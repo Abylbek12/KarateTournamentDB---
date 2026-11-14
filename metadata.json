@@ -1,0 +1,6 @@
+{
+  "name": "KarateTournamentDB - Схема БД и Управление Турнирами",
+  "description": "Проектирование реляционной схемы базы данных и система управления турнирами по карате: пользователи, участники, категории по весу и возрасту, расписание поединков по татами.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
