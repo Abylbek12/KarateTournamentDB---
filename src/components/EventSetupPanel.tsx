@@ -1,5 +1,6 @@
 import React from 'react';
-import { Plus, Trash2, Shuffle, Lock, Unlock, ChevronDown, Layers } from 'lucide-react';
+import { Plus, Trash2, Shuffle, Lock, Unlock, ChevronDown, Layers, Printer, ListChecks } from 'lucide-react';
+import { printUrl } from './PrintDocuments';
 import type { Bout, EventCategory, Gender, Participant, Tournament } from '../types/schema';
 import { WKF_AGE_GROUPS, buildWkfSet, categoryName, newCategoryId, activeEntries, DISCIPLINE_LABELS, isTeamCategory } from '../utils/eventCategories';
 
@@ -181,6 +182,14 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
                     >
                       <Shuffle className="w-3.5 h-3.5" /> {catBouts.length ? 'Заново' : 'Жеребьёвка'}
                     </button>
+                    {catBouts.length > 0 && (
+                      <a href={printUrl({ kind: 'bracket', eventId: c.tournamentId, categoryId: c.id })} target="_blank" rel="noreferrer" className="p-1.5 rounded-lg text-[var(--app-text-muted)] hover:text-[var(--app-text-primary)]" title="Печать сетки / PDF">
+                        <Printer className="w-4 h-4" />
+                      </a>
+                    )}
+                    <a href={printUrl({ kind: 'entries', eventId: c.tournamentId, categoryId: c.id })} target="_blank" rel="noreferrer" className="p-1.5 rounded-lg text-[var(--app-text-muted)] hover:text-[var(--app-text-primary)]" title="Стартовый лист / PDF">
+                      <ListChecks className="w-4 h-4" />
+                    </a>
                     <button onClick={() => patch(c.id, { isClosed: !c.isClosed })} className="p-1.5 rounded-lg text-[var(--app-text-muted)] hover:text-[var(--app-text-primary)] cursor-pointer" title={c.isClosed ? 'Открыть приём заявок' : 'Закрыть приём заявок'}>
                       {c.isClosed ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
                     </button>

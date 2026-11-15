@@ -1,5 +1,6 @@
 import React from 'react';
-import { ArrowLeft, Trophy, Radio, Medal } from 'lucide-react';
+import { ArrowLeft, Trophy, Radio, Medal, Printer } from 'lucide-react';
+import { printUrl } from './PrintDocuments';
 import type { Bout, Participant, TournamentCategory, EventCategory } from '../types/schema';
 import { categoryName, activeEntries, DISCIPLINE_LABELS } from '../utils/eventCategories';
 import type { UventexEventItem, EventActionType } from '../data/uventexEventsData';
@@ -65,7 +66,9 @@ const EventHeader: React.FC<{
   active: EventActionType;
   onBack: () => void;
   onNavigateAction: (a: EventActionType) => void;
-}> = ({ event, language, active, onBack, onNavigateAction }) => {
+  printCategoryId?: string;
+}> = ({ event, language, active, onBack, onNavigateAction, printCategoryId }) => {
+  const printKind = active === 'brackets' ? 'bracket' : active === 'results' ? 'results' : active === 'medals' ? 'medals' : null;
   const tabs: { id: EventActionType; label: string }[] = [
     { id: 'info', label: t(language, 'Информация', 'Маалымат', 'Info') },
     { id: 'categories_prices', label: t(language, 'Категории', 'Категориялар', 'Categories') },
@@ -79,7 +82,19 @@ const EventHeader: React.FC<{
       <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-[var(--app-text-muted)] hover:text-[var(--app-text-primary)] cursor-pointer">
         <ArrowLeft className="w-4 h-4" /> {t(language, 'Все турниры', 'Бардык мелдештер', 'All tournaments')}
       </button>
-      <h1 className="text-2xl font-bold text-[var(--app-text-primary)] leading-snug">{event.title}</h1>
+      <div className="flex flex-wrap items-start gap-3">
+        <h1 className="flex-1 min-w-[220px] text-2xl font-bold text-[var(--app-text-primary)] leading-snug">{event.title}</h1>
+        {printKind && (
+          <a
+            href={printUrl({ kind: printKind, eventId: event.id, categoryId: printKind === 'bracket' ? printCategoryId : undefined, lang: language })}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-[var(--app-border)] text-sm text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)]"
+          >
+            <Printer className="w-4 h-4" /> {t(language, 'Печать / PDF', 'Басып чыгаруу / PDF', 'Print / PDF')}
+          </a>
+        )}
+      </div>
       <div className="flex gap-1.5 overflow-x-auto no-scrollbar border-b border-[var(--app-border)]">
         {tabs.map((tab) => (
           <button
@@ -168,7 +183,7 @@ export const PublicBracketsView: React.FC<BaseProps> = (props) => {
 
   return (
     <div className="theme-keep space-y-5 pb-8">
-      <EventHeader {...props} active="brackets" />
+      <EventHeader {...props} active="brackets" printCategoryId={active} />
       {cats.length === 0 ? (
         <EmptyState language={language} text={['Сетки ещё не опубликованы', 'Торчолор али жарыялана элек', 'Brackets are not published yet']} />
       ) : (

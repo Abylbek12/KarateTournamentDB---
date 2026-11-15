@@ -93,6 +93,8 @@ import { getDeviceKey, setDeviceKey } from './utils/liveStream';
 import { TatamiDisplay, CallRoomDisplay, TatamiControl } from './components/TatamiScreens';
 import { MyAccountPanel } from './components/MyAccountPanel';
 import { RoleGuide } from './components/RoleGuide';
+import { PrintDocuments, parsePrintRequest } from './components/PrintDocuments';
+import { DocumentsPanel } from './components/DocumentsPanel';
 
 // Heavy screens are loaded on demand so the first page opens faster.
 const SchemaVisualizer = React.lazy(() => import('./components/SchemaVisualizer').then((m) => ({ default: m.SchemaVisualizer })));
@@ -115,7 +117,6 @@ const RefereeElectronicVotingAndVrModule = React.lazy(() => import('./components
 const DoctorTimeMedicalModule = React.lazy(() => import('./components/DoctorTimeMedicalModule').then((m) => ({ default: m.DoctorTimeMedicalModule })));
 const VideoAnalyticsModule = React.lazy(() => import('./components/VideoAnalyticsModule').then((m) => ({ default: m.VideoAnalyticsModule })));
 const AcquiringPaymentsModule = React.lazy(() => import('./components/AcquiringPaymentsModule').then((m) => ({ default: m.AcquiringPaymentsModule })));
-const OfficialProtocolsExportModule = React.lazy(() => import('./components/OfficialProtocolsExportModule').then((m) => ({ default: m.OfficialProtocolsExportModule })));
 
 const ScreensQrPanel = React.lazy(() => import('./components/ScreensQrPanel').then((m) => ({ default: m.ScreensQrPanel })));
 
@@ -583,7 +584,7 @@ function AppContent() {
       case 'doctor': return language === 'ru' ? 'Медицинский контроль (Doctor 80s Time)' : 'Medical Commission (Doctor 80s Time)';
       case 'video_analytics': return language === 'ru' ? 'Модуль видеоаналитики и отчетов Федерации' : 'Video Analytics & Federation Reports';
       case 'protocols': return language === 'ru' ? 'Судейские протоколы ГСК' : 'Certified Scorecards';
-      case 'exports': return language === 'ru' ? 'Официальный экспорт протоколов' : 'Official Protocols & Export';
+      case 'exports': return language === 'ru' ? 'Документы и печать' : 'Documents & Printing';
       case 'bracket': return language === 'ru' ? 'Турнирные сетки плей-офф' : 'Playoff Brackets';
       case 'schedule': return language === 'ru' ? 'Расписание татами 1-4' : 'Tatami 1-4 Schedule';
       case 'lan': return language === 'ru' ? 'Локальная сеть (LAN Hub)' : 'Local Venue LAN Hub';
@@ -677,6 +678,7 @@ function AppContent() {
     }
     return null;
   });
+  const [printRequest] = useState(() => parsePrintRequest(window.location.search));
   const [deviceOk, setDeviceOk] = useState<boolean | null>(null);
   React.useEffect(() => {
     if (screenMode?.kind !== 'control') return;
@@ -1063,6 +1065,11 @@ function AppContent() {
   //   ?screen=calls                warm-up area: who is on every tatami and who is next
   //   ?screen=control&t=1&key=...  secretary console for tatami 1 (tablet / laptop)
   // ---------------------------------------------------------------------------
+  // Printable documents: ?print=bracket|results|medals|entries|bout|diplomas&e=<event>&c=<category>&b=<bout>
+  if (printRequest) {
+    return <PrintDocuments request={printRequest} tournaments={tournaments} categories={eventCategories} bouts={bouts} participants={participants} />;
+  }
+
   if (screenMode) {
     if (screenMode.kind === 'tatami') return <TatamiDisplay tatamiNumber={screenMode.tatami} bouts={bouts} rules={tournamentRules} />;
     if (screenMode.kind === 'calls') return <CallRoomDisplay bouts={bouts} tatamiNumbers={SAMPLE_TATAMIS.map((t) => t.number)} />;
@@ -1946,15 +1953,7 @@ function AppContent() {
 
           {/* 5.4 Официальный экспорт протоколов и результатов */}
           {activeTab === 'exports' && (
-            <OfficialProtocolsExportModule
-              tournament={selectedTournament}
-              categories={SAMPLE_TOURNAMENT_CATEGORIES}
-              participants={participants}
-              bouts={bouts}
-              clubs={SAMPLE_CLUBS}
-              protocols={protocols}
-              currentUserRole={currentUserRole}
-            />
+            <DocumentsPanel tournaments={tournaments} initialTournamentId={selectedUventexEvent.id} categories={eventCategories} bouts={bouts} />
           )}
 
           {activeTab === 'admin' && effectiveRole === 'admin' && <UsersRolesPanel currentUserId={currentUser?.id} />}

@@ -1,5 +1,6 @@
 import React from 'react';
-import { X, Play, Pause, RotateCcw, Minus, Plus, Undo2, Volume2, VolumeX, Gavel } from 'lucide-react';
+import { X, Play, Pause, RotateCcw, Minus, Plus, Undo2, Volume2, VolumeX, Gavel, Printer } from 'lucide-react';
+import { printUrl } from './PrintDocuments';
 import type { Bout, Participant, TournamentRules } from '../types/schema';
 import * as E from '../utils/boutEngine';
 import { stageLabel } from '../utils/bracketProgression';
@@ -323,6 +324,14 @@ export const BoutConsole: React.FC<BoutConsoleProps> = ({ bout, rules, onChange,
               >
                 {tr('Исправить результат', 'Жыйынтыкты оңдоо', 'Correct result')}
               </button>
+              <a
+                href={printUrl({ kind: 'bout', eventId: bout.tournamentId, boutId: bout.id, lang })}
+                target="_blank"
+                rel="noreferrer"
+                className="h-10 px-4 inline-flex items-center gap-1.5 rounded-lg border border-[var(--app-border)] text-sm text-[var(--app-text-primary)]"
+              >
+                <Printer className="w-4 h-4" /> {tr('Протокол боя', 'Беттештин протоколу', 'Bout protocol')}
+              </a>
               <button onClick={onClose} className="h-10 px-4 rounded-lg bg-[var(--accent)] text-white text-sm font-semibold cursor-pointer">{tr('Готово', 'Даяр', 'Done')}</button>
             </div>
           )}

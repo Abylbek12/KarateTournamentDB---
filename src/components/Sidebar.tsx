@@ -164,7 +164,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             { id: 'screens' as NavTabId, label: tr('Экраны и QR-коды', 'Экрандар жана QR', 'Screens & QR'), icon: QrCode },
             { id: 'bracket' as NavTabId, label: tr('Сетки и жеребьёвка', 'Торчолор жана чүчүкулак', 'Brackets & draw'), icon: GitBranch },
             { id: 'acquiring' as NavTabId, label: tr('Оплаты и взносы', 'Төлөмдөр', 'Payments'), icon: CreditCard },
-            { id: 'exports' as NavTabId, label: tr('Экспорт протоколов', 'Протоколдорду экспорттоо', 'Exports'), icon: Stamp },
+            { id: 'exports' as NavTabId, label: tr('Документы и печать', 'Документтер жана басып чыгаруу', 'Documents & printing'), icon: Stamp },
             { id: 'lan' as NavTabId, label: tr('Работа без интернета', 'Интернетсиз режим', 'Offline (LAN)'), icon: Wifi }
           ]
         : []
