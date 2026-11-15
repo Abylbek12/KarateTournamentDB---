@@ -79,6 +79,9 @@ import { Bout, Participant, TournamentRules, RefereeProtocol, UserRole, Tourname
 import { AppProvider, useApp } from './context/AppContext';
 import { useGlobalDomTranslator, trLang } from './utils/globalDomTranslator';
 import { useServerSyncedState } from './utils/useServerSyncedState';
+import { canAccess, ROLE_LABELS, type AccessRole } from './utils/access';
+import { AccessGate } from './components/AccessGate';
+import { UsersRolesPanel } from './components/UsersRolesPanel';
 
 // Heavy screens are loaded on demand so the first page opens faster.
 const SchemaVisualizer = React.lazy(() => import('./components/SchemaVisualizer').then((m) => ({ default: m.SchemaVisualizer })));
@@ -136,6 +139,8 @@ function AppContent() {
   const [tournamentRules, setTournamentRules] = useState<TournamentRules>('wkf');
   const [currentUser, setCurrentUser] = useState<AuthenticatedUserProfile | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>('club_coach');
+  // What the visitor may see: 'guest' until signed in.
+  const effectiveRole: AccessRole = currentUser ? currentUserRole : 'guest';
 
   // Role switching is a UI preview only; real permissions are enforced by the server session.
   // Nobody can switch to Administrator without signing in as an administrator.
@@ -1035,7 +1040,7 @@ function AppContent() {
   };
 
   // Standalone Fullscreen Online Registration Page (Zero distraction, Uventex Style)
-  if (activeTab === 'registration') {
+  if (activeTab === 'registration' && canAccess('registration', effectiveRole)) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
         {/* Minimalist Dedicated Top Bar */}
@@ -1136,7 +1141,7 @@ function AppContent() {
         onTabChange={(tab) => navigateWithHash(tab)}
         tournamentRules={tournamentRules}
         onRulesChange={setTournamentRules}
-        currentUserRole={currentUserRole}
+        currentUserRole={effectiveRole}
         onRoleChange={requestRoleChange}
         selectedTournament={selectedTournament}
         onOpenResetDialog={() => setIsResetModalOpen(true)}
@@ -1358,14 +1363,14 @@ function AppContent() {
 
                 <span
                   className={`hidden sm:inline-flex text-[10px] font-semibold px-1.5 py-0.2 rounded-full border items-center gap-0.5 ${
-                    currentUserRole === 'admin'
+                    effectiveRole === 'admin'
                       ? 'bg-rose-500/10 text-rose-600 border-rose-500/30'
-                      : 'bg-sky-500/10 text-sky-600 border-sky-500/30'
+                      : effectiveRole === 'guest'
+                        ? 'bg-slate-500/10 text-slate-600 border-slate-500/30'
+                        : 'bg-sky-500/10 text-sky-600 border-sky-500/30'
                   }`}
                 >
-                  {currentUserRole === 'admin'
-                    ? tr('Админ', 'Админ', 'Admin')
-                    : tr('Участник', 'Катышуучу', 'Member')}
+                  {ROLE_LABELS[effectiveRole]}
                 </span>
 
                 <ChevronDown
@@ -1475,6 +1480,7 @@ function AppContent() {
                       )}
                     </div>
 
+                    {currentUser?.role === 'admin' && (<>
                     {/* 2. RBAC Role Selection (Администратор vs. Участник / Учреждение) */}
                     <div className="space-y-1.5 pt-1 border-t border-slate-100">
                       <div className="flex items-center justify-between px-1">
@@ -1538,6 +1544,7 @@ function AppContent() {
                       </div>
                     </div>
 
+                    </>)}
                     {/* 3. Theme Switcher (Яркая / Чёрная) */}
                     <div className="space-y-1.5 pt-1 border-t border-slate-100">
                       <div className="px-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
@@ -1755,6 +1762,20 @@ function AppContent() {
         {/* Full-width Stretched Content Area */}
         <main className="flex-1 w-full min-w-0 px-3 sm:px-6 py-2.5 sm:py-3 space-y-4">
           <React.Suspense fallback={<ScreenLoader />}>
+          {!canAccess(activeTab, effectiveRole) ? (
+            <AccessGate
+              role={effectiveRole}
+              onLogin={() => {
+                setAuthModalMode('login');
+                setIsAuthModalOpen(true);
+              }}
+              onRegister={() => {
+                setAuthModalMode('register');
+                setIsAuthModalOpen(true);
+              }}
+              onGoHome={() => navigateWithHash('tournaments')}
+            />
+          ) : (<>
           {/* 1. События (Tournaments showcase with Category-Dependent Hover Options + RBAC) */}
           {activeTab === 'tournaments' && (
             <TournamentShowcase
@@ -2078,6 +2099,8 @@ function AppContent() {
             />
           )}
 
+          {activeTab === 'admin' && effectiveRole === 'admin' && <UsersRolesPanel currentUserId={currentUser?.id} />}
+
           {activeTab === 'admin' && (
             <AdminPanel
               clubs={SAMPLE_CLUBS}
@@ -2183,6 +2206,7 @@ function AppContent() {
           {activeTab === 'categories' && <CategoriesManager />}
           {activeTab === 'schema' && <SchemaVisualizer />}
           {activeTab === 'sql' && <SqlViewer />}
+          </>)}
           </React.Suspense>
         </main>
 
@@ -2493,16 +2517,6 @@ function AppContent() {
         </div>
       )}
 
-      {/* Floating Zendesk-style Chat Widget on Bottom Right (Positioned above mobile bottom nav on smartphones/tablets) */}
-      <button
-        type="button"
-        onClick={() => setActiveTab('help')}
-        className="fixed bottom-20 right-4 lg:bottom-5 lg:right-5 z-40 w-12 h-12 rounded-2xl bg-[#0f3844] hover:bg-[#0c2f3a] text-white shadow-xl flex items-center justify-center transition-transform hover:scale-105 active:scale-95 cursor-pointer"
-        title={tr('Служба поддержки и чат-виджет Uventex', 'Uventex колдоо кызматы жана чат-виджети', 'Uventex Support & Help Center')}
-      >
-        <MessageSquare className="w-5 h-5 text-white" />
-      </button>
-
       {/* ========================================================
           MOBILE & TABLET THUMB-ZONE BOTTOM NAVIGATION BAR (lg:hidden)
          ======================================================== */}
@@ -2531,9 +2545,9 @@ function AppContent() {
 
         <button
           type="button"
-          onClick={() => navigateWithHash('scoreboard')}
+          onClick={() => navigateWithHash(canAccess('scoreboard', effectiveRole) ? 'scoreboard' : 'event_live_scoring')}
           className={`flex flex-col items-center justify-center gap-1 h-full rounded-xl transition-colors cursor-pointer ${
-            activeTab === 'scoreboard' || activeTab === 'tatami'
+            activeTab === 'scoreboard' || activeTab === 'tatami' || activeTab === 'event_live_scoring'
               ? 'text-sky-500 font-semibold'
               : 'hover:text-sky-500'
           }`}
@@ -2546,9 +2560,9 @@ function AppContent() {
 
         <button
           type="button"
-          onClick={() => navigateWithHash('bracket')}
+          onClick={() => navigateWithHash(canAccess('bracket', effectiveRole) ? 'bracket' : 'event_brackets')}
           className={`flex flex-col items-center justify-center gap-1 h-full rounded-xl transition-colors cursor-pointer ${
-            activeTab === 'bracket'
+            activeTab === 'bracket' || activeTab === 'event_brackets'
               ? 'text-sky-500 font-semibold'
               : 'hover:text-sky-500'
           }`}
@@ -2561,7 +2575,14 @@ function AppContent() {
 
         <button
           type="button"
-          onClick={() => navigateWithHash('admin')}
+          onClick={() => {
+            if (effectiveRole === 'guest') {
+              setAuthModalMode('login');
+              setIsAuthModalOpen(true);
+            } else {
+              navigateWithHash('admin');
+            }
+          }}
           className={`flex flex-col items-center justify-center gap-1 h-full rounded-xl transition-colors cursor-pointer ${
             activeTab === 'admin'
               ? 'text-sky-500 font-semibold'
@@ -2570,7 +2591,11 @@ function AppContent() {
         >
           <Layers className="w-5 h-5" />
           <span className="text-[11px] leading-none truncate max-w-[64px]">
-            {tr('Админ', 'Админ', 'Admin')}
+            {effectiveRole === 'guest'
+              ? tr('Войти', 'Кирүү', 'Sign in')
+              : effectiveRole === 'admin'
+                ? tr('Админ', 'Админ', 'Admin')
+                : tr('Кабинет', 'Кабинет', 'Account')}
           </span>
         </button>
 

@@ -1,3 +1,4 @@
+import { canAccess, type AccessRole } from '../utils/access';
 import React, { useState } from 'react';
 import { 
   Tv, 
@@ -64,7 +65,7 @@ interface SidebarProps {
   onTabChange: (tab: NavTabId) => void;
   tournamentRules: TournamentRules;
   onRulesChange: (rules: TournamentRules) => void;
-  currentUserRole: UserRole;
+  currentUserRole: AccessRole;
   onRoleChange: (role: UserRole) => void;
   selectedTournament: Tournament;
   onOpenResetDialog: () => void;
@@ -147,23 +148,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'video_analytics', label: tr('Видеоаналитика', 'Видеоаналитика', 'Video Analytics'), icon: Film }
   ];
 
-  const tournamentManagementItems = allTournamentManagementItems.filter(
-    (item) => isAdmin || !item.adminOnly
-  );
+  const tournamentManagementItems = allTournamentManagementItems.filter((item) => canAccess(item.id, currentUserRole));
 
   // 3. Unified Administration & Infrastructure Dropdown Group (Full control for Admin, Archive/Read-only Cabinet for Participant)
-  const adminSystemItems: NavItemConfig[] = isAdmin
-    ? [
-        { id: 'admin', label: tr('Управление событиями и Архив', 'Мелдештерди башкаруу жана Архив', 'Manage Events & Archive'), icon: ShieldCheck },
-        { id: 'acquiring', label: tr('Эквайринг и взносы', 'Төлөмдөр жана взностор', 'Acquiring & Fees'), icon: CreditCard },
-        { id: 'exports', label: tr('Экспорт протоколов', 'Протоколдорду экспорттоо', 'Official Exports'), icon: Stamp },
-        { id: 'lan', label: tr('Локальный LAN-сервер', 'Локалдык LAN-сервер', 'Venue LAN Hub'), icon: Wifi },
-        { id: 'schema', label: tr('База данных SQL', 'SQL маалымат базасы', 'PostgreSQL Schema'), icon: Database }
-      ]
-    : [
-        { id: 'admin', label: tr('Кабинет участника и Архив', 'Катышуучу кабинети жана Архив', 'Participant Cabinet & Archive'), icon: UserCheck },
-        { id: 'acquiring', label: tr('Оплата взносов клуба', 'Клуб взносторун төлөө', 'Club Fee Payments'), icon: CreditCard }
-      ];
+  const adminSystemItems: NavItemConfig[] = (
+    (isAdmin
+      ? [
+          { id: 'admin', label: tr('Турниры, пользователи и архив', 'Мелдештер, колдонуучулар жана архив', 'Events, Users & Archive'), icon: ShieldCheck },
+          { id: 'acquiring', label: tr('Оплаты и взносы', 'Төлөмдөр жана взностор', 'Payments & Fees'), icon: CreditCard },
+          { id: 'exports', label: tr('Экспорт протоколов', 'Протоколдорду экспорттоо', 'Official Exports'), icon: Stamp },
+          { id: 'lan', label: tr('Локальный LAN-сервер', 'Локалдык LAN-сервер', 'Venue LAN Hub'), icon: Wifi },
+          { id: 'schema', label: tr('База данных (для разработчика)', 'Маалымат базасы', 'Database (developer)'), icon: Database }
+        ]
+      : [
+          { id: 'admin', label: tr('Личный кабинет', 'Жеке кабинет', 'My Account'), icon: UserCheck },
+          { id: 'acquiring', label: tr('Мои оплаты', 'Менин төлөмдөрүм', 'My Payments'), icon: CreditCard },
+          { id: 'exports', label: tr('Экспорт протоколов', 'Протоколдорду экспорттоо', 'Official Exports'), icon: Stamp }
+        ]) as NavItemConfig[]
+  ).filter((item) => canAccess(item.id, currentUserRole));
 
   // 4. Secondary Info & Support Links (Hidden inside compact dropdown)
   const secondaryInfoItems: NavItemConfig[] = [
@@ -321,6 +323,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             })}
           </div>
 
+          {tournamentManagementItems.length > 0 && (<>
           {/* SECTION 2: GROUPED DROPDOWN — TOURNAMENT MANAGEMENT / PARTICIPANT CABINET */}
           <div className="pt-2 border-t border-slate-100 space-y-1">
             <button
@@ -388,6 +391,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           </div>
 
+          </>)}
+          {adminSystemItems.length > 0 && (<>
           {/* SECTION 3: GROUPED DROPDOWN — ADMINISTRATION & ARCHIVE */}
           <div className="space-y-1">
             <button
@@ -455,6 +460,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           </div>
 
+          </>)}
           {/* SECTION 4: SECONDARY LINKS DROPDOWN (Help, About, Privacy) */}
           <div className="space-y-1">
             <button

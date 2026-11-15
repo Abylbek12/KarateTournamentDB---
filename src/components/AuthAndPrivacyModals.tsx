@@ -150,7 +150,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [regPhone, setRegPhone] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
-  const [regRole, setRegRole] = useState<UserRole>('club_coach');
+  const [regRole, setRegRole] = useState<UserRole>('athlete');
   const [regAgreeTerms, setRegAgreeTerms] = useState(true);
 
   // Quick fill helper toggle
@@ -654,8 +654,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         onChange={(e) => setRegRole(e.target.value as UserRole)}
                         className="w-full rounded-full bg-white border border-slate-200/80 px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-[#38a3a5] shadow-2xs font-sans cursor-pointer"
                       >
-                        <option value="club_coach">🥋 Спортсмен / Атлет</option>
-                        <option value="club_coach">🥊 Тренер клуба</option>
+                        <option value="athlete">🥋 Спортсмен (или родитель спортсмена)</option>
+                        <option value="club_coach">🥊 Тренер / представитель клуба</option>
                       </select>
                       <p className="mt-1 text-[10px] text-slate-500 font-sans">
                         {language !== 'en'

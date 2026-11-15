@@ -4,6 +4,7 @@ export type UserRole =
   | 'tatami_referee'
   | 'scorekeeper'
   | 'club_coach'
+  | 'athlete'
   | 'medical_officer';
 
 export type RefereeCategory = 

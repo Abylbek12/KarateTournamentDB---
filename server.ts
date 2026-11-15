@@ -427,7 +427,7 @@ app.get('/api/rankings', (_req: Request, res: Response) => {
 
 // Roles a person may pick for themselves at sign-up. Referee/medical/admin roles
 // are assigned by an administrator, never self-selected.
-const SELF_SERVICE_ROLES = new Set(['club_coach']);
+const SELF_SERVICE_ROLES = new Set(['athlete', 'club_coach']);
 
 // Development-only demo accounts (never created in production).
 function seedDevDemoAccounts() {
@@ -702,7 +702,7 @@ app.post('/api/auth/logout', (req: Request, res: Response) => {
 });
 
 // 10. Admin: list users and assign roles (referees, medical officers, etc.)
-const ALL_ROLES = new Set(['admin', 'chief_referee', 'tatami_referee', 'scorekeeper', 'club_coach', 'medical_officer']);
+const ALL_ROLES = new Set(['admin', 'chief_referee', 'tatami_referee', 'scorekeeper', 'club_coach', 'athlete', 'medical_officer']);
 
 app.get('/api/admin/users', (req: Request, res: Response) => {
   if (!isRequestAuthorizedAdmin(req)) {
@@ -727,6 +727,10 @@ app.put('/api/admin/users/:id/role', (req: Request, res: Response) => {
     res.status(400).json({ error: 'Недопустимая роль.' });
     return;
   }
+  if (target.role === 'admin' && role !== 'admin' && db.accounts.filter((a) => a.role === 'admin').length <= 1) {
+    res.status(400).json({ error: 'Нельзя снять роль с последнего администратора.' });
+    return;
+  }
   target.role = role;
   saveDb();
   res.json({ success: true, user: publicUser(target) });
@@ -739,7 +743,7 @@ app.put('/api/admin/users/:id/role', (req: Request, res: Response) => {
 // so two devices cannot silently overwrite each other (409 = reload and retry).
 // ========================================================
 const SHARED_STATE_WRITERS: Record<string, Set<string>> = {
-  participants: new Set(['admin', 'chief_referee', 'scorekeeper', 'club_coach']),
+  participants: new Set(['admin', 'chief_referee', 'scorekeeper', 'medical_officer', 'club_coach', 'athlete']),
   bouts: new Set(['admin', 'chief_referee', 'tatami_referee', 'scorekeeper']),
   protocols: new Set(['admin', 'chief_referee', 'tatami_referee', 'scorekeeper'])
 };
@@ -801,8 +805,8 @@ app.put('/api/state/:key', (req: Request, res: Response) => {
     res.status(409).json({ error: 'Данные уже изменены с другого устройства.', ...stateEnvelope(key) });
     return;
   }
-  if (user.role === 'club_coach' && !isAppendOnlyChange(current?.value, value)) {
-    res.status(403).json({ error: 'Тренер может только добавлять своих спортсменов.' });
+  if ((user.role === 'club_coach' || user.role === 'athlete') && !isAppendOnlyChange(current?.value, value)) {
+    res.status(403).json({ error: 'Тренер или спортсмен может только добавлять заявки, но не менять чужие.' });
     return;
   }
 
@@ -838,6 +842,20 @@ function generateExpertFallbackResponse(prompt: string, context: Record<string, 
 *Контекст текущего турнира:* На турнире **«${currentTourn}»** система судейского табло автоматически фиксирует и отображает Senshu в реальном времени!`;
   }
 
+  if (q.includes('skif') || q.includes('shobu') || q.includes('сетокан') || q.includes('сётокан')) {
+    return `### ⛩️ Сравнение регламентов WKF и SKIF (Shobu Ippon / Sanbon)
+
+| Параметр | WKF (Спортивное каратэ) | SKIF (Традиционный Сётокан) |
+|---|---|---|
+| **Главный принцип** | Накопительная система баллов (до разницы 8 очков) | Концепция «Одного смертельного удара» (*Todome-waza*) |
+| **Система счета** | Yuko (1), Waza-ari (2), Ippon (3) | Waza-ari (половина победы), Ippon (чистая победа) |
+| **Финал поединка** | Окончание времени или разрыв в 8 баллов | 1 Ippon или 2 Waza-ari (в Shobu Sanbon — до 3 Ippon) |
+| **Контакт** | Строгий контроль (Skin-touch в юниорах/взрослых, запрет в кадетах) | Максимальная фокусировка удара, глубокий контроль дистанции |
+| **Судейская бригада** | Рефери на татами + 4 боковых судьи (флажки/джойстики) | 1 Рефери (Shushin) + 4 угловых судьи (Fukushin) с красным/белым флагами |
+
+*В нашей платформе переключение между регламентами WKF и SKIF происходит в 1 клик через шапку сайта!*`;
+  }
+
   if (q.includes('оценк') || q.includes('ippon') || q.includes('waza') || q.includes('yuko') || q.includes('баллы') || q.includes('иппон')) {
     return `### 📊 Система оценок в каратэ WKF (Версия 2026)
 
@@ -853,20 +871,6 @@ function generateExpertFallbackResponse(prompt: string, context: Record<string, 
   - Удары обратной стороной кулака (*Uraken*).
 
 *Разница счета:* Поединок завершается досрочно при разнице в **8 баллов** (*Senshu / Kiken / досрочная победа*).`;
-  }
-
-  if (q.includes('skif') || q.includes('shobu') || q.includes('сетокан') || q.includes('сётокан')) {
-    return `### ⛩️ Сравнение регламентов WKF и SKIF (Shobu Ippon / Sanbon)
-
-| Параметр | WKF (Спортивное каратэ) | SKIF (Традиционный Сётокан) |
-|---|---|---|
-| **Главный принцип** | Накопительная система баллов (до разницы 8 очков) | Концепция «Одного смертельного удара» (*Todome-waza*) |
-| **Система счета** | Yuko (1), Waza-ari (2), Ippon (3) | Waza-ari (половина победы), Ippon (чистая победа) |
-| **Финал поединка** | Окончание времени или разрыв в 8 баллов | 1 Ippon или 2 Waza-ari (в Shobu Sanbon — до 3 Ippon) |
-| **Контакт** | Строгий контроль (Skin-touch в юниорах/взрослых, запрет в кадетах) | Максимальная фокусировка удара, глубокий контроль дистанции |
-| **Судейская бригада** | Рефери на татами + 4 боковых судьи (флажки/джойстики) | 1 Рефери (Shushin) + 4 угловых судьи (Fukushin) с красным/белым флагами |
-
-*В нашей платформе переключение между регламентами WKF и SKIF происходит в 1 клик через шапку сайта!*`;
   }
 
   if (q.includes('жеребьевк') || q.includes('сетк') || q.includes('разведен') || q.includes('клуб') || q.includes('draw')) {

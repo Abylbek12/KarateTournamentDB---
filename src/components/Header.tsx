@@ -48,6 +48,7 @@ export const Header: React.FC<HeaderProps> = ({
     tatami_referee: { label: 'Судья татами', icon: '🥋', color: 'bg-blue-950/90 text-blue-300 border-blue-800', desc: 'Флажки, табло, судейство Ката' },
     scorekeeper: { label: 'Оператор табло', icon: '⏱️', color: 'bg-emerald-950/90 text-emerald-300 border-emerald-800', desc: 'Ведение счета и хронометраж' },
     club_coach: { label: 'Тренер клуба', icon: '🥊', color: 'bg-purple-950/90 text-purple-300 border-purple-800', desc: 'Просмотр сетки и заявки (read-only)' },
+    athlete: { label: 'Спортсмен', icon: '🥋', color: 'bg-sky-950/90 text-sky-300 border-sky-800', desc: 'Свои заявки и результаты' },
     medical_officer: { label: 'Врач соревнований', icon: '🩺', color: 'bg-teal-950/90 text-teal-300 border-teal-800', desc: 'Медицинский допуск и 10с травмы' }
   };
 
