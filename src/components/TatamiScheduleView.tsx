@@ -41,6 +41,7 @@ export const TatamiScheduleView: React.FC<TatamiScheduleViewProps> = ({
   const inProgressCount = bouts.filter((b) => b.status === 'in_progress').length;
 
   const roundStageLabels: Record<RoundStage, string> = {
+    'round_1_32': '1/32 Финала',
     'round_1_16': '1/16 Финала',
     'round_1_8': '1/8 Финала',
     'quarter_final': '1/4 Финала',

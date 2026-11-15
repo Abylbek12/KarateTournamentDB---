@@ -116,6 +116,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [regFullName, setRegFullName] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPhone, setRegPhone] = useState('');
+  const [regClubName, setRegClubName] = useState('');
+  const [regAlsoCompetes, setRegAlsoCompetes] = useState(false);
   const [regPassword, setRegPassword] = useState('');
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
   const [regRole, setRegRole] = useState<UserRole>('athlete');
@@ -274,7 +276,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           phone: regPhone,
           password: regPassword,
           role: lockedRole || regRole,
-          inviteToken: inviteToken || undefined
+          inviteToken: inviteToken || undefined,
+          clubName: regClubName || undefined,
+          alsoCompetes: (lockedRole || regRole) === 'club_coach' ? regAlsoCompetes : undefined
         })
       });
 
@@ -641,6 +645,40 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           : 'Referee and organizer roles are granted by an administrator after sign-up.'}
                       </p>
                     </div>
+                    )}
+
+                    {/* Club + "I also compete" for coaches */}
+                    {((lockedRole || regRole) === 'club_coach' || (lockedRole || regRole) === 'athlete') && (
+                      <div>
+                        <label className="block text-[11px] font-semibold text-[#2c5270] mb-1 font-sans">
+                          {language !== 'en' ? 'Клуб (если есть)' : 'Club (optional)'}
+                        </label>
+                        <input
+                          type="text"
+                          value={regClubName}
+                          onChange={(e) => setRegClubName(e.target.value)}
+                          placeholder={language !== 'en' ? 'Например: СК «Тигр», Бишкек' : 'e.g. Tiger Karate Club, Bishkek'}
+                          className="w-full rounded-full bg-white border border-slate-200/80 px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-[#38a3a5] shadow-2xs font-sans"
+                        />
+                      </div>
+                    )}
+                    {(lockedRole || regRole) === 'club_coach' && (
+                      <label className="flex items-start gap-2 text-[11px] text-slate-700 font-sans cursor-pointer rounded-2xl border border-slate-200 bg-white px-3 py-2">
+                        <input
+                          type="checkbox"
+                          checked={regAlsoCompetes}
+                          onChange={(e) => setRegAlsoCompetes(e.target.checked)}
+                          className="mt-0.5 rounded text-[#38a3a5] focus:ring-[#38a3a5]"
+                        />
+                        <span>
+                          <b>{language !== 'en' ? 'Я тоже выступаю на соревнованиях' : 'I also compete'}</b>
+                          <span className="block text-[10px] text-slate-500">
+                            {language !== 'en'
+                              ? 'Сможете подавать заявки и за учеников, и за себя — с одного аккаунта.'
+                              : 'Enter your athletes and yourself from one account.'}
+                          </span>
+                        </span>
+                      </label>
                     )}
 
                     {/* Terms Checkbox */}

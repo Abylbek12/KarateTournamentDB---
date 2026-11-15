@@ -12,7 +12,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test:draw": "tsx scripts/test-draw.ts",
+    "test": "npm run test:draw"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

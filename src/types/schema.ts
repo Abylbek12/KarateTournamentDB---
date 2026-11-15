@@ -55,6 +55,7 @@ export type BracketType =
 export type TatamiStatus = 'ready' | 'active' | 'paused' | 'finished';
 
 export type RoundStage = 
+  | 'round_1_32'
   | 'round_1_16'
   | 'round_1_8'
   | 'quarter_final'
@@ -631,6 +632,8 @@ export interface AuthenticatedUserProfile {
   avatarUrl?: string;
   licenseCode?: string;
   clubName?: string;
+  /** Coach who also competes as an athlete. */
+  alsoCompetes?: boolean;
   isVerified: boolean;
   confirmedAt?: string;
   lastLoginAt: string;

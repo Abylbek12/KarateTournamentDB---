@@ -1,63 +1,58 @@
-import { canAccess, type AccessRole } from '../utils/access';
 import React, { useState } from 'react';
-import { 
-  Tv, 
-  FileText, 
-  GitBranch, 
-  Calendar, 
-  Wifi, 
-  Users, 
-  ShieldCheck, 
+import {
+  Tv,
+  FileText,
+  GitBranch,
+  Calendar,
+  Wifi,
+  Users,
+  ShieldCheck,
   Shield,
-  Database, 
-  ChevronLeft, 
-  ChevronRight, 
-  X,
   Stethoscope,
-  Film,
   CreditCard,
   Stamp,
-  ChevronDown,
   Video,
   HelpCircle,
   Target,
   LayoutGrid,
-  Briefcase,
+  Info,
   Trophy,
-  Sliders,
-  Sparkles,
+  UserCircle2,
+  ClipboardList,
+  Scale,
   PanelLeftClose,
   PanelLeftOpen,
-  UserCheck,
-  Lock
+  X
 } from 'lucide-react';
+import { canAccess, type AccessRole } from '../utils/access';
 import { TournamentRules, UserRole, Tournament } from '../types/schema';
 import { Language } from '../utils/translations';
 import { useApp } from '../context/AppContext';
+import { TatamiMark, TatamiWordmark } from './BrandLogo';
 
-export type NavTabId = 
-  | 'tournaments' 
+export type NavTabId =
+  | 'tournaments'
   | 'tournament_details'
-  | 'studios' 
+  | 'studios'
   | 'virtual_studios'
-  | 'rankings' 
+  | 'rankings'
   | 'about'
   | 'help'
   | 'coach'
   | 'acquiring'
-  | 'scoreboard' 
+  | 'scoreboard'
   | 'referee_vr'
   | 'doctor'
   | 'video_analytics'
-  | 'protocols' 
+  | 'protocols'
   | 'exports'
-  | 'bracket' 
-  | 'schedule' 
-  | 'lan' 
-  | 'participants' 
-  | 'admin' 
-  | 'schema' 
-  | 'sql' 
+  | 'bracket'
+  | 'schedule'
+  | 'lan'
+  | 'participants'
+  | 'admin'
+  | 'schema'
+  | 'sql'
   | 'registration';
 
 interface SidebarProps {
@@ -77,19 +72,34 @@ interface SidebarProps {
   onOpenPrivacyModal?: () => void;
 }
 
-interface NavItemConfig {
+interface NavItem {
   id: NavTabId;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   badge?: string;
 }
 
+interface NavSection {
+  key: string;
+  title?: string;
+  items: NavItem[];
+}
+
+const EVENT_SUB_ROUTES = [
+  'tournaments',
+  'tournament_details',
+  'event_info',
+  'event_categories_prices',
+  'event_brackets',
+  'event_results',
+  'event_medals',
+  'event_live_scoring'
+];
+
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   onTabChange,
-  currentUserRole,
-  onRoleChange,
-  selectedTournament,
+  currentUserRole: role,
   isMobileOpen,
   onToggleMobile,
   language: propLanguage,
@@ -97,461 +107,174 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const appContext = useApp();
   const language = propLanguage || appContext.language;
-
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [openGroup, setOpenGroup] = useState<'tournament_mgmt' | 'admin_system' | 'info_links' | null>('tournament_mgmt');
+  const tr = (ru: string, ky: string, en: string) => (language === 'ky' ? ky : language === 'en' ? en : ru);
 
-  const isAdmin = currentUserRole === 'admin';
+  const isAdmin = role === 'admin';
+  const isSignedIn = role !== 'guest';
 
-  const tr = (ru: string, ky: string, en: string) => {
-    if (language === 'ky') return ky;
-    if (language === 'en') return en;
-    return ru;
-  };
-
-  // 1. Primary Top-Level Navigation (Only the most essential items remain directly visible)
-  const primaryItems: NavItemConfig[] = [
+  const rawSections: NavSection[] = [
     {
-      id: 'tournaments',
-      label: tr('События и Турниры', 'Мелдештер', 'Events & Tournaments'),
-      icon: LayoutGrid
+      key: 'public',
+      items: [
+        { id: 'tournaments' as NavTabId, label: tr('Турниры', 'Мелдештер', 'Tournaments'), icon: LayoutGrid },
+        { id: 'virtual_studios' as NavTabId, label: tr('Трансляции', 'Түз эфир', 'Live'), icon: Video, badge: 'LIVE' },
+        { id: 'rankings' as NavTabId, label: tr('Рейтинги', 'Рейтингдер', 'Rankings'), icon: Trophy },
+        { id: 'studios' as NavTabId, label: tr('Клубы', 'Клубдар', 'Clubs'), icon: Target }
+      ]
     },
     {
-      id: 'studios',
-      label: tr('Клубы и Додзё', 'Клубдар (Studios)', 'Studios & Clubs'),
-      icon: Target
+      key: 'member',
+      title: tr('Мой кабинет', 'Менин кабинетим', 'My account'),
+      items:
+        isSignedIn && !isAdmin
+          ? [
+              { id: 'admin' as NavTabId, label: tr('Личный кабинет', 'Жеке кабинет', 'My account'), icon: UserCircle2 },
+              { id: 'registration' as NavTabId, label: tr('Подать заявку', 'Табыштама берүү', 'Enter a tournament'), icon: ClipboardList },
+              { id: 'coach' as NavTabId, label: tr('Мой клуб и ученики', 'Клубум жана окуучулар', 'My club & athletes'), icon: Users },
+              { id: 'acquiring' as NavTabId, label: tr('Мои оплаты', 'Төлөмдөрүм', 'My payments'), icon: CreditCard }
+            ]
+          : []
     },
     {
-      id: 'virtual_studios',
-      label: tr('Прямой эфир', 'Түз эфир (LIVE)', 'Virtual Studios'),
-      icon: Video,
-      badge: 'LIVE'
+      key: 'officials',
+      title: tr('Судейство', 'Калыстык', 'Officiating'),
+      items: [
+        { id: 'scoreboard' as NavTabId, label: tr('Табло татами', 'Татами таблосу', 'Tatami scoreboard'), icon: Tv },
+        { id: 'schedule' as NavTabId, label: tr('Расписание татами', 'Татами графиги', 'Tatami schedule'), icon: Calendar },
+        { id: 'participants' as NavTabId, label: tr('Взвешивание и допуск', 'Таразалоо жана уруксат', 'Weigh-in & clearance'), icon: Scale },
+        { id: 'protocols' as NavTabId, label: tr('Протоколы', 'Протоколдор', 'Protocols'), icon: FileText },
+        { id: 'referee_vr' as NavTabId, label: tr('Видеоповтор (VR)', 'Видеокайталоо (VR)', 'Video review'), icon: Shield },
+        { id: 'doctor' as NavTabId, label: tr('Медконтроль', 'Медкөзөмөл', 'Medical'), icon: Stethoscope }
+      ]
     },
     {
-      id: 'rankings',
-      label: tr('Рейтинги', 'Рейтингдер', 'Rankings'),
-      icon: Trophy
+      key: 'organizer',
+      title: tr('Организатор', 'Уюштуруучу', 'Organizer'),
+      items: isAdmin
+        ? [
+            { id: 'admin' as NavTabId, label: tr('Турниры и пользователи', 'Мелдештер жана колдонуучулар', 'Events & users'), icon: ShieldCheck },
+            { id: 'bracket' as NavTabId, label: tr('Сетки и жеребьёвка', 'Торчолор жана чүчүкулак', 'Brackets & draw'), icon: GitBranch },
+            { id: 'acquiring' as NavTabId, label: tr('Оплаты и взносы', 'Төлөмдөр', 'Payments'), icon: CreditCard },
+            { id: 'exports' as NavTabId, label: tr('Экспорт протоколов', 'Протоколдорду экспорттоо', 'Exports'), icon: Stamp },
+            { id: 'lan' as NavTabId, label: tr('Работа без интернета', 'Интернетсиз режим', 'Offline (LAN)'), icon: Wifi }
+          ]
+        : []
+    },
+    {
+      key: 'help',
+      title: tr('Помощь', 'Жардам', 'Help'),
+      items: [
+        { id: 'help' as NavTabId, label: tr('Инструкция', 'Нускама', 'How it works'), icon: HelpCircle },
+        { id: 'about' as NavTabId, label: tr('О платформе', 'Платформа жөнүндө', 'About'), icon: Info }
+      ]
     }
   ];
+  const sections = rawSections
+    .map((s) => ({ ...s, items: s.items.filter((i) => canAccess(i.id, role)) }))
+    .filter((s) => s.items.length > 0);
 
-  // 2. Unified Tournament Management & Officiating Dropdown Group (Filtered by RBAC)
-  const allTournamentManagementItems: (NavItemConfig & { adminOnly?: boolean })[] = [
-    { id: 'registration', label: tr('Подача заявки (Регистрация)', 'Каттоо табыштамасы', 'Event Registration'), icon: UserCheck },
-    { id: 'coach', label: tr('Кабинет клуба / Учреждения', 'Клуб / Мекеме кабинети', 'Club & Institution Cabinet'), icon: Users },
-    { id: 'scoreboard', label: tr('Онлайн-Табло и Трансляции', 'Онлайн-Табло жана Түз эфир', 'Live Scoreboard & Stream'), icon: Tv },
-    { id: 'bracket', label: tr('Сетки плей-офф', 'Плей-офф торчосу', 'Playoff Brackets'), icon: GitBranch },
-    { id: 'schedule', label: tr('Расписание татами', 'Татами ырааттамасы', 'Tatami Schedule'), icon: Calendar },
-    { id: 'participants', label: tr('База участников', 'Катышуучулар базасы', 'Athletes Roster'), icon: Users },
-    { id: 'referee_vr', label: tr('Судейский VR и Флаги', 'Калыстар VR пульту', 'Referee VR & Flags'), icon: Shield, adminOnly: true },
-    { id: 'protocols', label: tr('Протоколы поединков', 'Беттеш протоколдору', 'Match Protocols'), icon: FileText, adminOnly: true },
-    { id: 'doctor', label: tr('Медконтроль (80с)', 'Медкөзөмөл (80с)', 'Medical Timer 80s'), icon: Stethoscope, adminOnly: true },
-    { id: 'video_analytics', label: tr('Видеоаналитика', 'Видеоаналитика', 'Video Analytics'), icon: Film }
-  ];
+  const compact = isCollapsed && !isMobileOpen;
 
-  const tournamentManagementItems = allTournamentManagementItems.filter((item) => canAccess(item.id, currentUserRole));
-
-  // 3. Unified Administration & Infrastructure Dropdown Group (Full control for Admin, Archive/Read-only Cabinet for Participant)
-  const adminSystemItems: NavItemConfig[] = (
-    (isAdmin
-      ? [
-          { id: 'admin', label: tr('Турниры, пользователи и архив', 'Мелдештер, колдонуучулар жана архив', 'Events, Users & Archive'), icon: ShieldCheck },
-          { id: 'acquiring', label: tr('Оплаты и взносы', 'Төлөмдөр жана взностор', 'Payments & Fees'), icon: CreditCard },
-          { id: 'exports', label: tr('Экспорт протоколов', 'Протоколдорду экспорттоо', 'Official Exports'), icon: Stamp },
-          { id: 'lan', label: tr('Локальный LAN-сервер', 'Локалдык LAN-сервер', 'Venue LAN Hub'), icon: Wifi },
-          { id: 'schema', label: tr('База данных (для разработчика)', 'Маалымат базасы', 'Database (developer)'), icon: Database }
-        ]
-      : [
-          { id: 'admin', label: tr('Личный кабинет', 'Жеке кабинет', 'My Account'), icon: UserCheck },
-          { id: 'acquiring', label: tr('Мои оплаты', 'Менин төлөмдөрүм', 'My Payments'), icon: CreditCard },
-          { id: 'exports', label: tr('Экспорт протоколов', 'Протоколдорду экспорттоо', 'Official Exports'), icon: Stamp }
-        ]) as NavItemConfig[]
-  ).filter((item) => canAccess(item.id, currentUserRole));
-
-  // 4. Secondary Info & Support Links (Hidden inside compact dropdown)
-  const secondaryInfoItems: NavItemConfig[] = [
-    { id: 'about', label: tr('О платформе', 'Платформа жөнүндө', 'About Platform'), icon: Briefcase },
-    { id: 'help', label: tr('Помощь и FAQ', 'Жардам жана FAQ', 'Help & FAQ'), icon: HelpCircle }
-  ];
-
-  const isEventSubRoute = [
-    'tournaments',
-    'tournament_details',
-    'event_info',
-    'event_categories_prices',
-    'event_brackets',
-    'event_results',
-    'event_medals',
-    'event_live_scoring'
-  ].includes(activeTab);
-
-  const isTournamentMgmtActive = tournamentManagementItems.some((i) => i.id === activeTab);
-  const isAdminSystemActive = adminSystemItems.some((i) => i.id === activeTab);
-  const isSecondaryInfoActive = secondaryInfoItems.some((i) => i.id === activeTab);
-
-  const toggleGroup = (groupKey: 'tournament_mgmt' | 'admin_system' | 'info_links') => {
-    if (isCollapsed) {
-      setIsCollapsed(false);
-      setOpenGroup(groupKey);
-      return;
-    }
-    setOpenGroup((prev) => (prev === groupKey ? null : groupKey));
-  };
-
-  const handleSelectTab = (id: NavTabId) => {
+  const select = (id: NavTabId) => {
     onTabChange(id);
     if (isMobileOpen) onToggleMobile();
   };
 
+  const isActive = (id: NavTabId) => activeTab === id || (id === 'tournaments' && EVENT_SUB_ROUTES.includes(activeTab));
+
   return (
     <>
-      {/* Mobile Backdrop */}
-      {isMobileOpen && (
-        <div
-          onClick={onToggleMobile}
-          className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-xs lg:hidden transition-opacity"
-        />
-      )}
+      {isMobileOpen && <div onClick={onToggleMobile} className="fixed inset-0 z-40 bg-black/50 lg:hidden" aria-hidden="true" />}
 
-      {/* Main Collapsible Sidebar (Full-width touch drawer on mobile/tablet, collapsible on desktop) */}
       <aside
-        className={`fixed lg:sticky top-0 h-[100dvh] z-40 flex flex-col bg-white border-r border-slate-200/90 shadow-xl lg:shadow-2xs transition-all duration-200 ease-in-out font-sans shrink-0 select-none ${
-          isCollapsed ? 'w-72 max-w-[85vw] lg:w-[68px]' : 'w-72 max-w-[85vw] lg:w-64'
-        } ${
-          isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        }`}
+        className={`theme-keep fixed lg:sticky top-0 h-[100dvh] z-40 flex flex-col bg-[var(--app-surface)] border-r border-[var(--app-border)] transition-all duration-200 shrink-0 select-none ${
+          compact ? 'w-72 lg:w-[68px]' : 'w-72 max-w-[85vw] lg:w-60'
+        } ${isMobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'}`}
+        aria-label={tr('Главное меню', 'Негизги меню', 'Main menu')}
       >
-        {/* Top Header: Active Context Pill & Collapse Toggle */}
-        <div className="h-14 px-3.5 flex items-center justify-between border-b border-slate-100 shrink-0">
-          {!isCollapsed || isMobileOpen ? (
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 lg:w-7 lg:h-7 rounded-lg bg-gradient-to-br from-sky-600 to-teal-600 text-white flex items-center justify-center shadow-2xs shrink-0">
-                <Sparkles className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs lg:text-[11px] font-bold uppercase tracking-wider text-slate-800 truncate">
-                  {tr('Навигация', 'Чабыттоо', 'Navigation')}
-                </div>
-                <div className="text-[11px] lg:text-[10px] text-slate-400 truncate max-w-[160px] lg:max-w-[135px]" title={selectedTournament?.title}>
-                  {selectedTournament?.title || 'Tatami.kg'}
-                </div>
-              </div>
-            </div>
-          ) : (
+        {/* Brand */}
+        <div className="h-14 px-3.5 flex items-center justify-between border-b border-[var(--app-border)] shrink-0">
+          {compact ? (
             <button
-              type="button"
               onClick={() => setIsCollapsed(false)}
-              className="mx-auto p-2 rounded-xl bg-slate-100 hover:bg-sky-50 text-slate-600 hover:text-sky-600 transition-colors cursor-pointer"
-              title={tr('Развернуть боковое меню', 'Менюну жаюу', 'Expand sidebar')}
+              className="mx-auto p-2 rounded-lg text-[var(--app-text-muted)] hover:text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)] cursor-pointer"
+              title={tr('Развернуть меню', 'Менюну жаюу', 'Expand menu')}
             >
               <PanelLeftOpen className="w-4 h-4" />
             </button>
+          ) : (
+            <>
+              <button onClick={() => select('tournaments')} className="flex items-center gap-2 cursor-pointer min-w-0">
+                <TatamiMark className="w-7 h-7 shrink-0" />
+                <TatamiWordmark className="text-lg text-[var(--app-text-primary)]" />
+              </button>
+              <button
+                onClick={() => setIsCollapsed(true)}
+                className="hidden lg:flex p-1.5 rounded-lg text-[var(--app-text-muted)] hover:text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)] cursor-pointer"
+                title={tr('Свернуть меню', 'Менюну жыйноо', 'Collapse menu')}
+              >
+                <PanelLeftClose className="w-4 h-4" />
+              </button>
+              <button
+                onClick={onToggleMobile}
+                className="lg:hidden w-10 h-10 flex items-center justify-center rounded-lg text-[var(--app-text-muted)] hover:bg-[var(--app-surface-subtle)] cursor-pointer"
+                aria-label={tr('Закрыть меню', 'Менюну жабуу', 'Close menu')}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </>
           )}
-
-          {!isCollapsed && (
-            <button
-              type="button"
-              onClick={() => setIsCollapsed(true)}
-              className="hidden lg:flex p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
-              title={tr('Свернуть меню', 'Менюну жыйноо', 'Collapse sidebar')}
-            >
-              <PanelLeftClose className="w-4 h-4" />
-            </button>
-          )}
-
-          {/* Mobile Close Button (44x44px touch target) */}
-          <button
-            type="button"
-            onClick={onToggleMobile}
-            className="lg:hidden min-w-[42px] min-h-[42px] flex items-center justify-center rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 cursor-pointer"
-            aria-label={tr('Закрыть меню', 'Менюну жабуу', 'Close menu')}
-          >
-            <X className="w-5 h-5" />
-          </button>
         </div>
 
-        {/* Scrollable Navigation Body */}
-        <div className="flex-1 overflow-y-auto px-2.5 py-3 space-y-4 no-scrollbar">
-          {/* SECTION 1: ESSENTIAL PRIMARY LINKS */}
-          <div className="space-y-1">
-            {(!isCollapsed || isMobileOpen) && (
-              <div className="px-2.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                {tr('Основное', 'Негизги', 'Main')}
-              </div>
-            )}
-
-            {primaryItems.map((item) => {
-              const Icon = item.icon;
-              const isActive =
-                activeTab === item.id || (item.id === 'tournaments' && isEventSubRoute);
-
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => handleSelectTab(item.id)}
-                  title={item.label}
-                  className={`w-full min-h-[44px] lg:min-h-[38px] flex items-center gap-2.5 rounded-xl text-left transition-all cursor-pointer group relative ${
-                    isCollapsed && !isMobileOpen ? 'justify-center p-2.5' : 'px-3 py-2.5 lg:py-2'
-                  } ${
-                    isActive
-                      ? 'bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-900 font-bold ring-1 ring-emerald-200/90 shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium'
-                  }`}
-                >
-                  {isActive && (
-                    <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-emerald-600" />
-                  )}
-
-                  <Icon
-                    className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-105 ${
-                      isActive ? 'text-emerald-600' : 'text-slate-500 group-hover:text-slate-800'
-                    }`}
-                  />
-
-                  {(!isCollapsed || isMobileOpen) && (
-                    <>
-                      <span className="text-xs truncate flex-1">{item.label}</span>
-                      {item.badge && (
-                        <span className="px-1.5 py-0.5 rounded-md bg-rose-500/10 border border-rose-500/20 text-rose-600 text-[9px] font-extrabold tracking-wider">
-                          {item.badge}
-                        </span>
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto px-2.5 py-3 space-y-4">
+          {sections.map((section) => (
+            <div key={section.key}>
+              {section.title && !compact && (
+                <div className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
+                  {section.title}
+                </div>
+              )}
+              {section.title && compact && <div className="mx-3 mb-2 border-t border-[var(--app-border)]" />}
+              <div className="space-y-0.5">
+                {section.items.map((item) => {
+                  const Icon = item.icon;
+                  const active = isActive(item.id);
+                  return (
+                    <button
+                      key={`${section.key}-${item.id}`}
+                      onClick={() => select(item.id)}
+                      title={item.label}
+                      aria-current={active ? 'page' : undefined}
+                      className={`w-full flex items-center gap-3 rounded-lg text-left transition-colors cursor-pointer ${
+                        compact ? 'justify-center p-2.5' : 'px-3 py-2 min-h-[40px]'
+                      } ${
+                        active
+                          ? 'bg-[var(--accent-soft)] text-[var(--accent)] font-semibold'
+                          : 'text-[var(--app-text-secondary)] hover:text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)]'
+                      }`}
+                    >
+                      <Icon className="w-[18px] h-[18px] shrink-0" />
+                      {!compact && <span className="text-sm truncate flex-1">{item.label}</span>}
+                      {!compact && item.badge && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-600 text-white">{item.badge}</span>
                       )}
-                    </>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {tournamentManagementItems.length > 0 && (<>
-          {/* SECTION 2: GROUPED DROPDOWN — TOURNAMENT MANAGEMENT / PARTICIPANT CABINET */}
-          <div className="pt-2 border-t border-slate-100 space-y-1">
-            <button
-              type="button"
-              onClick={() => toggleGroup('tournament_mgmt')}
-              title={
-                isAdmin
-                  ? tr('Управление турнирами', 'Мелдештерди башкаруу', 'Tournament Management')
-                  : tr('Кабинет участника и трансляции', 'Катышуучу кабинети жана эфир', 'Member Cabinet & Streams')
-              }
-              className={`w-full flex items-center rounded-xl transition-all cursor-pointer ${
-                isCollapsed && !isMobileOpen ? 'justify-center p-2.5' : 'justify-between px-3 py-2'
-              } ${
-                isTournamentMgmtActive
-                  ? 'bg-sky-50/90 text-sky-900 font-bold ring-1 ring-sky-200/80'
-                  : 'text-slate-700 hover:bg-slate-100/80 font-semibold'
-              }`}
-            >
-              <span className="flex items-center gap-2.5 min-w-0">
-                <Trophy
-                  className={`w-4 h-4 shrink-0 ${
-                    isTournamentMgmtActive ? 'text-sky-600' : 'text-slate-500'
-                  }`}
-                />
-                {(!isCollapsed || isMobileOpen) && (
-                  <span className="text-xs truncate">
-                    {isAdmin
-                      ? tr('Управление турниром', 'Мелдешти башкаруу', 'Tournament Control')
-                      : tr('Регистрация и Трансляции', 'Каттоо жана Эфир', 'Registration & Streams')}
-                  </span>
-                )}
-              </span>
-
-              {(!isCollapsed || isMobileOpen) && (
-                <ChevronDown
-                  className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 shrink-0 ${
-                    openGroup === 'tournament_mgmt' || isTournamentMgmtActive ? 'rotate-180 text-sky-600' : ''
-                  }`}
-                />
-              )}
-            </button>
-
-            {(!isCollapsed || isMobileOpen) && (openGroup === 'tournament_mgmt' || isTournamentMgmtActive) && (
-              <div className="pl-3 pr-1 py-1 space-y-0.5 border-l-2 border-slate-100 ml-4 animate-fadeIn">
-                {tournamentManagementItems.map((sub) => {
-                  const SubIcon = sub.icon;
-                  const isActive = activeTab === sub.id;
-                  return (
-                    <button
-                      key={sub.id}
-                      type="button"
-                      onClick={() => handleSelectTab(sub.id)}
-                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-[11px] transition-colors cursor-pointer ${
-                        isActive
-                          ? 'bg-sky-600 text-white font-bold shadow-2xs'
-                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium'
-                      }`}
-                    >
-                      <SubIcon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                      <span className="truncate">{sub.label}</span>
                     </button>
                   );
                 })}
               </div>
-            )}
-          </div>
+            </div>
+          ))}
+        </nav>
 
-          </>)}
-          {adminSystemItems.length > 0 && (<>
-          {/* SECTION 3: GROUPED DROPDOWN — ADMINISTRATION & ARCHIVE */}
-          <div className="space-y-1">
-            <button
-              type="button"
-              onClick={() => toggleGroup('admin_system')}
-              title={
-                isAdmin
-                  ? tr('Администрирование (Полный доступ)', 'Администрациялоо (Толук укук)', 'Administration (Full Access)')
-                  : tr('Кабинет учреждения и Архив', 'Мекеме кабинети жана Архив', 'Institution Cabinet & Archive')
-              }
-              className={`w-full flex items-center rounded-xl transition-all cursor-pointer ${
-                isCollapsed && !isMobileOpen ? 'justify-center p-2.5' : 'justify-between px-3 py-2'
-              } ${
-                isAdminSystemActive
-                  ? 'bg-indigo-50/90 text-indigo-900 font-bold ring-1 ring-indigo-200/80'
-                  : 'text-slate-700 hover:bg-slate-100/80 font-semibold'
-              }`}
-            >
-              <span className="flex items-center gap-2.5 min-w-0">
-                <Sliders
-                  className={`w-4 h-4 shrink-0 ${
-                    isAdminSystemActive ? 'text-indigo-600' : 'text-slate-500'
-                  }`}
-                />
-                {(!isCollapsed || isMobileOpen) && (
-                  <span className="text-xs truncate">
-                    {isAdmin
-                      ? tr('Администрирование', 'Администрация', 'Administration')
-                      : tr('Кабинет и Архив', 'Кабинет жана Архив', 'Cabinet & Archive')}
-                  </span>
-                )}
-              </span>
-
-              {(!isCollapsed || isMobileOpen) && (
-                <ChevronDown
-                  className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 shrink-0 ${
-                    openGroup === 'admin_system' || isAdminSystemActive ? 'rotate-180 text-indigo-600' : ''
-                  }`}
-                />
-              )}
+        {!compact && onOpenPrivacyModal && (
+          <div className="px-5 py-3 border-t border-[var(--app-border)] text-xs">
+            <button onClick={onOpenPrivacyModal} className="text-[var(--app-text-muted)] hover:text-[var(--app-text-primary)] cursor-pointer">
+              {tr('Политика конфиденциальности', 'Купуялуулук саясаты', 'Privacy policy')}
             </button>
-
-            {(!isCollapsed || isMobileOpen) && (openGroup === 'admin_system' || isAdminSystemActive) && (
-              <div className="pl-3 pr-1 py-1 space-y-0.5 border-l-2 border-slate-100 ml-4 animate-fadeIn">
-                {adminSystemItems.map((sub) => {
-                  const SubIcon = sub.icon;
-                  const isActive = activeTab === sub.id;
-                  return (
-                    <button
-                      key={sub.id}
-                      type="button"
-                      onClick={() => handleSelectTab(sub.id)}
-                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-[11px] transition-colors cursor-pointer ${
-                        isActive
-                          ? 'bg-indigo-600 text-white font-bold shadow-2xs'
-                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium'
-                      }`}
-                    >
-                      <SubIcon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                      <span className="truncate">{sub.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
           </div>
-
-          </>)}
-          {/* SECTION 4: SECONDARY LINKS DROPDOWN (Help, About, Privacy) */}
-          <div className="space-y-1">
-            <button
-              type="button"
-              onClick={() => toggleGroup('info_links')}
-              title={tr('Справка и Документы', 'Маалымат жана Жардам', 'Info & Support')}
-              className={`w-full flex items-center rounded-xl transition-all cursor-pointer ${
-                isCollapsed && !isMobileOpen ? 'justify-center p-2.5' : 'justify-between px-3 py-2'
-              } ${
-                isSecondaryInfoActive
-                  ? 'bg-slate-100 text-slate-900 font-bold'
-                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/70 font-medium'
-              }`}
-            >
-              <span className="flex items-center gap-2.5 min-w-0">
-                <HelpCircle className="w-4 h-4 shrink-0 text-slate-400" />
-                {(!isCollapsed || isMobileOpen) && (
-                  <span className="text-xs truncate">
-                    {tr('Справка и О нас', 'Маалымат жана Жардам', 'Help & Info')}
-                  </span>
-                )}
-              </span>
-
-              {(!isCollapsed || isMobileOpen) && (
-                <ChevronDown
-                  className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 shrink-0 ${
-                    openGroup === 'info_links' || isSecondaryInfoActive ? 'rotate-180 text-slate-700' : ''
-                  }`}
-                />
-              )}
-            </button>
-
-            {(!isCollapsed || isMobileOpen) && (openGroup === 'info_links' || isSecondaryInfoActive) && (
-              <div className="pl-3 pr-1 py-1 space-y-0.5 border-l-2 border-slate-100 ml-4 animate-fadeIn">
-                {secondaryInfoItems.map((sub) => {
-                  const SubIcon = sub.icon;
-                  const isActive = activeTab === sub.id;
-                  return (
-                    <button
-                      key={sub.id}
-                      type="button"
-                      onClick={() => handleSelectTab(sub.id)}
-                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-[11px] transition-colors cursor-pointer ${
-                        isActive
-                          ? 'bg-slate-800 text-white font-bold'
-                          : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100 font-medium'
-                      }`}
-                    >
-                      <SubIcon className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate">{sub.label}</span>
-                    </button>
-                  );
-                })}
-
-                <button
-                  type="button"
-                  onClick={() => onOpenPrivacyModal && onOpenPrivacyModal()}
-                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-[11px] text-slate-500 hover:text-slate-900 hover:bg-slate-100 font-medium transition-colors cursor-pointer"
-                >
-                  <Lock className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-                  <span className="truncate">
-                    {tr('Конфиденциальность', 'Купуялуулук саясаты', 'Privacy & Cookies')}
-                  </span>
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Bottom Compact Collapse Toggle Footer */}
-        <div className="p-2.5 border-t border-slate-100 shrink-0 bg-slate-50/60">
-          <button
-            type="button"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className={`w-full flex items-center gap-2 rounded-xl py-2 px-2.5 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 transition-colors cursor-pointer ${
-              isCollapsed ? 'justify-center' : 'justify-between'
-            }`}
-            title={isCollapsed ? tr('Развернуть меню', 'Менюну жаюу', 'Expand menu') : tr('Свернуть меню', 'Менюну жыйноо', 'Collapse menu')}
-          >
-            {!isCollapsed && (
-              <span className="truncate">
-                {tr('Компактный режим', 'Чакан режим', 'Compact Mode')}
-              </span>
-            )}
-            {isCollapsed ? (
-              <ChevronRight className="w-4 h-4 text-slate-500" />
-            ) : (
-              <ChevronLeft className="w-4 h-4 text-slate-500" />
-            )}
-          </button>
-        </div>
+        )}
       </aside>
     </>
   );

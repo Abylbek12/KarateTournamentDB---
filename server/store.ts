@@ -16,6 +16,7 @@ export interface StoredUserAccount {
   avatarUrl?: string;
   clubName?: string;
   licenseCode?: string;
+  alsoCompetes?: boolean;
   isVerified: boolean;
   confirmedAt?: string;
   createdAt: string;

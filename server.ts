@@ -624,7 +624,7 @@ app.post('/api/auth/login', authLimiter, (req: Request, res: Response) => {
 
 // 5. Registration (self-service roles only) — also opens a session.
 app.post('/api/auth/register', authLimiter, (req: Request, res: Response) => {
-  const { fullName, email, phone, password, role, inviteToken } = req.body || {};
+  const { fullName, email, phone, password, role, inviteToken, clubName, alsoCompetes } = req.body || {};
 
   // An invite link fixes the role (e.g. referee). Without one, only self-service roles are possible.
   let invite: ReturnType<typeof findValidInvite> = null;
@@ -659,12 +659,14 @@ app.post('/api/auth/register', authLimiter, (req: Request, res: Response) => {
     passwordHash: hashPassword(password),
     fullName: fullName.trim().slice(0, 120),
     phone: phone ? String(phone).trim().slice(0, 40) : undefined,
+    clubName: clubName ? String(clubName).trim().slice(0, 120) : undefined,
     role: invite ? invite.record.role : SELF_SERVICE_ROLES.has(role) ? role : 'athlete',
     provider: 'credentials',
     isVerified: true,
     confirmedAt: new Date().toISOString(),
     createdAt: new Date().toISOString()
   };
+  account.alsoCompetes = account.role === 'club_coach' && alsoCompetes === true;
   addAccount(account);
   if (invite) {
     invite.record.uses += 1;
@@ -707,6 +709,22 @@ app.get('/api/auth/me', (req: Request, res: Response) => {
     return;
   }
   res.json({ authenticated: true, user: publicUser(user) });
+});
+
+// 8b. Update own profile (never the role)
+app.put('/api/auth/profile', (req: Request, res: Response) => {
+  const user = getSessionUser(req);
+  if (!user) {
+    res.status(401).json({ error: 'Войдите в аккаунт.' });
+    return;
+  }
+  const { fullName, phone, clubName, alsoCompetes } = req.body || {};
+  if (typeof fullName === 'string' && fullName.trim()) user.fullName = fullName.trim().slice(0, 120);
+  if (typeof phone === 'string') user.phone = phone.trim().slice(0, 40) || undefined;
+  if (typeof clubName === 'string') user.clubName = clubName.trim().slice(0, 120) || undefined;
+  if (typeof alsoCompetes === 'boolean') user.alsoCompetes = user.role === 'club_coach' && alsoCompetes;
+  saveDb();
+  res.json({ success: true, user: publicUser(user) });
 });
 
 // 9. Logout

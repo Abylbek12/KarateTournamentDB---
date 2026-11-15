@@ -18,6 +18,10 @@ export interface WkfSeedingReport {
   separatedClubs: string[];
   separatedCities: string[];
   separatedCountries: string[];
+  /** Detected tournament level: one city, national (cities/oblasts), international. */
+  scope?: 'local' | 'national' | 'international';
+  /** Which levels were used to separate athletes, most important first. */
+  separationLevels?: ('club' | 'city' | 'region' | 'country')[];
   assignedTatami: Tatami;
   autoTatamiReason: string;
 }
@@ -82,215 +86,276 @@ export function getAutoAssignedTatami(category: TournamentCategory, tatamis: Tat
   };
 }
 
-/**
- * Оценка штрафа конфликтов между спортсменами в сетке
- * Штрафует нахождение представителей одного клуба/города/страны:
- * - в одной паре первого круга (R1) - максимальный штраф
- * - в одном 4-местном квадранте (R2) - высокий штраф
- * - в одной половине сетки - умеренный штраф
- */
-function evaluateBracketPenalty(slots: (Participant | null)[], bracketSize: number): number {
-  let penalty = 0;
+// ============================================================================
+// DRAW WITH SEPARATION (жеребьёвка с разведением)
+//
+// Rule: athletes who are "close" to each other must meet as LATE as possible.
+//   club / school  >  city  >  region (oblast)  >  country
+// The scope is detected automatically from the entries of the category:
+//   * city tournament      -> everyone from one city: separate by club/school only;
+//   * national tournament  -> also separate by city and by oblast;
+//   * international        -> also separate by country.
+// A level where all athletes are equal (e.g. everyone is from Kyrgyzstan) is ignored.
+// ============================================================================
 
-  for (let i = 0; i < bracketSize; i++) {
+export type SeparationLevel = 'club' | 'city' | 'region' | 'country';
+export type DrawScope = 'local' | 'national' | 'international';
+
+/** How much a conflict on each level costs (club is by far the most important). */
+const LEVEL_WEIGHT: Record<SeparationLevel, number> = { club: 1000, city: 120, region: 40, country: 15 };
+
+/** City -> oblast of Kyrgyzstan (used when the entry has no explicit region). */
+const KG_REGION_BY_CITY: Record<string, string> = {
+  'бишкек': 'г. Бишкек',
+  'ош': 'г. Ош',
+  'кант': 'Чуйская обл.', 'токмок': 'Чуйская обл.', 'кара-балта': 'Чуйская обл.', 'беловодское': 'Чуйская обл.', 'сокулук': 'Чуйская обл.',
+  'каракол': 'Иссык-Кульская обл.', 'чолпон-ата': 'Иссык-Кульская обл.', 'балыкчы': 'Иссык-Кульская обл.',
+  'нарын': 'Нарынская обл.', 'кочкор': 'Нарынская обл.',
+  'талас': 'Таласская обл.',
+  'джалал-абад': 'Джалал-Абадская обл.', 'кара-куль': 'Джалал-Абадская обл.', 'майлуу-суу': 'Джалал-Абадская обл.', 'таш-кумыр': 'Джалал-Абадская обл.',
+  'баткен': 'Баткенская обл.', 'кызыл-кия': 'Баткенская обл.', 'сулюкта': 'Баткенская обл.',
+  'узген': 'Ошская обл.', 'кара-суу': 'Ошская обл.'
+};
+
+const norm = (v?: string | null) => (v || '').trim().toLowerCase();
+
+export function separationKey(p: Participant, level: SeparationLevel): string {
+  switch (level) {
+    case 'club':
+      return norm(p.clubId) || norm(p.clubName);
+    case 'city':
+      return norm(p.city);
+    case 'region':
+      return norm((p as Participant & { region?: string }).region) || norm(KG_REGION_BY_CITY[norm(p.city)]) || norm(p.city);
+    case 'country':
+      return norm(p.country);
+  }
+}
+
+/** Levels that actually distinguish athletes in this category, plus the detected scope. */
+export function detectSeparation(athletes: Participant[]): { levels: SeparationLevel[]; scope: DrawScope } {
+  const varies = (level: SeparationLevel) => {
+    const values = new Set(athletes.map((a) => separationKey(a, level)).filter(Boolean));
+    return values.size >= 2;
+  };
+  const levels = (['club', 'city', 'region', 'country'] as SeparationLevel[]).filter(varies);
+  const scope: DrawScope = levels.includes('country') ? 'international' : levels.includes('city') || levels.includes('region') ? 'national' : 'local';
+  return { levels, scope };
+}
+
+/** Round in which slots i and j can first meet (1 = first round). */
+const meetRound = (i: number, j: number) => Math.floor(Math.log2(i ^ j)) + 1;
+
+function pairCost(a: Participant, b: Participant, i: number, j: number, levels: SeparationLevel[], totalRounds: number): number {
+  let cost = 0;
+  const earlyness = totalRounds - meetRound(i, j); // 0 = could only meet in the final
+  if (earlyness <= 0) return 0;
+  const factor = Math.pow(4, earlyness);
+  for (const level of levels) {
+    const ka = separationKey(a, level);
+    if (ka && ka === separationKey(b, level)) cost += LEVEL_WEIGHT[level] * factor;
+  }
+  return cost;
+}
+
+function totalCost(slots: (Participant | null)[], levels: SeparationLevel[], totalRounds: number): number {
+  let cost = 0;
+  for (let i = 0; i < slots.length; i++) {
     const a = slots[i];
     if (!a) continue;
-
-    for (let j = i + 1; j < bracketSize; j++) {
+    for (let j = i + 1; j < slots.length; j++) {
       const b = slots[j];
-      if (!b) continue;
-
-      const sameClub = a.clubId && b.clubId && a.clubId === b.clubId;
-      const sameCity = a.city && b.city && a.city.trim().toLowerCase() === b.city.trim().toLowerCase();
-      const sameCountry = a.country && b.country && a.country.trim().toLowerCase() === b.country.trim().toLowerCase();
-
-      if (!sameClub && !sameCity && !sameCountry) continue;
-
-      // 1. Конфликт 1-го круга (одна пара поединка)
-      const sameR1Pair = Math.floor(i / 2) === Math.floor(j / 2);
-      if (sameR1Pair) {
-        if (sameClub) penalty += 50000;
-        if (sameCity) penalty += 25000;
-        if (sameCountry) penalty += 10000;
-      }
-
-      // 2. Конфликт 2-го круга (один 4-местный квадрант)
-      const sameR2Quadrant = Math.floor(i / 4) === Math.floor(j / 4);
-      if (sameR2Quadrant) {
-        if (sameClub) penalty += 8000;
-        if (sameCity) penalty += 4000;
-        if (sameCountry) penalty += 1500;
-      }
-
-      // 3. Нахождение в одной половине сетки
-      const sameHalf = (i < bracketSize / 2 && j < bracketSize / 2) || (i >= bracketSize / 2 && j >= bracketSize / 2);
-      if (sameHalf) {
-        if (sameClub) penalty += 100;
-        if (sameCity) penalty += 50;
-        if (sameCountry) penalty += 20;
-      }
+      if (b) cost += pairCost(a, b, i, j, levels, totalRounds);
     }
   }
+  return cost;
+}
 
-  return penalty;
+/** Cost contributed by the athlete in slot k against everyone else. */
+function slotCost(slots: (Participant | null)[], k: number, levels: SeparationLevel[], totalRounds: number, skip = -1): number {
+  const a = slots[k];
+  if (!a) return 0;
+  let cost = 0;
+  for (let j = 0; j < slots.length; j++) {
+    if (j === k || j === skip) continue;
+    const b = slots[j];
+    if (b) cost += pairCost(a, b, k, j, levels, totalRounds);
+  }
+  return cost;
+}
+
+/** Standard seeding order (1-based seeds -> slot), e.g. size 8: [0,7,4,3,2,5,6,1]. Seeds 1 and 2 meet only in the final. */
+function seedSlotOrder(size: number): number[] {
+  let order = [0];
+  while (order.length < size) {
+    const n = order.length * 2;
+    order = order.flatMap((s) => [s, n - 1 - s]);
+  }
+  // order[k] = seed index occupying slot k; invert to seed -> slot
+  const slotOfSeed = new Array(size);
+  order.forEach((seed, slot) => (slotOfSeed[seed] = slot));
+  return slotOfSeed;
+}
+
+const BELT_WEIGHT: Record<string, number> = {
+  black_3dan_plus: 10, black_2dan: 9, black_1dan: 8, brown_1kyu: 7, brown_3kyu: 6,
+  blue_4kyu: 5, green_6kyu: 4, orange_7kyu: 3, yellow_8kyu: 2, white_10kyu: 1
+};
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
 }
 
 /**
- * Проверяет, возможен ли поединок между спортсменами в 1-м или 2-м круге
+ * Orders athletes so that members of the same club are dealt far apart:
+ * biggest clubs first, one member per club per round (like dealing cards).
  */
-export function checkPairProtection(p1: Participant, p2: Participant, slotIndex1: number, slotIndex2: number): ProtectionCheckResult {
-  const sameClub = p1.clubId && p2.clubId && p1.clubId === p2.clubId;
-  const sameCity = p1.city && p2.city && p1.city.trim().toLowerCase() === p2.city.trim().toLowerCase();
-  const sameCountry = p1.country && p2.country && p1.country.trim().toLowerCase() === p2.country.trim().toLowerCase();
-
-  const isR1Pair = Math.floor(slotIndex1 / 2) === Math.floor(slotIndex2 / 2);
-  const isR2Quadrant = Math.floor(slotIndex1 / 4) === Math.floor(slotIndex2 / 4);
-
-  if (isR1Pair) {
-    if (sameClub) return { hasR1Conflict: true, hasR2Conflict: true, conflictType: 'club', message: `Конфликт 1-го круга: общий клуб "${p1.clubName || p1.clubId}"` };
-    if (sameCity) return { hasR1Conflict: true, hasR2Conflict: true, conflictType: 'city', message: `Конфликт 1-го круга: общий город "${p1.city}"` };
-    if (sameCountry) return { hasR1Conflict: true, hasR2Conflict: true, conflictType: 'country', message: `Конфликт 1-го круга: общая страна "${p1.country}"` };
+function dealByClub(athletes: Participant[]): Participant[] {
+  const groups = new Map<string, Participant[]>();
+  for (const a of shuffle(athletes)) {
+    const key = separationKey(a, 'club') || `solo:${a.id}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(a);
   }
-
-  if (isR2Quadrant) {
-    if (sameClub) return { hasR1Conflict: false, hasR2Conflict: true, conflictType: 'club', message: `Конфликт 2-го круга: общий клуб "${p1.clubName || p1.clubId}"` };
-    if (sameCity) return { hasR1Conflict: false, hasR2Conflict: true, conflictType: 'city', message: `Конфликт 2-го круга: общий город "${p1.city}"` };
-    if (sameCountry) return { hasR1Conflict: false, hasR2Conflict: true, conflictType: 'country', message: `Конфликт 2-го круга: общая страна "${p1.country}"` };
+  const lists = [...groups.values()]
+    .map((g) => g.sort((x, y) => (BELT_WEIGHT[y.beltRank] || 0) - (BELT_WEIGHT[x.beltRank] || 0)))
+    .sort((x, y) => y.length - x.length);
+  const dealt: Participant[] = [];
+  for (let round = 0; dealt.length < athletes.length; round++) {
+    for (const g of lists) if (round < g.length) dealt.push(g[round]);
   }
-
-  return { hasR1Conflict: false, hasR2Conflict: false, message: 'Разведение WKF соблюдено' };
+  return dealt;
 }
 
+export const bracketSizeFor = (count: number) => {
+  let size = 2;
+  while (size < count) size *= 2;
+  return Math.max(size, 2);
+};
+
 /**
- * Интеллектуальный генератор сетки WKF с защитой от поединков соклубников,
- * земляков (один город) и соотечественников (одна страна) в 1-м и 2-м кругах.
+ * Builds a bracket where athletes of the same club (then city, oblast, country)
+ * meet as late as possible. Byes go to the top seed positions.
  */
 export function seedWkfBracketWithProtection(
   athletes: Participant[],
   preferredBracketSize?: number
 ): { slots: (Participant | null)[]; report: Omit<WkfSeedingReport, 'assignedTatami' | 'autoTatamiReason'> } {
   const count = athletes.length;
-  let bracketSize = preferredBracketSize || 4;
-  if (!preferredBracketSize) {
-    if (count > 8) bracketSize = 16;
-    else if (count > 4) bracketSize = 8;
-    else bracketSize = 4;
-  }
+  const bracketSize = Math.max(preferredBracketSize || 0, bracketSizeFor(count));
+  const totalRounds = Math.log2(bracketSize);
+  const { levels, scope } = detectSeparation(athletes);
+  const seedToSlot = seedSlotOrder(bracketSize);
 
-  // WKF стандартные слоты для семян (посева)
-  // Для 8-местной: Верх: 0, 1, 2, 3 | Низ: 4, 5, 6, 7
-  // Квадранты для 16: Q1 (0..3), Q2 (4..7), Q3 (8..11), Q4 (12..15)
-
-  // 1. Создаем начальный массив слотов
   let bestSlots: (Participant | null)[] = new Array(bracketSize).fill(null);
+  let bestCost = Infinity;
 
-  // Сортируем участников: сперва с высокими поясами (дан), затем остальные
-  const beltRanksWeight: Record<string, number> = {
-    'black_3dan_plus': 10,
-    'black_2dan': 9,
-    'black_1dan': 8,
-    'brown_1kyu': 7,
-    'brown_3kyu': 6,
-    'blue_4kyu': 5,
-    'green_6kyu': 4,
-    'orange_7kyu': 3,
-    'yellow_8kyu': 2,
-    'white_10kyu': 1
-  };
+  const attempts = count <= 2 ? 1 : 25;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    // 1. Greedy start: deal clubs apart along the seeding order
+    const slots: (Participant | null)[] = new Array(bracketSize).fill(null);
+    dealByClub(athletes).forEach((a, seed) => (slots[seedToSlot[seed]] = a));
+    const occupied = slots.map((a, i) => (a ? i : -1)).filter((i) => i >= 0);
 
-  const sortedAthletes = [...athletes].sort((a, b) => {
-    const wB = beltRanksWeight[b.beltRank] || 0;
-    const wA = beltRanksWeight[a.beltRank] || 0;
-    return wB - wA;
-  });
+    // 2. Improve with pairwise swaps until no swap helps (byes stay in place)
+    let cost = totalCost(slots, levels, totalRounds);
+    let improved = cost > 0;
+    while (improved) {
+      improved = false;
+      for (let x = 0; x < occupied.length && cost > 0; x++) {
+        for (let y = x + 1; y < occupied.length; y++) {
+          const i = occupied[x];
+          const j = occupied[y];
+          const before = slotCost(slots, i, levels, totalRounds, j) + slotCost(slots, j, levels, totalRounds, i);
+          [slots[i], slots[j]] = [slots[j], slots[i]];
+          const after = slotCost(slots, i, levels, totalRounds, j) + slotCost(slots, j, levels, totalRounds, i);
+          if (after < before) {
+            cost -= before - after;
+            improved = true;
+          } else {
+            [slots[i], slots[j]] = [slots[j], slots[i]];
+          }
+        }
+      }
+    }
 
-  // Первоначальное чередование по квадрантам/половинам (Upper Half vs Lower Half)
-  // Для 8 участников: слоты [0, 4, 2, 6, 1, 5, 3, 7]
-  const pattern8 = [0, 4, 2, 6, 1, 5, 3, 7];
-  const pattern16 = [0, 8, 4, 12, 2, 10, 6, 14, 1, 9, 5, 13, 3, 11, 7, 15];
-  const pattern4 = [0, 2, 1, 3];
-
-  const preferredPattern = bracketSize === 16 ? pattern16 : bracketSize === 8 ? pattern8 : pattern4;
-
-  for (let i = 0; i < sortedAthletes.length && i < bracketSize; i++) {
-    bestSlots[preferredPattern[i]] = sortedAthletes[i];
-  }
-
-  let bestPenalty = evaluateBracketPenalty(bestSlots, bracketSize);
-
-  // 2. Итерационная оптимизация (локальный стохастический поиск / Hill Climbing)
-  // Переставляем участников местами для минимизации штрафа конфликтов
-  const MAX_ITERATIONS = 400;
-  for (let iter = 0; iter < MAX_ITERATIONS && bestPenalty > 0; iter++) {
-    const candidateSlots = [...bestSlots];
-    const idxA = Math.floor(Math.random() * bracketSize);
-    const idxB = Math.floor(Math.random() * bracketSize);
-    if (idxA === idxB) continue;
-
-    // Меняем местами
-    const temp = candidateSlots[idxA];
-    candidateSlots[idxA] = candidateSlots[idxB];
-    candidateSlots[idxB] = temp;
-
-    const penalty = evaluateBracketPenalty(candidateSlots, bracketSize);
-    if (penalty < bestPenalty) {
-      bestSlots = candidateSlots;
-      bestPenalty = penalty;
+    if (cost < bestCost) {
+      bestCost = cost;
+      bestSlots = slots;
+      if (cost === 0) break;
     }
   }
 
-  // 3. Формирование аналитического отчета о разведении
+  // 3. Report: conflicts that could not be avoided
   let r1Conflicts = 0;
   let r2Conflicts = 0;
-  const clubSet = new Set<string>();
-  const citySet = new Set<string>();
-  const countrySet = new Set<string>();
-
+  const conflictsByLevel: Record<SeparationLevel, number> = { club: 0, city: 0, region: 0, country: 0 };
   for (let i = 0; i < bracketSize; i++) {
     const a = bestSlots[i];
     if (!a) continue;
-    if (a.clubName) clubSet.add(a.clubName);
-    if (a.city) citySet.add(a.city);
-    if (a.country) countrySet.add(a.country);
-
     for (let j = i + 1; j < bracketSize; j++) {
       const b = bestSlots[j];
       if (!b) continue;
-
-      const sameClub = a.clubId && b.clubId && a.clubId === b.clubId;
-      const sameCity = a.city && b.city && a.city.trim().toLowerCase() === b.city.trim().toLowerCase();
-      const sameCountry = a.country && b.country && a.country.trim().toLowerCase() === b.country.trim().toLowerCase();
-
-      if (!sameClub && !sameCity && !sameCountry) continue;
-
-      const sameR1 = Math.floor(i / 2) === Math.floor(j / 2);
-      const sameR2 = Math.floor(i / 4) === Math.floor(j / 4);
-
-      if (sameR1) r1Conflicts++;
-      else if (sameR2) r2Conflicts++;
+      const round = meetRound(i, j);
+      if (round > 2 || round === totalRounds) continue;
+      const sameLevels = levels.filter((l) => separationKey(a, l) && separationKey(a, l) === separationKey(b, l));
+      if (sameLevels.length === 0) continue;
+      if (round === 1) r1Conflicts++;
+      else r2Conflicts++;
+      sameLevels.forEach((l) => conflictsByLevel[l]++);
     }
   }
+
+  const unique = (level: SeparationLevel, pick: (p: Participant) => string | undefined) =>
+    Array.from(new Set(athletes.map(pick).filter(Boolean) as string[]));
 
   return {
     slots: bestSlots,
     report: {
       bracketSize,
-      totalAthletes: athletes.length,
+      totalAthletes: count,
       r1ConflictsCount: r1Conflicts,
       r2ConflictsCount: r2Conflicts,
-      clubSeparationSuccess: r1Conflicts === 0 && r2Conflicts === 0,
-      citySeparationSuccess: r1Conflicts === 0 && r2Conflicts === 0,
-      countrySeparationSuccess: r1Conflicts === 0 && r2Conflicts === 0,
-      separatedClubs: Array.from(clubSet),
-      separatedCities: Array.from(citySet),
-      separatedCountries: Array.from(countrySet)
+      clubSeparationSuccess: conflictsByLevel.club === 0,
+      citySeparationSuccess: conflictsByLevel.city === 0 && conflictsByLevel.region === 0,
+      countrySeparationSuccess: conflictsByLevel.country === 0,
+      separatedClubs: unique('club', (p) => p.clubName || p.clubId),
+      separatedCities: unique('city', (p) => p.city),
+      separatedCountries: unique('country', (p) => p.country),
+      scope,
+      separationLevels: levels
     }
   };
 }
 
 /**
- * Полная генерация дерева поединков WKF для выбранного дивизиона
- * с автоматическим назначением татами и защитой сетки.
+ * Checks whether two slots could meet in round 1 or 2 while sharing a club / city / country.
+ */
+export function checkPairProtection(p1: Participant, p2: Participant, slotIndex1: number, slotIndex2: number): ProtectionCheckResult {
+  const round = meetRound(slotIndex1, slotIndex2);
+  const same = (l: SeparationLevel) => separationKey(p1, l) && separationKey(p1, l) === separationKey(p2, l);
+  const type: ProtectionCheckResult['conflictType'] = same('club') ? 'club' : same('city') ? 'city' : same('country') ? 'country' : undefined;
+  if (!type || round > 2) return { hasR1Conflict: false, hasR2Conflict: false, message: 'Разведение соблюдено' };
+  const what = type === 'club' ? `общий клуб "${p1.clubName || p1.clubId}"` : type === 'city' ? `общий город "${p1.city}"` : `общая страна "${p1.country}"`;
+  return {
+    hasR1Conflict: round === 1,
+    hasR2Conflict: true,
+    conflictType: type,
+    message: `Конфликт ${round}-го круга: ${what}`
+  };
+}
+
+const stageForBoutsInRound = (bouts: number): RoundStage =>
+  bouts === 1 ? 'final' : bouts === 2 ? 'semi_final' : bouts === 4 ? 'quarter_final' : bouts === 8 ? 'round_1_8' : bouts === 16 ? 'round_1_16' : 'round_1_32';
+
+/**
+ * Generates all bouts of an elimination bracket (any size), plus two repechage
+ * bouts for bronze (WKF awards two bronze medals). A bye advances the athlete automatically.
  */
 export function generateProtectedWkfCategoryBouts(
   category: TournamentCategory,
@@ -301,209 +366,84 @@ export function generateProtectedWkfCategoryBouts(
   const { tatami: autoTatami, reason: autoTatamiReason } = getAutoAssignedTatami(category, tatamis);
   const startTime = options?.startTime || '12:00';
   const interval = options?.boutIntervalMinutes || 12;
-
   const [startH, startM] = startTime.split(':').map(Number);
   const computeTime = (offsetMins: number) => {
-    const totalMinutes = startH * 60 + startM + offsetMins;
-    const h = Math.floor(totalMinutes / 60) % 24;
-    const m = totalMinutes % 60;
-    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+    const total = startH * 60 + startM + offsetMins;
+    return `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
   };
 
   const { slots, report: rawReport } = seedWkfBracketWithProtection(athletes);
   const bracketSize = rawReport.bracketSize;
-  const categoryTitle = `${category.ageCategoryName || 'Взрослые 18+'} · ${category.gender === 'male' ? 'Мужчины' : 'Женщины'} · ${category.discipline === 'kata' ? 'Ката' : category.weightCategoryName || 'Кумитэ'}`;
+  const categoryTitle = `${category.ageCategoryName || 'Взрослые 18+'} · ${category.gender === 'male' ? 'Мужчины' : 'Женщины'} · ${
+    category.discipline === 'kata' ? 'Ката' : category.weightCategoryName || 'Кумитэ'
+  }`;
 
-  const generatedBouts: Bout[] = [];
-  let currentMinuteOffset = 0;
-  let boutCounter = autoTatami.number * 100 + 10;
+  const bouts: Bout[] = [];
+  let offset = 0;
+  let boutNumber = autoTatami.number * 100 + 10;
+  const stamp = Date.now();
 
-  if (bracketSize === 8) {
-    // 1/4 финала (4 боя)
-    const qfBouts: Bout[] = [];
-    for (let i = 0; i < 4; i++) {
-      const aka = slots[i * 2];
-      const ao = slots[i * 2 + 1];
-      boutCounter++;
-      const b: Bout = {
-        id: `bout_${Date.now()}_cat_${category.id}_qf_${i + 1}`,
-        tournamentId: category.tournamentId || 'tourn1',
-        categoryId: category.id,
-        categoryName: categoryTitle,
-        tatamiId: autoTatami.id,
-        tatamiNumber: autoTatami.number,
-        boutNumber: boutCounter,
-        roundStage: 'quarter_final',
-        bracketPosition: i + 1,
-        akaParticipantId: aka?.id,
-        akaParticipant: aka || undefined,
-        aoParticipantId: ao?.id,
-        aoParticipant: ao || undefined,
-        scheduledTime: computeTime(currentMinuteOffset),
-        akaScore: 0,
-        aoScore: 0,
-        akaSenshu: false,
-        aoSenshu: false,
-        akaPenaltiesC1: 0,
-        aoPenaltiesC1: 0,
-        akaPenaltiesC2: 0,
-        aoPenaltiesC2: 0,
-        status: 'scheduled',
-        timerSecondsRemaining: category.discipline === 'kata' ? 240 : 180
-      };
-      qfBouts.push(b);
-      currentMinuteOffset += interval;
+  const makeBout = (stage: RoundStage, position: number, aka?: Participant | null, ao?: Participant | null): Bout => ({
+    id: `bout_${stamp}_cat_${category.id}_${stage}_${position}`,
+    tournamentId: category.tournamentId || 'tourn1',
+    categoryId: category.id,
+    categoryName: categoryTitle,
+    tatamiId: autoTatami.id,
+    tatamiNumber: autoTatami.number,
+    boutNumber: ++boutNumber,
+    roundStage: stage,
+    bracketPosition: position,
+    akaParticipantId: aka?.id,
+    akaParticipant: aka || undefined,
+    aoParticipantId: ao?.id,
+    aoParticipant: ao || undefined,
+    scheduledTime: computeTime((offset += interval) - interval),
+    akaScore: 0,
+    aoScore: 0,
+    akaSenshu: false,
+    aoSenshu: false,
+    akaPenaltiesC1: 0,
+    aoPenaltiesC1: 0,
+    akaPenaltiesC2: 0,
+    aoPenaltiesC2: 0,
+    status: 'scheduled',
+    timerSecondsRemaining: category.discipline === 'kata' ? 240 : 180
+  });
+
+  // Known athletes entering each round (null = decided by a previous bout)
+  let entrants: (Participant | null | 'bye')[] = slots.map((s) => s ?? 'bye');
+  while (entrants.length >= 2) {
+    const boutsInRound = entrants.length / 2;
+    const stage = stageForBoutsInRound(boutsInRound);
+    const next: (Participant | null | 'bye')[] = [];
+    for (let k = 0; k < boutsInRound; k++) {
+      const a = entrants[2 * k];
+      const b = entrants[2 * k + 1];
+      if (a === 'bye' && b === 'bye') {
+        next.push('bye');
+      } else if (a === 'bye' || b === 'bye') {
+        next.push(a === 'bye' ? b : a); // walk-over: advances without a bout
+      } else {
+        bouts.push(makeBout(stage, k + 1, a, b));
+        next.push(null);
+      }
     }
-    generatedBouts.push(...qfBouts);
-
-    // Полуфиналы (2 боя)
-    const sfBouts: Bout[] = [];
-    for (let i = 0; i < 2; i++) {
-      boutCounter++;
-      const b: Bout = {
-        id: `bout_${Date.now()}_cat_${category.id}_sf_${i + 1}`,
-        tournamentId: category.tournamentId || 'tourn1',
-        categoryId: category.id,
-        categoryName: categoryTitle,
-        tatamiId: autoTatami.id,
-        tatamiNumber: autoTatami.number,
-        boutNumber: boutCounter,
-        roundStage: 'semi_final',
-        bracketPosition: i + 1,
-        scheduledTime: computeTime(currentMinuteOffset),
-        akaScore: 0,
-        aoScore: 0,
-        akaSenshu: false,
-        aoSenshu: false,
-        akaPenaltiesC1: 0,
-        aoPenaltiesC1: 0,
-        akaPenaltiesC2: 0,
-        aoPenaltiesC2: 0,
-        status: 'scheduled',
-        timerSecondsRemaining: category.discipline === 'kata' ? 240 : 180
-      };
-      sfBouts.push(b);
-      currentMinuteOffset += interval;
-    }
-    generatedBouts.push(...sfBouts);
-
-    // Бронзовый финал
-    boutCounter++;
-    generatedBouts.push({
-      id: `bout_${Date.now()}_cat_${category.id}_bronze`,
-      tournamentId: category.tournamentId || 'tourn1',
-      categoryId: category.id,
-      categoryName: categoryTitle,
-      tatamiId: autoTatami.id,
-      tatamiNumber: autoTatami.number,
-      boutNumber: boutCounter,
-      roundStage: 'bronze_match',
-      bracketPosition: 1,
-      scheduledTime: computeTime(currentMinuteOffset),
-      akaScore: 0,
-      aoScore: 0,
-      akaSenshu: false,
-      aoSenshu: false,
-      akaPenaltiesC1: 0,
-      aoPenaltiesC1: 0,
-      akaPenaltiesC2: 0,
-      aoPenaltiesC2: 0,
-      status: 'scheduled',
-      timerSecondsRemaining: category.discipline === 'kata' ? 240 : 180
-    });
-    currentMinuteOffset += interval;
-
-    // Главный финал за 1-е место (Золото)
-    boutCounter++;
-    generatedBouts.push({
-      id: `bout_${Date.now()}_cat_${category.id}_final`,
-      tournamentId: category.tournamentId || 'tourn1',
-      categoryId: category.id,
-      categoryName: categoryTitle,
-      tatamiId: autoTatami.id,
-      tatamiNumber: autoTatami.number,
-      boutNumber: boutCounter,
-      roundStage: 'final',
-      bracketPosition: 1,
-      scheduledTime: computeTime(currentMinuteOffset),
-      akaScore: 0,
-      aoScore: 0,
-      akaSenshu: false,
-      aoSenshu: false,
-      akaPenaltiesC1: 0,
-      aoPenaltiesC1: 0,
-      akaPenaltiesC2: 0,
-      aoPenaltiesC2: 0,
-      status: 'scheduled',
-      timerSecondsRemaining: category.discipline === 'kata' ? 240 : 180
-    });
-  } else {
-    // 4 участника: Полуфиналы (2 боя) + Бронза + Финал
-    for (let i = 0; i < 2; i++) {
-      const aka = slots[i * 2];
-      const ao = slots[i * 2 + 1];
-      boutCounter++;
-      generatedBouts.push({
-        id: `bout_${Date.now()}_cat_${category.id}_sf_${i + 1}`,
-        tournamentId: category.tournamentId || 'tourn1',
-        categoryId: category.id,
-        categoryName: categoryTitle,
-        tatamiId: autoTatami.id,
-        tatamiNumber: autoTatami.number,
-        boutNumber: boutCounter,
-        roundStage: 'semi_final',
-        bracketPosition: i + 1,
-        akaParticipantId: aka?.id,
-        akaParticipant: aka || undefined,
-        aoParticipantId: ao?.id,
-        aoParticipant: ao || undefined,
-        scheduledTime: computeTime(currentMinuteOffset),
-        akaScore: 0,
-        aoScore: 0,
-        akaSenshu: false,
-        aoSenshu: false,
-        akaPenaltiesC1: 0,
-        aoPenaltiesC1: 0,
-        akaPenaltiesC2: 0,
-        aoPenaltiesC2: 0,
-        status: 'scheduled',
-        timerSecondsRemaining: 180
-      });
-      currentMinuteOffset += interval;
-    }
-
-    // Финал
-    boutCounter++;
-    generatedBouts.push({
-      id: `bout_${Date.now()}_cat_${category.id}_final`,
-      tournamentId: category.tournamentId || 'tourn1',
-      categoryId: category.id,
-      categoryName: categoryTitle,
-      tatamiId: autoTatami.id,
-      tatamiNumber: autoTatami.number,
-      boutNumber: boutCounter,
-      roundStage: 'final',
-      bracketPosition: 1,
-      scheduledTime: computeTime(currentMinuteOffset),
-      akaScore: 0,
-      aoScore: 0,
-      akaSenshu: false,
-      aoSenshu: false,
-      akaPenaltiesC1: 0,
-      aoPenaltiesC1: 0,
-      akaPenaltiesC2: 0,
-      aoPenaltiesC2: 0,
-      status: 'scheduled',
-      timerSecondsRemaining: 180
-    });
+    entrants = next;
   }
 
+  // Repechage for the two bronze medals (opponents known after the semi-finals)
+  if (bracketSize >= 8) {
+    bouts.push(makeBout('repechage', 1));
+    bouts.push(makeBout('repechage', 2));
+  }
+
+  // Run order: earlier rounds first, final last
+  const order: RoundStage[] = ['round_1_32', 'round_1_16', 'round_1_8', 'quarter_final', 'semi_final', 'repechage', 'bronze_match', 'final'];
+  bouts.sort((x, y) => order.indexOf(x.roundStage) - order.indexOf(y.roundStage) || x.bracketPosition - y.bracketPosition);
+  bouts.forEach((b, i) => (b.scheduledTime = computeTime(i * interval)));
+
   return {
-    bouts: generatedBouts,
-    report: {
-      ...rawReport,
-      assignedTatami: autoTatami,
-      autoTatamiReason
-    }
+    bouts,
+    report: { ...rawReport, assignedTatami: autoTatami, autoTatamiReason }
   };
 }
