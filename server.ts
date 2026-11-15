@@ -2,35 +2,66 @@ import express, { Request, Response } from 'express';
 import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
 import { GoogleGenAI } from '@google/genai';
+import crypto from 'crypto';
+
+import {
+  db,
+  saveDb,
+  hashPassword,
+  verifyPassword,
+  findAccountByEmail,
+  findAccountById,
+  addAccount,
+  publicUser,
+  ensureAdminAccount,
+  createSession,
+  destroySession,
+  getSessionUser,
+  isAdminRequest,
+  saveImage,
+  readImage,
+  rateLimiter,
+  type StoredUserAccount
+} from './server/store';
 
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 
+app.disable('x-powered-by');
+app.set('trust proxy', 1);
 app.use(express.json({ limit: '10mb' }));
 
 import { UVENTEX_SCREENSHOT_EVENTS } from './src/data/uventexEventsData';
+
+const hasGeminiKey = () => {
+  const k = process.env.GEMINI_API_KEY;
+  return !!k && k !== 'MY_GEMINI_API_KEY';
+};
 
 // Health Check API
 app.get('/api/health', (_req: Request, res: Response) => {
   res.json({
     status: 'ok',
     service: 'Uventex Karate AI Server',
-    model: 'gemini-3.8-flash',
+    model: GEMINI_MODEL,
+    aiEnabled: hasGeminiKey(),
     timestamp: new Date().toISOString()
   });
 });
 
-app.post('/api/test', (req: Request, res: Response) => {
-  console.log('Received /api/test request:', req.body);
-  res.json({ received: req.body });
-});
 
 // ========================================================
 // UVENTEX EVENTS & ACTIONS BACKEND API (SYNCHRONIZED REGISTRY + RBAC)
 // ========================================================
-let STORED_EVENTS: any[] = JSON.parse(JSON.stringify(UVENTEX_SCREENSHOT_EVENTS));
+let STORED_EVENTS: any[] = db.events ?? JSON.parse(JSON.stringify(UVENTEX_SCREENSHOT_EVENTS));
+const persistEvents = () => {
+  db.events = STORED_EVENTS;
+  saveDb();
+};
 
 const isEventDatePast = (endDateStr?: string): boolean => {
   if (!endDateStr) return false;
@@ -40,21 +71,20 @@ const isEventDatePast = (endDateStr?: string): boolean => {
   return cleanDate < todayStr;
 };
 
-const isRequestAuthorizedAdmin = (req: Request): boolean => {
-  const headerRole = String(req.headers['x-user-role'] || '').toLowerCase().trim();
-  const bodyRole = String(req.body?.userRole || '').toLowerCase().trim();
-  const effectiveRole = headerRole || bodyRole || 'admin';
-  return effectiveRole === 'admin';
-};
+// Admin rights come only from the server-side session, never from client headers/body.
+const isRequestAuthorizedAdmin = (req: Request): boolean => isAdminRequest(req);
 
 app.get('/api/events', (_req: Request, res: Response) => {
   // Automatically transition concluded events to 'completed' (Archive) instead of deleting them
+  let changed = false;
   STORED_EVENTS = STORED_EVENTS.map((ev) => {
     if (isEventDatePast(ev.endDate) && ev.status !== 'completed') {
+      changed = true;
       return { ...ev, status: 'completed', isArchived: true };
     }
     return ev;
   });
+  if (changed) persistEvents();
 
   res.json({
     total: STORED_EVENTS.length,
@@ -62,8 +92,7 @@ app.get('/api/events', (_req: Request, res: Response) => {
   });
 });
 
-// In-memory binary store for uploaded event images (JPG / WebP, max 2 MB)
-const UPLOADED_EVENT_IMAGES = new Map<string, { mimeType: string; buffer: Buffer; fileName: string; sizeBytes: number; uploadedAt: string }>();
+// Uploaded event images (JPG / WebP, max 2 MB) are stored on disk in DATA_DIR/uploads
 const MAX_EVENT_IMAGE_SIZE_BYTES = 2 * 1024 * 1024; // 2 MB limit
 const ALLOWED_EVENT_IMAGE_MIMES = new Set(['image/jpeg', 'image/webp']);
 const ALLOWED_EVENT_IMAGE_EXTS = /\.(jpe?g|webp)$/i;
@@ -117,10 +146,9 @@ app.post('/api/upload/event-image', (req: Request, res: Response) => {
     const imageId = `event_img_${Date.now()}_${Math.random().toString(36).slice(2, 7)}.${ext}`;
     const storedMime = ext === 'webp' ? 'image/webp' : 'image/jpeg';
 
-    UPLOADED_EVENT_IMAGES.set(imageId, {
+    saveImage(imageId, buffer, {
       mimeType: storedMime,
-      buffer,
-      fileName: fileName || imageId,
+      fileName: String(fileName || imageId).slice(0, 200),
       sizeBytes: actualBytes,
       uploadedAt: new Date().toISOString()
     });
@@ -139,12 +167,13 @@ app.post('/api/upload/event-image', (req: Request, res: Response) => {
 });
 
 app.get('/api/uploads/:filename', (req: Request, res: Response) => {
-  const item = UPLOADED_EVENT_IMAGES.get(req.params.filename);
+  const item = readImage(req.params.filename);
   if (!item) {
     res.status(404).json({ error: 'Изображение не найдено' });
     return;
   }
-  res.setHeader('Content-Type', item.mimeType);
+  res.setHeader('Content-Type', item.meta.mimeType);
+  res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Cache-Control', 'public, max-age=86400');
   res.send(item.buffer);
 });
@@ -181,7 +210,8 @@ app.post('/api/events', (req: Request, res: Response) => {
     clubCount: newEvent.clubCount || 0
   };
 
-  STORED_EVENTS = [preparedEvent, ...STORED_EVENTS];
+  STORED_EVENTS = [preparedEvent, ...STORED_EVENTS.filter((e) => e.id !== id)];
+  persistEvents();
   res.status(201).json({ success: true, event: preparedEvent });
 });
 
@@ -224,6 +254,7 @@ app.put('/api/events/:id', (req: Request, res: Response) => {
   };
 
   STORED_EVENTS[index] = updatedEvent;
+  persistEvents();
   res.json({ success: true, event: updatedEvent });
 });
 
@@ -244,6 +275,7 @@ app.delete('/api/events/:id', (req: Request, res: Response) => {
     return;
   }
 
+  persistEvents();
   res.json({ success: true, deletedId: id });
 });
 
@@ -393,94 +425,34 @@ app.get('/api/rankings', (_req: Request, res: Response) => {
 // REAL OAUTH 2.0 (GOOGLE & FACEBOOK) & AUTHENTICATION API
 // ========================================================
 
-interface StoredUserAccount {
-  id: string;
-  email: string;
-  passwordHash: string; // Plaintext or hash check for credentials
-  fullName: string;
-  phone?: string;
-  role: string;
-  provider: 'credentials' | 'google' | 'facebook';
-  avatarUrl?: string;
-  clubName?: string;
-  licenseCode?: string;
-  isVerified: boolean;
-  confirmedAt?: string;
-  createdAt: string;
+// Roles a person may pick for themselves at sign-up. Referee/medical/admin roles
+// are assigned by an administrator, never self-selected.
+const SELF_SERVICE_ROLES = new Set(['club_coach']);
+
+// Development-only demo accounts (never created in production).
+function seedDevDemoAccounts() {
+  if (IS_PRODUCTION) return;
+  const demo = [
+    { email: 'coach.smr@samurai.club', password: 'Coach2026!', fullName: 'Алексеев Владимир Сергеевич', role: 'club_coach', clubName: 'СК "Самурай"' },
+    { email: 'chief.referee@karate-fed.ru', password: 'Pass2026!', fullName: 'Белов Артем Геннадьевич', role: 'chief_referee', licenseCode: 'INT-REF-0104' }
+  ];
+  for (const d of demo) {
+    if (findAccountByEmail(d.email)) continue;
+    addAccount({
+      id: `usr-${crypto.randomUUID()}`,
+      email: d.email,
+      passwordHash: hashPassword(d.password),
+      fullName: d.fullName,
+      role: d.role,
+      clubName: (d as any).clubName,
+      licenseCode: (d as any).licenseCode,
+      provider: 'credentials',
+      isVerified: true,
+      confirmedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString()
+    });
+  }
 }
-
-// In-Memory User Database with pre-seeded credentials
-const STORED_ACCOUNTS: Map<string, StoredUserAccount> = new Map([
-  [
-    'admin@uventex.com',
-    {
-      id: 'usr-admin-01',
-      email: 'admin@uventex.com',
-      passwordHash: 'Admin2026!',
-      fullName: 'Александр Вершинин',
-      phone: '+7 (999) 111-22-33',
-      role: 'admin',
-      provider: 'credentials',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80',
-      isVerified: true,
-      confirmedAt: '2026-01-10T12:00:00.000Z',
-      createdAt: '2026-01-10T10:00:00.000Z'
-    }
-  ],
-  [
-    'coach.smr@samurai.club',
-    {
-      id: 'usr-coach-01',
-      email: 'coach.smr@samurai.club',
-      passwordHash: 'Coach2026!',
-      fullName: 'Алексеев Владимир Сергеевич',
-      phone: '+7 (495) 123-45-67',
-      role: 'club_coach',
-      clubName: 'СК "Самурай"',
-      provider: 'credentials',
-      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80',
-      isVerified: true,
-      confirmedAt: '2026-01-15T14:30:00.000Z',
-      createdAt: '2026-01-15T14:00:00.000Z'
-    }
-  ],
-  [
-    'chief.referee@karate-fed.ru',
-    {
-      id: 'usr-ref-01',
-      email: 'chief.referee@karate-fed.ru',
-      passwordHash: 'Pass2026!',
-      fullName: 'Белов Артем Геннадьевич',
-      phone: '+7 (916) 111-22-33',
-      role: 'chief_referee',
-      licenseCode: 'INT-REF-0104',
-      provider: 'credentials',
-      avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&auto=format&fit=crop&q=80',
-      isVerified: true,
-      confirmedAt: '2026-01-05T09:00:00.000Z',
-      createdAt: '2026-01-05T08:30:00.000Z'
-    }
-  ],
-  [
-    'athlete@uventex.com',
-    {
-      id: 'usr-ath-01',
-      email: 'athlete@uventex.com',
-      passwordHash: 'Athlete2026!',
-      fullName: 'Денис Соколов',
-      phone: '+7 (985) 555-44-33',
-      role: 'club_coach',
-      provider: 'credentials',
-      avatarUrl: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=120&auto=format&fit=crop&q=80',
-      isVerified: true,
-      confirmedAt: '2026-02-01T11:20:00.000Z',
-      createdAt: '2026-02-01T10:00:00.000Z'
-    }
-  ]
-]);
-
-// Current Active Session store
-let activeSessionUser: StoredUserAccount | null = null;
 
 // Helper to determine clean origin and redirectUri
 function getRedirectUri(req: Request): string {
@@ -492,7 +464,11 @@ function getRedirectUri(req: Request): string {
 // 1. Google OAuth Authorize URL Generator
 app.get('/api/auth/google/url', (req: Request, res: Response) => {
   const redirectUri = getRedirectUri(req);
-  const clientId = process.env.GOOGLE_CLIENT_ID || '311229007973-uventex-oauth.apps.googleusercontent.com';
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  if (!clientId) {
+    res.status(501).json({ error: 'Вход через Google не настроен на этом сервере.' });
+    return;
+  }
 
   const params = new URLSearchParams({
     client_id: clientId,
@@ -516,7 +492,11 @@ app.get('/api/auth/google/url', (req: Request, res: Response) => {
 // 2. Facebook OAuth Authorize URL Generator
 app.get('/api/auth/facebook/url', (req: Request, res: Response) => {
   const redirectUri = getRedirectUri(req);
-  const appId = process.env.FACEBOOK_APP_ID || '102938475618293';
+  const appId = process.env.FACEBOOK_APP_ID;
+  if (!appId) {
+    res.status(501).json({ error: 'Вход через Facebook не настроен на этом сервере.' });
+    return;
+  }
 
   const params = new URLSearchParams({
     client_id: appId,
@@ -537,8 +517,10 @@ app.get('/api/auth/facebook/url', (req: Request, res: Response) => {
 
 // 3. OAuth Callback Handler matching OAuth Skill (iframe & popup postMessage)
 app.get(['/auth/callback', '/auth/callback/'], (req: Request, res: Response) => {
-  const code = (req.query.code as string) || `auth_code_${Date.now()}`;
-  const provider = (req.query.state as string) || 'oauth';
+  // Values are JSON-encoded (and '<' escaped) before being placed in the inline script to prevent XSS.
+  const safeJs = (v: unknown) => JSON.stringify(String(v ?? '')).replace(/</g, '\\u003c');
+  const code = safeJs(req.query.code || '');
+  const provider = safeJs(req.query.state || 'oauth');
 
   res.send(`
     <!DOCTYPE html>
@@ -596,10 +578,10 @@ app.get(['/auth/callback', '/auth/callback/'], (req: Request, res: Response) => 
             if (window.opener) {
               window.opener.postMessage({
                 type: 'OAUTH_AUTH_SUCCESS',
-                provider: '${provider}',
-                code: '${code}',
+                provider: ${provider},
+                code: ${code},
                 timestamp: Date.now()
-              }, '*');
+              }, window.location.origin);
               setTimeout(function() {
                 window.close();
               }, 600);
@@ -615,265 +597,139 @@ app.get(['/auth/callback', '/auth/callback/'], (req: Request, res: Response) => 
   `);
 });
 
-// 4. Mandatory Credentials Login with Strict Password Verification
-app.post('/api/auth/login', (req: Request, res: Response) => {
-  const { email, password, role } = req.body || {};
+const authLimiter = rateLimiter(20, 60_000);
+
+// 4. Credentials login: verifies the password and opens a cookie session.
+app.post('/api/auth/login', authLimiter, (req: Request, res: Response) => {
+  const { email, password } = req.body || {};
 
   if (!email || typeof email !== 'string') {
     res.status(400).json({ error: 'Пожалуйста, введите ваш email для входа.' });
     return;
   }
-
   if (!password || typeof password !== 'string') {
     res.status(400).json({ error: 'Требуется ввод пароля. Пустой пароль недопустим.' });
     return;
   }
 
-  const normalizedEmail = email.trim().toLowerCase();
-  const existingUser = STORED_ACCOUNTS.get(normalizedEmail);
-
-  if (existingUser) {
-    // Check password
-    if (existingUser.passwordHash !== password) {
-      res.status(401).json({
-        error: 'Неверный пароль. Пожалуйста, введите правильный пароль учетной записи или воспользуйтесь восстановлением.'
-      });
-      return;
-    }
-
-    // Require profile confirmation step
-    res.json({
-      success: true,
-      requiresProfileConfirmation: true,
-      user: {
-        id: existingUser.id,
-        email: existingUser.email,
-        fullName: existingUser.fullName,
-        phone: existingUser.phone,
-        role: role || existingUser.role,
-        clubName: existingUser.clubName,
-        licenseCode: existingUser.licenseCode,
-        avatarUrl: existingUser.avatarUrl,
-        provider: existingUser.provider,
-        isVerified: existingUser.isVerified,
-        createdAt: existingUser.createdAt
-      }
-    });
+  const user = findAccountByEmail(email);
+  if (!user || !verifyPassword(password, user.passwordHash)) {
+    res.status(401).json({ error: 'Неверный email или пароль. Если у вас нет аккаунта — зарегистрируйтесь.' });
     return;
   }
 
-  // If user is new but provided valid password (>= 6 chars), create verified account
-  if (password.length < 6) {
-    res.status(400).json({ error: 'Пароль учетной записи должен содержать не менее 6 символов.' });
-    return;
-  }
-
-  const newUser: StoredUserAccount = {
-    id: `usr-${Date.now()}`,
-    email: normalizedEmail,
-    passwordHash: password,
-    fullName: email.split('@')[0],
-    role: role || 'club_coach',
-    provider: 'credentials',
-    isVerified: true,
-    confirmedAt: new Date().toISOString(),
-    createdAt: new Date().toISOString()
-  };
-
-  STORED_ACCOUNTS.set(normalizedEmail, newUser);
-
-  res.json({
-    success: true,
-    requiresProfileConfirmation: true,
-    user: {
-      id: newUser.id,
-      email: newUser.email,
-      fullName: newUser.fullName,
-      role: newUser.role,
-      provider: newUser.provider,
-      isVerified: newUser.isVerified,
-      createdAt: newUser.createdAt
-    }
-  });
+  createSession(req, res, user.id);
+  res.json({ success: true, requiresProfileConfirmation: true, user: publicUser(user) });
 });
 
-// 5. Registration with Mandatory Password & Profile Data
-app.post('/api/auth/register', (req: Request, res: Response) => {
+// 5. Registration (self-service roles only) — also opens a session.
+app.post('/api/auth/register', authLimiter, (req: Request, res: Response) => {
   const { fullName, email, phone, password, role } = req.body || {};
 
-  if (!fullName || typeof fullName !== 'string') {
+  if (!fullName || typeof fullName !== 'string' || !fullName.trim()) {
     res.status(400).json({ error: 'Пожалуйста, укажите ваши имя и фамилию.' });
     return;
   }
-
-  if (!email || typeof email !== 'string') {
-    res.status(400).json({ error: 'Пожалуйста, укажите контактный e-mail.' });
+  if (!email || typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    res.status(400).json({ error: 'Пожалуйста, укажите корректный e-mail.' });
     return;
   }
-
-  if (!password || typeof password !== 'string' || password.length < 6) {
-    res.status(400).json({ error: 'Пароль должен состоять минимум из 6 символов.' });
+  if (!password || typeof password !== 'string' || password.length < 8) {
+    res.status(400).json({ error: 'Пароль должен состоять минимум из 8 символов.' });
     return;
   }
-
-  const normalizedEmail = email.trim().toLowerCase();
-
-  if (STORED_ACCOUNTS.has(normalizedEmail)) {
+  if (findAccountByEmail(email)) {
     res.status(409).json({ error: 'Пользователь с таким email уже зарегистрирован. Пожалуйста, выполните вход.' });
     return;
   }
 
-  const createdAccount: StoredUserAccount = {
-    id: `usr-${Date.now()}`,
-    email: normalizedEmail,
-    passwordHash: password,
-    fullName: fullName.trim(),
-    phone: phone ? String(phone).trim() : undefined,
-    role: role || 'club_coach',
+  const account: StoredUserAccount = {
+    id: `usr-${crypto.randomUUID()}`,
+    email: email.trim().toLowerCase(),
+    passwordHash: hashPassword(password),
+    fullName: fullName.trim().slice(0, 120),
+    phone: phone ? String(phone).trim().slice(0, 40) : undefined,
+    role: SELF_SERVICE_ROLES.has(role) ? role : 'club_coach',
     provider: 'credentials',
     isVerified: true,
     confirmedAt: new Date().toISOString(),
     createdAt: new Date().toISOString()
   };
+  addAccount(account);
+  createSession(req, res, account.id);
 
-  STORED_ACCOUNTS.set(normalizedEmail, createdAccount);
+  res.json({ success: true, requiresProfileConfirmation: true, user: publicUser(account) });
+});
 
-  res.json({
-    success: true,
-    requiresProfileConfirmation: true,
-    user: {
-      id: createdAccount.id,
-      email: createdAccount.email,
-      fullName: createdAccount.fullName,
-      phone: createdAccount.phone,
-      role: createdAccount.role,
-      provider: createdAccount.provider,
-      isVerified: createdAccount.isVerified,
-      createdAt: createdAccount.createdAt
-    }
+// 6. Social login needs a real OAuth code exchange, which is not implemented yet.
+app.post('/api/auth/social/verify', (_req: Request, res: Response) => {
+  res.status(501).json({
+    error: 'Вход через Google/Facebook пока не подключён. Используйте вход по email и паролю.'
   });
 });
 
-// 6. Social OAuth Profile Verification Endpoint (Google / Facebook)
-app.post('/api/auth/social/verify', (req: Request, res: Response) => {
-  const { provider, socialProfile, code } = req.body || {};
-
-  const prov = provider === 'Facebook' || provider === 'facebook' ? 'facebook' : 'google';
-  const email = socialProfile?.email || (prov === 'google' ? 'google.athlete@gmail.com' : 'fb.user@uventex.net');
-  const name = socialProfile?.name || (prov === 'google' ? 'Google Спортсмен' : 'Facebook Пользователь');
-
-  const normalizedEmail = email.toLowerCase();
-  let user = STORED_ACCOUNTS.get(normalizedEmail);
-
-  if (!user) {
-    user = {
-      id: `usr-${prov}-${Date.now()}`,
-      email: normalizedEmail,
-      passwordHash: `social_auth_${Date.now()}`,
-      fullName: name,
-      role: 'club_coach',
-      provider: prov,
-      avatarUrl: socialProfile?.avatar || (prov === 'google'
-        ? 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&auto=format&fit=crop&q=80'
-        : 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=120&auto=format&fit=crop&q=80'),
-      isVerified: true,
-      confirmedAt: new Date().toISOString(),
-      createdAt: new Date().toISOString()
-    };
-    STORED_ACCOUNTS.set(normalizedEmail, user);
-  }
-
-  res.json({
-    success: true,
-    requiresProfileConfirmation: true,
-    user: {
-      id: user.id,
-      email: user.email,
-      fullName: user.fullName,
-      role: user.role,
-      provider: user.provider,
-      avatarUrl: user.avatarUrl,
-      isVerified: user.isVerified,
-      createdAt: user.createdAt
-    }
-  });
-});
-
-// 7. Profile Confirmation Step (Mandatory Profile Confirmation)
+// 7. Profile confirmation — only for the signed-in user; the role cannot be changed here.
 app.post('/api/auth/confirm-profile', (req: Request, res: Response) => {
-  const { userId, confirmedRole } = req.body || {};
+  const sessionUser = getSessionUser(req);
+  const { userId } = req.body || {};
 
-  let targetUser: StoredUserAccount | undefined;
-  for (const account of STORED_ACCOUNTS.values()) {
-    if (account.id === userId) {
-      targetUser = account;
-      break;
-    }
-  }
-
-  if (!targetUser) {
-    res.status(404).json({ error: 'Пользователь для подтверждения профиля не найден.' });
+  if (!sessionUser || (userId && userId !== sessionUser.id)) {
+    res.status(401).json({ error: 'Сессия не найдена. Пожалуйста, войдите снова.' });
     return;
   }
 
-  if (confirmedRole) {
-    targetUser.role = confirmedRole;
-  }
+  sessionUser.isVerified = true;
+  sessionUser.confirmedAt = new Date().toISOString();
+  saveDb();
 
-  targetUser.isVerified = true;
-  targetUser.confirmedAt = new Date().toISOString();
-  activeSessionUser = targetUser;
-
-  res.json({
-    success: true,
-    authenticated: true,
-    user: {
-      id: targetUser.id,
-      email: targetUser.email,
-      fullName: targetUser.fullName,
-      phone: targetUser.phone,
-      role: targetUser.role,
-      clubName: targetUser.clubName,
-      licenseCode: targetUser.licenseCode,
-      avatarUrl: targetUser.avatarUrl,
-      provider: targetUser.provider,
-      isVerified: true,
-      confirmedAt: targetUser.confirmedAt,
-      createdAt: targetUser.createdAt
-    }
-  });
+  res.json({ success: true, authenticated: true, user: publicUser(sessionUser) });
 });
 
-// 8. Session check
-app.get('/api/auth/me', (_req: Request, res: Response) => {
-  if (!activeSessionUser) {
+// 8. Session check (per browser, via HttpOnly cookie)
+app.get('/api/auth/me', (req: Request, res: Response) => {
+  const user = getSessionUser(req);
+  if (!user) {
     res.json({ authenticated: false, user: null });
     return;
   }
-
-  res.json({
-    authenticated: true,
-    user: {
-      id: activeSessionUser.id,
-      email: activeSessionUser.email,
-      fullName: activeSessionUser.fullName,
-      phone: activeSessionUser.phone,
-      role: activeSessionUser.role,
-      clubName: activeSessionUser.clubName,
-      licenseCode: activeSessionUser.licenseCode,
-      avatarUrl: activeSessionUser.avatarUrl,
-      provider: activeSessionUser.provider,
-      isVerified: activeSessionUser.isVerified,
-      confirmedAt: activeSessionUser.confirmedAt,
-      createdAt: activeSessionUser.createdAt
-    }
-  });
+  res.json({ authenticated: true, user: publicUser(user) });
 });
 
 // 9. Logout
-app.post('/api/auth/logout', (_req: Request, res: Response) => {
-  activeSessionUser = null;
+app.post('/api/auth/logout', (req: Request, res: Response) => {
+  destroySession(req, res);
   res.json({ success: true, message: 'Сессия завершена' });
+});
+
+// 10. Admin: list users and assign roles (referees, medical officers, etc.)
+const ALL_ROLES = new Set(['admin', 'chief_referee', 'tatami_referee', 'scorekeeper', 'club_coach', 'medical_officer']);
+
+app.get('/api/admin/users', (req: Request, res: Response) => {
+  if (!isRequestAuthorizedAdmin(req)) {
+    res.status(403).json({ error: 'Доступно только Администратору.' });
+    return;
+  }
+  res.json({ users: db.accounts.map(publicUser) });
+});
+
+app.put('/api/admin/users/:id/role', (req: Request, res: Response) => {
+  if (!isRequestAuthorizedAdmin(req)) {
+    res.status(403).json({ error: 'Доступно только Администратору.' });
+    return;
+  }
+  const { role } = req.body || {};
+  const target = findAccountById(req.params.id);
+  if (!target) {
+    res.status(404).json({ error: 'Пользователь не найден.' });
+    return;
+  }
+  if (!ALL_ROLES.has(role)) {
+    res.status(400).json({ error: 'Недопустимая роль.' });
+    return;
+  }
+  target.role = role;
+  saveDb();
+  res.json({ success: true, user: publicUser(target) });
 });
 
 // Comprehensive Karate Domain Fallback Engine
@@ -969,7 +825,9 @@ function generateExpertFallbackResponse(prompt: string, context: Record<string, 
 }
 
 // Full Gemini Chat Endpoint
-app.post('/api/chat', async (req: Request, res: Response) => {
+const aiLimiter = rateLimiter(15, 60_000);
+
+app.post('/api/chat', aiLimiter, async (req: Request, res: Response) => {
   try {
     const { message, history = [], context = {} } = req.body;
     if (!message || typeof message !== 'string') {
@@ -980,7 +838,7 @@ app.post('/api/chat', async (req: Request, res: Response) => {
     const apiKey = process.env.GEMINI_API_KEY;
     console.log('[Sensei AI] Request received:', { hasKey: !!apiKey, messageLength: message.length });
 
-    if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
+    if (!hasGeminiKey()) {
       // Offline / Local knowledge base response
       const fallback = generateExpertFallbackResponse(message, context);
       res.json({
@@ -992,7 +850,7 @@ app.post('/api/chat', async (req: Request, res: Response) => {
     }
 
     const ai = new GoogleGenAI({
-      apiKey,
+      apiKey: apiKey!,
       httpOptions: {
         headers: {
           'User-Agent': 'aistudio-build',
@@ -1019,10 +877,10 @@ app.post('/api/chat', async (req: Request, res: Response) => {
     const contents: any[] = [];
     if (Array.isArray(history)) {
       for (const item of history.slice(-10)) {
-        if (item.role === 'user' || item.role === 'model') {
+        if ((item?.role === 'user' || item?.role === 'model') && typeof item.text === 'string') {
           contents.push({
             role: item.role,
-            parts: [{ text: item.text }]
+            parts: [{ text: item.text.slice(0, 4000) }]
           });
         }
       }
@@ -1030,12 +888,12 @@ app.post('/api/chat', async (req: Request, res: Response) => {
 
     contents.push({
       role: 'user',
-      parts: [{ text: message }]
+      parts: [{ text: message.slice(0, 4000) }]
     });
 
     // 12-second safety timeout so requests never hang or block user interface
     const generatePromise = ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+      model: GEMINI_MODEL,
       contents,
       config: {
         systemInstruction,
@@ -1051,7 +909,7 @@ app.post('/api/chat', async (req: Request, res: Response) => {
     
     res.json({
       reply,
-      source: 'gemini-3.8-flash',
+      source: GEMINI_MODEL,
       status: 'ok'
     });
   } catch (error: any) {
@@ -1067,7 +925,7 @@ app.post('/api/chat', async (req: Request, res: Response) => {
 });
 
 // Official Federation Analytics & Executive Report Generator Endpoint
-app.post('/api/ai/federation-report', async (req: Request, res: Response) => {
+app.post('/api/ai/federation-report', aiLimiter, async (req: Request, res: Response) => {
   try {
     const { tournamentTitle, stats, chiefReferee, language } = req.body || {};
     const apiKey = process.env.GEMINI_API_KEY;
@@ -1082,7 +940,7 @@ app.post('/api/ai/federation-report', async (req: Request, res: Response) => {
 - Продолжить планомерное обучение тренеров таймингу подачи апелляций (VR).
 - Сфокусировать судейские семинары на унификации критериев предупреждений Категории 2 (Jogai/Mubobi) в заключительные 15 секунд поединка.`;
 
-    if (!apiKey) {
+    if (!hasGeminiKey()) {
       res.json({
         executiveSummary: fallbackSummary,
         source: 'federation-knowledge-engine',
@@ -1092,7 +950,7 @@ app.post('/api/ai/federation-report', async (req: Request, res: Response) => {
     }
 
     const ai = new GoogleGenAI({
-      apiKey,
+      apiKey: apiKey!,
       httpOptions: {
         headers: {
           'User-Agent': 'aistudio-build',
@@ -1123,7 +981,7 @@ app.post('/api/ai/federation-report', async (req: Request, res: Response) => {
 5. 3 ключевые рекомендации Федерации на следующий сезон.`;
 
     const generatePromise = ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+      model: GEMINI_MODEL,
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
     });
 
@@ -1136,7 +994,7 @@ app.post('/api/ai/federation-report', async (req: Request, res: Response) => {
 
     res.json({
       executiveSummary,
-      source: 'gemini-3.8-flash',
+      source: GEMINI_MODEL,
       status: 'ok'
     });
   } catch (error: any) {
@@ -1151,7 +1009,9 @@ app.post('/api/ai/federation-report', async (req: Request, res: Response) => {
 
 // Start Express Server with Vite Dev Server in Middleware Mode
 async function startServer() {
-  const isProduction = process.env.NODE_ENV === 'production';
+  const isProduction = IS_PRODUCTION;
+  ensureAdminAccount(isProduction);
+  seedDevDemoAccounts();
 
   // Support official Uventex /GWTClient.html?&locale=ru#home entry point URLs
   app.use((req: Request, _res: Response, next) => {
@@ -1176,7 +1036,7 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[Uventex Server] Dev server listening on http://0.0.0.0:${PORT}`);
+    console.log(`[Server] ${isProduction ? 'Production' : 'Dev'} server listening on http://0.0.0.0:${PORT}`);
   });
 }
 

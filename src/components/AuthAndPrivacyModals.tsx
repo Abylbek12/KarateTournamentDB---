@@ -160,8 +160,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
       // Validate origin is from AI Studio preview or localhost
-      const origin = event.origin;
-      if (!origin.endsWith('.run.app') && !origin.includes('localhost') && !origin.includes('3000')) {
+      if (event.origin !== window.location.origin) {
         return;
       }
 
@@ -172,18 +171,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           const res = await fetch('/api/auth/social/verify', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              provider,
-              code,
-              socialProfile: {
-                name: provider === 'google' ? 'Google Athlete' : 'Facebook User',
-                email: provider === 'google' ? 'google.athlete@gmail.com' : 'facebook.user@uventex.net'
-              }
-            })
+            body: JSON.stringify({ provider, code })
           });
 
           const data = await res.json();
-          if (data.user) {
+          if (!res.ok) {
+            setErrorMessage(data.error || 'Ошибка завершения OAuth авторизации.');
+          } else if (data.user) {
             setPendingProfileUser(data.user);
             setActiveTab('confirm_profile');
           }
@@ -252,7 +246,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     try {
       const endpoint = provider === 'Google' ? '/api/auth/google/url' : '/api/auth/facebook/url';
       const res = await fetch(endpoint);
-      if (!res.ok) throw new Error('Не удалось получить URL авторизации');
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Не удалось получить URL авторизации');
+      }
       const { url } = await res.json();
 
       // Open OAuth provider URL directly in popup (Mandatory OAuth Skill Rule)
@@ -263,24 +260,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       );
 
       if (!popupWindow) {
-        // Fallback if popup blocked by browser settings: trigger direct verify
-        const fallbackRes = await fetch('/api/auth/social/verify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            provider,
-            code: 'direct_access_grant',
-            socialProfile: {
-              name: provider === 'Google' ? 'Google Athlete' : 'Facebook Competitor',
-              email: provider === 'Google' ? 'google.athlete@gmail.com' : 'fb.competitor@uventex.net'
-            }
-          })
-        });
-        const fallbackData = await fallbackRes.json();
-        if (fallbackData.user) {
-          setPendingProfileUser(fallbackData.user);
-          setActiveTab('confirm_profile');
-        }
+        setErrorMessage('Браузер заблокировал всплывающее окно. Разрешите всплывающие окна для этого сайта.');
       }
     } catch (err: any) {
       setErrorMessage(err.message || `Ошибка авторизации через ${provider}.`);
@@ -302,8 +282,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setErrorMessage(language !== 'en' ? 'Укажите e-mail' : 'Enter your email');
       return;
     }
-    if (!regPassword || regPassword.length < 6) {
-      setErrorMessage(language !== 'en' ? 'Пароль должен состоять минимум из 6 символов' : 'Password must be at least 6 characters');
+    if (!regPassword || regPassword.length < 8) {
+      setErrorMessage(language !== 'en' ? 'Пароль должен состоять минимум из 8 символов' : 'Password must be at least 8 characters');
       return;
     }
     if (regPassword !== regConfirmPassword) {
@@ -361,7 +341,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       });
 
       const data = await res.json();
-      if (data.user) {
+      if (!res.ok) {
+        setErrorMessage(data.error || 'Не удалось подтвердить профиль.');
+      } else if (data.user) {
         onAuthenticated(data.user);
         onClose();
       }
@@ -540,7 +522,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     {language !== 'en' ? 'Регистрация' : 'Register'}
                   </button>
 
-                  {/* Demo Credentials Quick Switcher */}
+                  {/* Demo Credentials Quick Switcher (development builds only) */}
+                  {import.meta.env.DEV && (
                   <div className="text-center pt-1">
                     <button
                       type="button"
@@ -568,17 +551,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           <span>⚖️ Главный судья: chief.referee...</span>
                           <span className="text-slate-400">Pass2026!</span>
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => fillCredentials('admin@uventex.com', 'Admin2026!', 'admin')}
-                          className="w-full text-left p-1 rounded hover:bg-slate-100 flex items-center justify-between"
-                        >
-                          <span>👑 Администратор: admin@uventex.com</span>
-                          <span className="text-slate-400">Admin2026!</span>
-                        </button>
                       </div>
                     )}
                   </div>
+                  )}
                 </div>
               </div>
             )}
@@ -641,7 +617,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     {/* Password */}
                     <div>
                       <label className="block text-[11px] font-semibold text-[#2c5270] mb-1 font-sans">
-                        {language !== 'en' ? 'Пароль (минимум 6 символов)' : 'Password (min 6 chars)'}
+                        {language !== 'en' ? 'Пароль (минимум 8 символов)' : 'Password (min 8 chars)'}
                       </label>
                       <input
                         type="password"
@@ -680,9 +656,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       >
                         <option value="club_coach">🥋 Спортсмен / Атлет</option>
                         <option value="club_coach">🥊 Тренер клуба</option>
-                        <option value="tatami_referee">⚖️ Спортивный судья</option>
-                        <option value="admin">👑 Организатор турнира</option>
                       </select>
+                      <p className="mt-1 text-[10px] text-slate-500 font-sans">
+                        {language !== 'en'
+                          ? 'Роли судьи и организатора выдаёт администратор после регистрации.'
+                          : 'Referee and organizer roles are granted by an administrator after sign-up.'}
+                      </p>
                     </div>
 
                     {/* Terms Checkbox */}

@@ -1,20 +1,64 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# Karate Tournament DB
 
-# Run and deploy your AI Studio app
+Платформа для проведения турниров по карате (WKF / SKIF): витрина турниров, регистрация,
+сетки, расписание татами, онлайн-табло, судейство и протоколы, медконтроль, аналитика
+и ИИ-ассистент Sensei AI.
 
-This contains everything you need to run your app locally.
+Стек: React 19 + Vite + Tailwind CSS (клиент), Express (сервер), Gemini API (ИИ).
 
-View your app in AI Studio: https://ai.studio/apps/14c4be5c-f756-42c3-b7ce-51e694423205
+## Запуск на своём компьютере
 
-## Run Locally
+Нужен Node.js 20 или новее.
 
-**Prerequisites:**  Node.js
+```bash
+npm install
+cp .env.example .env     # затем при желании заполните .env
+npm run dev              # http://localhost:3000
+```
 
+При первом запуске в режиме разработки сервер создаёт администратора `admin@localhost`
+и **один раз** печатает его пароль в консоль. Чтобы задать свой — заполните
+`ADMIN_EMAIL` и `ADMIN_PASSWORD` в `.env` до первого запуска (или удалите папку `data/`).
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Запуск на сервере (production)
+
+```bash
+npm install
+npm run build
+ADMIN_EMAIL=you@example.com ADMIN_PASSWORD='надёжный-пароль' npm start
+```
+
+- Без `ADMIN_EMAIL`/`ADMIN_PASSWORD` в production администратор не создаётся.
+- Сайт должен работать по HTTPS (за nginx/Caddy или на хостинге с HTTPS) — тогда cookie сессии помечается `Secure`.
+- Папка `DATA_DIR` (по умолчанию `./data`) должна сохраняться между перезапусками и попадать в бэкапы.
+
+## Переменные окружения
+
+См. [.env.example](.env.example): `GEMINI_API_KEY`, `GEMINI_MODEL`, `ADMIN_EMAIL`,
+`ADMIN_PASSWORD`, `DATA_DIR`, `PORT`.
+
+## Безопасность и роли
+
+- Вход — по email и паролю; пароли хранятся только в виде хеша (scrypt).
+- Сессия — HttpOnly-cookie, отдельная для каждого браузера.
+- Права проверяет сервер: создавать, менять и удалять турниры может только администратор.
+- При регистрации можно стать только тренером/спортсменом. Роли судей, врача и
+  администратора выдаёт администратор (`PUT /api/admin/users/:id/role`).
+- Вход через Google/Facebook пока отключён: для него нужен обмен кода на сервере.
+
+## Что хранится на сервере, а что — только в браузере
+
+На сервере (в `data/db.json`, переживает перезапуск): турниры, аккаунты, сессии, картинки турниров.
+
+Пока **только в браузере** (пропадает при обновлении страницы и не видно на других
+устройствах): участники, сетки, поединки, счёт на табло, протоколы, медконтроль и т.д.
+Это следующий большой шаг — перенести эти данные на сервер (см. раздел «Дальнейшие шаги»).
+
+## Дальнейшие шаги
+
+1. Перенести участников, поединки и счёт на сервер (база данных, например PostgreSQL или SQLite).
+2. Синхронизация табло в реальном времени между устройствами (WebSocket).
+3. Экран администратора для выдачи ролей судьям и врачам.
+4. Восстановление пароля по email.
+5. Настоящий вход через Google/Facebook.
+6. Автотесты для жеребьёвки и подсчёта очков.

@@ -42,40 +42,13 @@ import {
 } from 'lucide-react';
 import { isTournamentDateExpired } from './components/TournamentEventsManager';
 import { Sidebar } from './components/Sidebar';
-import { SchemaVisualizer } from './components/SchemaVisualizer';
-import { TatamiScheduleView } from './components/TatamiScheduleView';
-import { TournamentBracketView } from './components/TournamentBracketView';
-import { CategoriesManager } from './components/CategoriesManager';
-import { ParticipantsManager } from './components/ParticipantsManager';
-import { AdminPanel } from './components/AdminPanel';
-import { SqlViewer } from './components/SqlViewer';
 import { ScoreboardModal } from './components/ScoreboardModal';
 import { ManualBoutControlModal } from './components/ManualBoutControlModal';
 
-import { OnlineScoreboard } from './components/OnlineScoreboard';
-import { TournamentBracketScoreboardModule } from './components/TournamentBracketScoreboardModule';
-import { TournamentEngineModule } from './components/TournamentEngineModule';
-import { TournamentAnalyticsModule } from './components/TournamentAnalyticsModule';
-import { TournamentClubAccountingModule } from './components/TournamentClubAccountingModule';
-import { CoachPortalModule } from './components/CoachPortalModule';
-import { RefereeProtocolModule } from './components/RefereeProtocolModule';
 import { ResetTournamentDataModal, ResetOptions } from './components/ResetTournamentDataModal';
-import { MultiStepRegistration } from './components/MultiStepRegistration';
-import { LocalLanTournamentHub } from './components/LocalLanTournamentHub';
 import { TournamentShowcase } from './components/TournamentShowcase';
-import { TournamentDetailsView } from './components/TournamentDetailsView';
-import { TournamentInfoDetailView } from './components/TournamentInfoDetailView';
-import { TournamentDivisionsPricingView } from './components/TournamentDivisionsPricingView';
-import { TournamentRingsBracketsView } from './components/TournamentRingsBracketsView';
-import { TournamentMedalsReportView } from './components/TournamentMedalsReportView';
-import { UventexLiveScoringView } from './components/UventexLiveScoringView';
 import { UVENTEX_SCREENSHOT_EVENTS, UventexEventItem, EventActionType } from './data/uventexEventsData';
-import { RefereeElectronicVotingAndVrModule } from './components/RefereeElectronicVotingAndVrModule';
-import { DoctorTimeMedicalModule } from './components/DoctorTimeMedicalModule';
-import { VideoAnalyticsModule } from './components/VideoAnalyticsModule';
 import { SenseiAiChatbot } from './components/SenseiAiChatbot';
-import { AcquiringPaymentsModule } from './components/AcquiringPaymentsModule';
-import { OfficialProtocolsExportModule } from './components/OfficialProtocolsExportModule';
 import { NotificationCenterModal } from './components/NotificationCenterModal';
 import { 
   VirtualStudiosView, 
@@ -84,7 +57,6 @@ import {
   StudiosView,
   RankingsView
 } from './components/UventexPortalViews';
-import { TournamentEventResultsView } from './components/TournamentEventResultsView';
 import { AuthModal, PrivacyPolicyModal } from './components/AuthAndPrivacyModals';
 import { SAMPLE_NOTIFICATIONS, playNotificationSound } from './data/sampleAcquiringAndExports';
 import { generateProtectedWkfCategoryBouts } from './utils/wkfBracketSeeding';
@@ -106,6 +78,38 @@ import { Bout, Participant, TournamentRules, RefereeProtocol, UserRole, Tourname
 
 import { AppProvider, useApp } from './context/AppContext';
 import { useGlobalDomTranslator, trLang } from './utils/globalDomTranslator';
+
+// Heavy screens are loaded on demand so the first page opens faster.
+const SchemaVisualizer = React.lazy(() => import('./components/SchemaVisualizer').then((m) => ({ default: m.SchemaVisualizer })));
+const TatamiScheduleView = React.lazy(() => import('./components/TatamiScheduleView').then((m) => ({ default: m.TatamiScheduleView })));
+const CategoriesManager = React.lazy(() => import('./components/CategoriesManager').then((m) => ({ default: m.CategoriesManager })));
+const ParticipantsManager = React.lazy(() => import('./components/ParticipantsManager').then((m) => ({ default: m.ParticipantsManager })));
+const AdminPanel = React.lazy(() => import('./components/AdminPanel').then((m) => ({ default: m.AdminPanel })));
+const SqlViewer = React.lazy(() => import('./components/SqlViewer').then((m) => ({ default: m.SqlViewer })));
+const TournamentBracketScoreboardModule = React.lazy(() => import('./components/TournamentBracketScoreboardModule').then((m) => ({ default: m.TournamentBracketScoreboardModule })));
+const TournamentEngineModule = React.lazy(() => import('./components/TournamentEngineModule').then((m) => ({ default: m.TournamentEngineModule })));
+const TournamentAnalyticsModule = React.lazy(() => import('./components/TournamentAnalyticsModule').then((m) => ({ default: m.TournamentAnalyticsModule })));
+const TournamentClubAccountingModule = React.lazy(() => import('./components/TournamentClubAccountingModule').then((m) => ({ default: m.TournamentClubAccountingModule })));
+const CoachPortalModule = React.lazy(() => import('./components/CoachPortalModule').then((m) => ({ default: m.CoachPortalModule })));
+const RefereeProtocolModule = React.lazy(() => import('./components/RefereeProtocolModule').then((m) => ({ default: m.RefereeProtocolModule })));
+const MultiStepRegistration = React.lazy(() => import('./components/MultiStepRegistration').then((m) => ({ default: m.MultiStepRegistration })));
+const LocalLanTournamentHub = React.lazy(() => import('./components/LocalLanTournamentHub').then((m) => ({ default: m.LocalLanTournamentHub })));
+const TournamentDetailsView = React.lazy(() => import('./components/TournamentDetailsView').then((m) => ({ default: m.TournamentDetailsView })));
+const TournamentInfoDetailView = React.lazy(() => import('./components/TournamentInfoDetailView').then((m) => ({ default: m.TournamentInfoDetailView })));
+const TournamentDivisionsPricingView = React.lazy(() => import('./components/TournamentDivisionsPricingView').then((m) => ({ default: m.TournamentDivisionsPricingView })));
+const TournamentRingsBracketsView = React.lazy(() => import('./components/TournamentRingsBracketsView').then((m) => ({ default: m.TournamentRingsBracketsView })));
+const TournamentMedalsReportView = React.lazy(() => import('./components/TournamentMedalsReportView').then((m) => ({ default: m.TournamentMedalsReportView })));
+const UventexLiveScoringView = React.lazy(() => import('./components/UventexLiveScoringView').then((m) => ({ default: m.UventexLiveScoringView })));
+const RefereeElectronicVotingAndVrModule = React.lazy(() => import('./components/RefereeElectronicVotingAndVrModule').then((m) => ({ default: m.RefereeElectronicVotingAndVrModule })));
+const DoctorTimeMedicalModule = React.lazy(() => import('./components/DoctorTimeMedicalModule').then((m) => ({ default: m.DoctorTimeMedicalModule })));
+const VideoAnalyticsModule = React.lazy(() => import('./components/VideoAnalyticsModule').then((m) => ({ default: m.VideoAnalyticsModule })));
+const AcquiringPaymentsModule = React.lazy(() => import('./components/AcquiringPaymentsModule').then((m) => ({ default: m.AcquiringPaymentsModule })));
+const OfficialProtocolsExportModule = React.lazy(() => import('./components/OfficialProtocolsExportModule').then((m) => ({ default: m.OfficialProtocolsExportModule })));
+const TournamentEventResultsView = React.lazy(() => import('./components/TournamentEventResultsView').then((m) => ({ default: m.TournamentEventResultsView })));
+
+const ScreenLoader = () => (
+  <div className="flex items-center justify-center py-16 text-sm text-slate-500">Загрузка…</div>
+);
 
 function AppContent() {
   const { 
@@ -130,7 +134,27 @@ function AppContent() {
   const [selectedUventexEvent, setSelectedUventexEvent] = useState<UventexEventItem>(UVENTEX_SCREENSHOT_EVENTS[3]);
   const [tournamentRules, setTournamentRules] = useState<TournamentRules>('wkf');
   const [currentUser, setCurrentUser] = useState<AuthenticatedUserProfile | null>(null);
-  const [currentUserRole, setCurrentUserRole] = useState<UserRole>('admin');
+  const [currentUserRole, setCurrentUserRole] = useState<UserRole>('club_coach');
+
+  // Role switching is a UI preview only; real permissions are enforced by the server session.
+  // Nobody can switch to Administrator without signing in as an administrator.
+  const requestRoleChange = (role: UserRole) => {
+    if (role === currentUserRole) return;
+    if (currentUser?.role === 'admin' || role === 'club_coach' || role === currentUser?.role) {
+      setCurrentUserRole(role);
+      return;
+    }
+    setAuthModalMode('login');
+    setIsAuthModalOpen(true);
+    setGlobalSystemToast(
+      tr(
+        'Чтобы получить эту роль, войдите в аккаунт с соответствующими правами.',
+        'Бул ролду алуу үчүн тиешелүү укуктары бар аккаунтка кириңиз.',
+        'Sign in with an account that has this role to use it.'
+      )
+    );
+    setTimeout(() => setGlobalSystemToast(null), 4000);
+  };
 
   // Unified tournaments registry fetch on mount
   React.useEffect(() => {
@@ -198,15 +222,22 @@ function AppContent() {
     if (newTournament.rulesType) setTournamentRules(newTournament.rulesType);
 
     try {
-      await fetch('/api/events', {
+      const saveResponse = await fetch('/api/events', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-role': currentUserRole
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(asUventex)
       });
-    } catch {}
+      if (!saveResponse.ok) {
+        const err = await saveResponse.json().catch(() => ({}));
+        setGlobalSystemToast(err.error || tr('Сервер отклонил сохранение турнира.', 'Сервер мелдешти сактоодон баш тартты.', 'The server rejected saving the tournament.'));
+        setTimeout(() => setGlobalSystemToast(null), 5000);
+        return;
+      }
+    } catch {
+      setGlobalSystemToast(tr('Нет связи с сервером: изменения не сохранены.', 'Сервер менен байланыш жок: өзгөртүүлөр сакталган жок.', 'No connection to server: changes not saved.'));
+      setTimeout(() => setGlobalSystemToast(null), 5000);
+      return;
+    }
 
     setGlobalSystemToast(
       tr(
@@ -249,15 +280,22 @@ function AppContent() {
     if (updatedTournament.rulesType) setTournamentRules(updatedTournament.rulesType);
 
     try {
-      await fetch(`/api/events/${asUventex.id}`, {
+      const saveResponse = await fetch(`/api/events/${asUventex.id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-role': currentUserRole
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(asUventex)
       });
-    } catch {}
+      if (!saveResponse.ok) {
+        const err = await saveResponse.json().catch(() => ({}));
+        setGlobalSystemToast(err.error || tr('Сервер отклонил сохранение турнира.', 'Сервер мелдешти сактоодон баш тартты.', 'The server rejected saving the tournament.'));
+        setTimeout(() => setGlobalSystemToast(null), 5000);
+        return;
+      }
+    } catch {
+      setGlobalSystemToast(tr('Нет связи с сервером: изменения не сохранены.', 'Сервер менен байланыш жок: өзгөртүүлөр сакталган жок.', 'No connection to server: changes not saved.'));
+      setTimeout(() => setGlobalSystemToast(null), 5000);
+      return;
+    }
 
     setGlobalSystemToast(
       tr(
@@ -287,10 +325,7 @@ function AppContent() {
 
     try {
       const response = await fetch(`/api/events/${encodeURIComponent(tournamentId)}`, {
-        method: 'DELETE',
-        headers: {
-          'x-user-role': currentUserRole
-        }
+        method: 'DELETE'
       });
       if (!response.ok && response.status !== 404) {
         setGlobalSystemToast(
@@ -1047,6 +1082,7 @@ function AppContent() {
 
         {/* Dedicated Clean Registration Page Container */}
         <main className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fadeIn">
+          <React.Suspense fallback={<ScreenLoader />}>
           <MultiStepRegistration
             tournament={selectedTournament}
             clubs={SAMPLE_CLUBS}
@@ -1064,6 +1100,7 @@ function AppContent() {
             onNavigateToParticipants={() => setActiveTab('participants')}
             onNavigateToScoreboard={() => setActiveTab('scoreboard')}
           />
+          </React.Suspense>
         </main>
 
         {/* Supreme AI Assistant: Sensei AI powered by Gemini 3.8 Flash */}
@@ -1091,7 +1128,7 @@ function AppContent() {
         tournamentRules={tournamentRules}
         onRulesChange={setTournamentRules}
         currentUserRole={currentUserRole}
-        onRoleChange={setCurrentUserRole}
+        onRoleChange={requestRoleChange}
         selectedTournament={selectedTournament}
         onOpenResetDialog={() => setIsResetModalOpen(true)}
         onExportSql={handleExportSql}
@@ -1446,7 +1483,7 @@ function AppContent() {
                       <div className="grid grid-cols-1 gap-1">
                         <button
                           type="button"
-                          onClick={() => setCurrentUserRole('admin')}
+                          onClick={() => requestRoleChange('admin')}
                           className={`w-full px-3 py-2 rounded-xl text-left flex items-center justify-between transition-all cursor-pointer border ${
                             currentUserRole === 'admin'
                               ? 'bg-rose-500/10 border-rose-500/40 text-rose-600 font-bold'
@@ -1469,7 +1506,7 @@ function AppContent() {
 
                         <button
                           type="button"
-                          onClick={() => setCurrentUserRole('club_coach')}
+                          onClick={() => requestRoleChange('club_coach')}
                           className={`w-full px-3 py-2 rounded-xl text-left flex items-center justify-between transition-all cursor-pointer border ${
                             currentUserRole !== 'admin'
                               ? 'bg-sky-500/10 border-sky-500/40 text-sky-600 font-bold'
@@ -1708,12 +1745,13 @@ function AppContent() {
 
         {/* Full-width Stretched Content Area */}
         <main className="flex-1 w-full min-w-0 px-3 sm:px-6 py-2.5 sm:py-3 space-y-4">
+          <React.Suspense fallback={<ScreenLoader />}>
           {/* 1. События (Tournaments showcase with Category-Dependent Hover Options + RBAC) */}
           {activeTab === 'tournaments' && (
             <TournamentShowcase
               tournaments={tournaments}
               currentUserRole={currentUserRole}
-              onRoleChange={setCurrentUserRole}
+              onRoleChange={requestRoleChange}
               onSelectTournament={(t) => {
                 setSelectedTournament(t);
                 const matched = UVENTEX_SCREENSHOT_EVENTS.find((e) => e.id === t.id);
@@ -2041,7 +2079,7 @@ function AppContent() {
               participants={participants}
               bouts={bouts}
               currentUserRole={currentUserRole}
-              onRoleChange={setCurrentUserRole}
+              onRoleChange={requestRoleChange}
               tournaments={tournaments}
               selectedTournament={selectedTournament}
               onSelectTournament={(t) => {
@@ -2136,6 +2174,7 @@ function AppContent() {
           {activeTab === 'categories' && <CategoriesManager />}
           {activeTab === 'schema' && <SchemaVisualizer />}
           {activeTab === 'sql' && <SqlViewer />}
+          </React.Suspense>
         </main>
 
         {/* ========================================================
