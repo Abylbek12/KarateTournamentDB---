@@ -1,4 +1,5 @@
 import React from 'react';
+import { subscribeLive, isLiveConnected } from './liveStream';
 
 type Setter<T> = React.Dispatch<React.SetStateAction<T>>;
 
@@ -9,6 +10,13 @@ interface Options {
   onError?: (message: string) => void;
   /** How often to check the server for changes made on other devices (ms). */
   pollMs?: number;
+  /** Save the whole value automatically after local changes (default true). */
+  autoSave?: boolean;
+}
+
+export interface SyncControls {
+  /** Skip pulls for a moment after an optimistic local change saved elsewhere. */
+  holdPulls: (ms: number) => void;
 }
 
 /**
@@ -18,7 +26,7 @@ interface Options {
  * - picks up changes from other devices every few seconds.
  * If the server has no saved value yet, the initial value is used.
  */
-export function useServerSyncedState<T>(key: string, initial: T, options: Options): [T, Setter<T>] {
+export function useServerSyncedState<T>(key: string, initial: T, options: Options): [T, Setter<T>, SyncControls] {
   const [value, setValue] = React.useState<T>(initial);
   const versionRef = React.useRef(0);
   const syncedJsonRef = React.useRef<string | null>(null);
@@ -28,6 +36,8 @@ export function useServerSyncedState<T>(key: string, initial: T, options: Option
   const errorShownRef = React.useRef(false);
   const optionsRef = React.useRef(options);
   optionsRef.current = options;
+  const holdUntilRef = React.useRef(0);
+  const controls = React.useMemo<SyncControls>(() => ({ holdPulls: (ms) => (holdUntilRef.current = Date.now() + ms) }), []);
 
   const adopt = React.useCallback((serverValue: unknown, version: number) => {
     versionRef.current = version;
@@ -43,6 +53,10 @@ export function useServerSyncedState<T>(key: string, initial: T, options: Option
 
     const pull = async (initialLoad: boolean) => {
       if (savingRef.current || saveTimerRef.current) return; // don't clobber unsaved local edits
+      if (!initialLoad && Date.now() < holdUntilRef.current) {
+        setTimeout(() => pull(false), holdUntilRef.current - Date.now() + 50);
+        return;
+      }
       try {
         const url = initialLoad ? `/api/state/${key}` : `/api/state/${key}?since=${versionRef.current}`;
         const res = await fetch(url);
@@ -58,13 +72,22 @@ export function useServerSyncedState<T>(key: string, initial: T, options: Option
     };
 
     pull(true);
+    // Instant updates from the server; polling stays as a safety net (slower while live).
+    const unsubscribe = subscribeLive((event) => {
+      if (event.type === 'state' && event.key === key && event.version !== versionRef.current) pull(false);
+      if (event.type === 'hello') pull(false);
+    });
+    let ticks = 0;
     const timer = setInterval(() => {
+      ticks++;
+      if (isLiveConnected() && ticks % 5 !== 0) return;
       if (typeof document === 'undefined' || document.visibilityState === 'visible') pull(false);
     }, options.pollMs ?? 3000);
 
     return () => {
       cancelled = true;
       clearInterval(timer);
+      unsubscribe();
     };
   }, [key, adopt, options.pollMs]);
 
@@ -73,7 +96,7 @@ export function useServerSyncedState<T>(key: string, initial: T, options: Option
     if (!loadedRef.current) return;
     const json = JSON.stringify(value);
     if (json === syncedJsonRef.current) return;
-    if (!optionsRef.current.canWrite) return;
+    if (!optionsRef.current.canWrite || optionsRef.current.autoSave === false) return;
 
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(async () => {
@@ -114,5 +137,5 @@ export function useServerSyncedState<T>(key: string, initial: T, options: Option
     }, 700);
   }, [value, key, adopt]);
 
-  return [value, setValue];
+  return [value, setValue, controls];
 }

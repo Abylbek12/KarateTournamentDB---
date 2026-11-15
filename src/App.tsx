@@ -84,8 +84,10 @@ import { AccessGate } from './components/AccessGate';
 import { TatamiMark, TatamiWordmark } from './components/BrandLogo';
 import { UsersRolesPanel } from './components/UsersRolesPanel';
 import { InviteLinksPanel } from './components/InviteLinksPanel';
-import { PublicBracketsView, PublicResultsView } from './components/PublicEventViews';
+import { PublicBracketsView, PublicResultsView, PublicLiveView } from './components/PublicEventViews';
 import { BoutConsole } from './components/BoutConsole';
+import { getDeviceKey, setDeviceKey } from './utils/liveStream';
+import { TatamiDisplay, CallRoomDisplay, TatamiControl } from './components/TatamiScreens';
 import { MyAccountPanel } from './components/MyAccountPanel';
 import { RoleGuide } from './components/RoleGuide';
 
@@ -107,12 +109,13 @@ const LocalLanTournamentHub = React.lazy(() => import('./components/LocalLanTour
 const TournamentDetailsView = React.lazy(() => import('./components/TournamentDetailsView').then((m) => ({ default: m.TournamentDetailsView })));
 const TournamentInfoDetailView = React.lazy(() => import('./components/TournamentInfoDetailView').then((m) => ({ default: m.TournamentInfoDetailView })));
 const TournamentDivisionsPricingView = React.lazy(() => import('./components/TournamentDivisionsPricingView').then((m) => ({ default: m.TournamentDivisionsPricingView })));
-const UventexLiveScoringView = React.lazy(() => import('./components/UventexLiveScoringView').then((m) => ({ default: m.UventexLiveScoringView })));
 const RefereeElectronicVotingAndVrModule = React.lazy(() => import('./components/RefereeElectronicVotingAndVrModule').then((m) => ({ default: m.RefereeElectronicVotingAndVrModule })));
 const DoctorTimeMedicalModule = React.lazy(() => import('./components/DoctorTimeMedicalModule').then((m) => ({ default: m.DoctorTimeMedicalModule })));
 const VideoAnalyticsModule = React.lazy(() => import('./components/VideoAnalyticsModule').then((m) => ({ default: m.VideoAnalyticsModule })));
 const AcquiringPaymentsModule = React.lazy(() => import('./components/AcquiringPaymentsModule').then((m) => ({ default: m.AcquiringPaymentsModule })));
 const OfficialProtocolsExportModule = React.lazy(() => import('./components/OfficialProtocolsExportModule').then((m) => ({ default: m.OfficialProtocolsExportModule })));
+
+const ScreensQrPanel = React.lazy(() => import('./components/ScreensQrPanel').then((m) => ({ default: m.ScreensQrPanel })));
 
 const ScreenLoader = () => (
   <div className="flex items-center justify-center py-16 text-sm text-slate-500">Загрузка…</div>
@@ -380,7 +383,44 @@ function AppContent() {
       setTimeout(() => setGlobalSystemToast(null), 6000);
     }
   };
-  const [bouts, setBouts] = useServerSyncedState<Bout[]>('bouts', SAMPLE_BOUTS, sharedStateOptions);
+  // Bouts are saved one by one (PUT /api/bouts) so several tatami can work at the same time.
+  const [bouts, setBoutsState, boutSync] = useServerSyncedState<Bout[]>('bouts', SAMPLE_BOUTS, { ...sharedStateOptions, autoSave: false });
+  const boutsRef = React.useRef(bouts);
+  boutsRef.current = bouts;
+  const saveBouts = React.useCallback(async (changed: Bout[], replaceAll: boolean) => {
+    if (changed.length === 0 && !replaceAll) return;
+    const deviceKey = getDeviceKey();
+    try {
+      const res = await fetch('/api/bouts', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...(deviceKey ? { 'x-device-key': deviceKey } : {}) },
+        body: JSON.stringify({ bouts: changed, replaceAll })
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setGlobalSystemToast(data.error || 'Сервер не сохранил изменения боя.');
+        setTimeout(() => setGlobalSystemToast(null), 6000);
+      }
+    } catch {
+      setGlobalSystemToast('Нет связи с сервером: изменения боя не сохранены.');
+      setTimeout(() => setGlobalSystemToast(null), 6000);
+    }
+  }, []);
+  const setBouts = React.useCallback(
+    (update: Bout[] | ((prev: Bout[]) => Bout[])) => {
+      const prev = boutsRef.current;
+      const next = typeof update === 'function' ? update(prev) : update;
+      if (next === prev) return;
+      boutsRef.current = next;
+      setBoutsState(next);
+      const prevById = new Map(prev.map((b) => [b.id, JSON.stringify(b)]));
+      const removed = prev.some((b) => !next.some((n) => n.id === b.id));
+      const changed = next.filter((b) => prevById.get(b.id) !== JSON.stringify(b));
+      boutSync.holdPulls(1500);
+      saveBouts(removed ? next : changed, removed);
+    },
+    [setBoutsState, boutSync, saveBouts]
+  );
   const [participants, setParticipants] = useServerSyncedState<Participant[]>('participants', SAMPLE_PARTICIPANTS, sharedStateOptions);
   const [protocols, setProtocols] = useServerSyncedState<RefereeProtocol[]>('protocols', SAMPLE_REFEREE_PROTOCOLS, sharedStateOptions);
   const [activeScoreboardBout, setActiveScoreboardBout] = useState<Bout | null>(null);
@@ -610,6 +650,39 @@ function AppContent() {
     venueLocalServerIp: '192.168.1.100',
     offlineModeActive: true
   });
+
+  // Screens opened from QR codes (see the standalone screens block below).
+  const [screenMode] = useState<{ kind: 'tatami' | 'calls' | 'control'; tatami: number } | null>(() => {
+    try {
+      const q = new URLSearchParams(window.location.search);
+      const kind = q.get('screen');
+      const tatami = Math.max(1, Number(q.get('t')) || 1);
+      if (kind === 'tatami' || kind === 'calls' || kind === 'control') {
+        if (kind === 'control' && q.get('key')) {
+          setDeviceKey(q.get('key'));
+          q.delete('key'); // keep the secret out of the address bar and history
+          window.history.replaceState(null, '', `${window.location.pathname}?${q.toString()}`);
+        }
+        return { kind, tatami };
+      }
+    } catch {
+      /* ignore */
+    }
+    return null;
+  });
+  const [deviceOk, setDeviceOk] = useState<boolean | null>(null);
+  React.useEffect(() => {
+    if (screenMode?.kind !== 'control') return;
+    const key = getDeviceKey();
+    if (!key) {
+      setDeviceOk(false);
+      return;
+    }
+    fetch('/api/device', { headers: { 'x-device-key': key } })
+      .then((r) => r.json().then((d) => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => setDeviceOk(ok && d.tatamiNumber === screenMode.tatami))
+      .catch(() => setDeviceOk(null));
+  }, [screenMode]);
 
   // Invitation links: ?join=athlete | ?join=coach (public) and ?invite=<secret> (staff, created by admin).
   const [inviteRole, setInviteRole] = useState<UserRole | null>(null);
@@ -946,6 +1019,25 @@ function AppContent() {
   };
 
   // Standalone Fullscreen Online Registration Page (Zero distraction, Uventex Style)
+  // ---------------------------------------------------------------------------
+  // Standalone screens opened from links / QR codes (no menu, no sign-in):
+  //   ?screen=tatami&t=1           spectator scoreboard for tatami 1 (TV / projector)
+  //   ?screen=calls                warm-up area: who is on every tatami and who is next
+  //   ?screen=control&t=1&key=...  secretary console for tatami 1 (tablet / laptop)
+  // ---------------------------------------------------------------------------
+  if (screenMode) {
+    if (screenMode.kind === 'tatami') return <TatamiDisplay tatamiNumber={screenMode.tatami} bouts={bouts} rules={tournamentRules} />;
+    if (screenMode.kind === 'calls') return <CallRoomDisplay bouts={bouts} tatamiNumbers={SAMPLE_TATAMIS.map((t) => t.number)} />;
+    return (
+      <>
+        <TatamiControl tatamiNumber={screenMode.tatami} bouts={bouts} rules={tournamentRules} deviceOk={deviceOk} onChange={handleUpdateBout} />
+        {globalSystemToast && (
+          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[70] rounded-xl bg-black/85 text-white text-sm px-4 py-2">{globalSystemToast}</div>
+        )}
+      </>
+    );
+  }
+
   if (activeTab === 'registration' && canAccess('registration', effectiveRole)) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
@@ -1654,10 +1746,14 @@ function AppContent() {
 
           {/* 1.6 Live Scoring Настройки & 4-Татами Монитор (Matching video at 00:48 & 01:13) */}
           {activeTab === 'event_live_scoring' && (
-            <UventexLiveScoringView
-              tournament={selectedUventexEvent}
+            <PublicLiveView
+              event={selectedUventexEvent}
+              bouts={bouts}
+              participants={participants}
+              categories={SAMPLE_TOURNAMENT_CATEGORIES}
+              language={language}
               onBack={() => navigateWithHash('tournaments')}
-              onNavigateAction={(action) => handleSelectTournamentAction(selectedUventexEvent, action as EventActionType)}
+              onNavigateAction={(action) => handleSelectTournamentAction(selectedUventexEvent, action)}
             />
           )}
 
@@ -1944,6 +2040,8 @@ function AppContent() {
               }}
             />
           )}
+
+          {activeTab === 'screens' && <ScreensQrPanel tatamiNumbers={SAMPLE_TATAMIS.map((t) => t.number)} />}
 
           {activeTab === 'lan' && (
             <LocalLanTournamentHub

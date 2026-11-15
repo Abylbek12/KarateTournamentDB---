@@ -22,7 +22,8 @@ import {
   Scale,
   PanelLeftClose,
   PanelLeftOpen,
-  X
+  X,
+  QrCode
 } from 'lucide-react';
 import { canAccess, type AccessRole } from '../utils/access';
 import { TournamentRules, UserRole, Tournament } from '../types/schema';
@@ -53,7 +54,8 @@ export type NavTabId =
   | 'admin'
   | 'schema'
   | 'sql'
-  | 'registration';
+  | 'registration'
+  | 'screens';
 
 interface SidebarProps {
   activeTab: string;
@@ -154,6 +156,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       items: isAdmin
         ? [
             { id: 'admin' as NavTabId, label: tr('Турниры и пользователи', 'Мелдештер жана колдонуучулар', 'Events & users'), icon: ShieldCheck },
+            { id: 'screens' as NavTabId, label: tr('Экраны и QR-коды', 'Экрандар жана QR', 'Screens & QR'), icon: QrCode },
             { id: 'bracket' as NavTabId, label: tr('Сетки и жеребьёвка', 'Торчолор жана чүчүкулак', 'Brackets & draw'), icon: GitBranch },
             { id: 'acquiring' as NavTabId, label: tr('Оплаты и взносы', 'Төлөмдөр', 'Payments'), icon: CreditCard },
             { id: 'exports' as NavTabId, label: tr('Экспорт протоколов', 'Протоколдорду экспорттоо', 'Exports'), icon: Stamp },

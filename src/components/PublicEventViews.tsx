@@ -4,6 +4,8 @@ import type { Bout, Participant, TournamentCategory } from '../types/schema';
 import type { UventexEventItem, EventActionType } from '../data/uventexEventsData';
 import { belongsToEvent } from '../data/sampleTournamentData';
 import { ELIMINATION_ORDER, computeStandings, repechageHalf, repechageStep, stageLabel } from '../utils/bracketProgression';
+import * as E from '../utils/boutEngine';
+import { currentBoutOf, upcomingOf } from './TatamiScreens';
 
 type Lang = 'ru' | 'ky' | 'en';
 
@@ -314,6 +316,102 @@ export const PublicResultsView: React.FC<BaseProps & { mode: 'results' | 'medals
             <Medal className="w-3.5 h-3.5" />
             {t(language, 'Считается автоматически по итогам боёв. Две бронзы в каждой категории (утешительные бои WKF).', 'Беттештердин жыйынтыгы боюнча автоматтык түрдө эсептелет.', 'Calculated automatically from bout results. Two bronze medals per category (WKF repechage).')}
           </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/** Public live page: every tatami of the event with the bout on it, updated instantly. */
+export const PublicLiveView: React.FC<BaseProps> = (props) => {
+  const { event, bouts, language } = props;
+  const eventBouts = bouts.filter((b) => belongsToEvent(b.tournamentId, event.id));
+  const tatamis = Array.from(new Set(eventBouts.map((b) => b.tatamiNumber).filter((n): n is number => !!n))).sort((a, b) => a - b);
+  const anyRunning = eventBouts.some((b) => E.isRunning(b));
+  const [now, setNow] = React.useState(Date.now());
+  React.useEffect(() => {
+    if (!anyRunning) return;
+    const id = setInterval(() => setNow(Date.now()), 100);
+    return () => clearInterval(id);
+  }, [anyRunning]);
+
+  return (
+    <div className="theme-keep space-y-5 pb-8">
+      <EventHeader {...props} active="live_scoring" />
+      {tatamis.length === 0 ? (
+        <EmptyState language={language} text={['Трансляция ещё не началась', 'Түз эфир али башталган жок', 'Live scoring has not started yet']} />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          {tatamis.map((tn) => {
+            const b = currentBoutOf(eventBouts, tn);
+            const next = upcomingOf(eventBouts, tn, b?.id, 2);
+            const live = !!b && (b.status === 'in_progress' || !!b.awaitingDecision);
+            const side = (s: 'aka' | 'ao') => {
+              const p = s === 'aka' ? b?.akaParticipant : b?.aoParticipant;
+              const won = b?.status === 'completed' && b.winnerId === (s === 'aka' ? b.akaParticipantId : b.aoParticipantId);
+              return (
+                <div className={`flex items-center gap-3 px-4 py-3 ${s === 'aka' ? 'bg-red-600' : 'bg-blue-600'} text-white`}>
+                  <div className="flex-1 min-w-0">
+                    <div className={`truncate text-[15px] ${won ? 'font-bold' : 'font-semibold'}`}>{p ? fullName(p) : '—'}</div>
+                    <div className="truncate text-xs opacity-85">{[p?.clubName, p?.country].filter(Boolean).join(' · ')}</div>
+                  </div>
+                  {(s === 'aka' ? b?.akaSenshu : b?.aoSenshu) && <span className="px-1.5 py-0.5 rounded bg-amber-400 text-black text-[10px] font-black">SENSHU</span>}
+                  <div className="text-3xl font-black tabular-nums w-10 text-right">{s === 'aka' ? b?.akaScore : b?.aoScore}</div>
+                </div>
+              );
+            };
+            return (
+              <section key={tn} className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] overflow-hidden">
+                <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[var(--app-border)]">
+                  <span className="font-bold text-[var(--app-text-primary)]">{t(language, 'Татами', 'Татами', 'Tatami')} {tn}</span>
+                  {live && (
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600">
+                      <Radio className="w-3.5 h-3.5" /> LIVE
+                    </span>
+                  )}
+                  <span className="flex-1" />
+                  {b && <span className="text-2xl font-black tabular-nums text-[var(--app-text-primary)]">{E.formatClock(E.remainingSeconds(b, now))}</span>}
+                </div>
+                {b ? (
+                  <>
+                    <div className="px-4 py-1.5 text-xs text-[var(--app-text-muted)] truncate">
+                      {b.categoryName} · {stageLabel(b.roundStage, language)} · #{b.boutNumber}
+                    </div>
+                    {side('aka')}
+                    {side('ao')}
+                    {b.status === 'completed' && b.winReason && (
+                      <div className="px-4 py-2 text-sm text-[var(--app-text-secondary)]">
+                        {t(language, 'Победа', 'Жеңиш', 'Winner')}: {b.winnerId === b.akaParticipantId ? 'АКА' : 'АО'} · {E.WIN_REASON_LABELS[b.winReason]}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="p-4 text-sm text-[var(--app-text-muted)]">
+                    {next.length > 0
+                      ? t(language, 'Ожидается пара для следующего боя', 'Кийинки беттештин жубу күтүлүүдө', 'Waiting for the next pair')
+                      : t(language, 'Поединков нет', 'Беттеш жок', 'No bouts')}
+                  </div>
+                )}
+                {next.length > 0 && (
+                  <div className="px-4 py-2 border-t border-[var(--app-border)] text-xs text-[var(--app-text-muted)] space-y-0.5">
+                    {next.map((n) => (
+                      <div key={n.id} className="truncate">
+                        {t(language, 'Далее', 'Кийинки', 'Next')} #{n.boutNumber}: {fullName(n.akaParticipant as Participant) || '—'} — {fullName(n.aoParticipant as Participant) || '—'}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <a
+                  href={`/?screen=tatami&t=${tn}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block px-4 py-2.5 border-t border-[var(--app-border)] text-sm text-[var(--accent)] hover:bg-[var(--app-surface-subtle)]"
+                >
+                  {t(language, 'Открыть табло на весь экран', 'Табло толук экранда', 'Open full-screen scoreboard')} →
+                </a>
+              </section>
+            );
+          })}
         </div>
       )}
     </div>

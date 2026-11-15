@@ -51,9 +51,19 @@ export interface InviteRecord {
   uses: number;
 }
 
+/** Secret key of a tatami device (secretary tablet / laptop) that may control one tatami. */
+export interface DeviceKeyRecord {
+  tatamiNumber: number;
+  label?: string;
+  createdBy: string;
+  createdAt: string;
+  expiresAt: number;
+}
+
 interface DbShape {
   events: any[] | null;
   invites: Record<string, InviteRecord>;
+  deviceKeys: Record<string, DeviceKeyRecord>;
   state: Record<string, SharedStateEntry>;
   accounts: StoredUserAccount[];
   sessions: Record<string, SessionRecord>;
@@ -73,12 +83,13 @@ function loadDb(): DbShape {
       events: Array.isArray(raw.events) ? raw.events : null,
       state: raw.state && typeof raw.state === 'object' ? raw.state : {},
       invites: raw.invites && typeof raw.invites === 'object' ? raw.invites : {},
+      deviceKeys: raw.deviceKeys && typeof raw.deviceKeys === 'object' ? raw.deviceKeys : {},
       accounts: Array.isArray(raw.accounts) ? raw.accounts : [],
       sessions: raw.sessions && typeof raw.sessions === 'object' ? raw.sessions : {},
       images: raw.images && typeof raw.images === 'object' ? raw.images : {}
     };
   } catch {
-    return { events: null, state: {}, invites: {}, accounts: [], sessions: {}, images: {} };
+    return { events: null, state: {}, invites: {}, deviceKeys: {}, accounts: [], sessions: {}, images: {} };
   }
 }
 

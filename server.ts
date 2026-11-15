@@ -3,6 +3,7 @@ import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
 import { GoogleGenAI } from '@google/genai';
 import crypto from 'crypto';
+import os from 'os';
 
 import {
   db,
@@ -36,6 +37,7 @@ app.set('trust proxy', 1);
 app.use(express.json({ limit: '10mb' }));
 
 import { UVENTEX_SCREENSHOT_EVENTS } from './src/data/uventexEventsData';
+import { SAMPLE_BOUTS } from './src/data/sampleTournamentData';
 
 const hasGeminiKey = () => {
   const k = process.env.GEMINI_API_KEY;
@@ -917,7 +919,167 @@ app.put('/api/state/:key', (req: Request, res: Response) => {
     updatedBy: user.id
   };
   saveDb();
+  broadcast({ type: 'state', key, version: db.state[key].version });
   res.json(stateEnvelope(key));
+});
+
+// ========================================================
+// LIVE UPDATES (Server-Sent Events) + PER-BOUT SAVING + TATAMI DEVICE KEYS
+// Every change is pushed at once to all open screens (scoreboards, spectator
+// displays, warm-up area). Each bout is saved on its own, so several tatami
+// can work at the same time without overwriting each other.
+// ========================================================
+const streamClients = new Set<Response>();
+
+function broadcast(event: Record<string, unknown>) {
+  const payload = `data: ${JSON.stringify(event)}\n\n`;
+  for (const client of streamClients) {
+    try {
+      client.write(payload);
+    } catch {
+      streamClients.delete(client);
+    }
+  }
+}
+
+app.get('/api/stream', (req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders?.();
+  res.write(`data: ${JSON.stringify({ type: 'hello' })}\n\n`);
+  streamClients.add(res);
+  const ping = setInterval(() => res.write(': ping\n\n'), 25000);
+  req.on('close', () => {
+    clearInterval(ping);
+    streamClients.delete(res);
+  });
+});
+
+const BOUT_WRITERS = new Set(['admin', 'chief_referee', 'tatami_referee', 'scorekeeper']);
+
+function deviceKeyFor(req: Request) {
+  const key = String(req.headers['x-device-key'] || '');
+  const record = key ? db.deviceKeys[key] : undefined;
+  if (!record || record.expiresAt < Date.now()) return null;
+  return record;
+}
+
+/**
+ * Upserts bouts by id. Officials may change any bout; a tatami device key may only
+ * change bouts of its tatami (plus the next-round / repechage bouts its result fills).
+ * `replaceAll` (draw, reset) is for officials only.
+ */
+app.put('/api/bouts', (req: Request, res: Response) => {
+  const user = getSessionUser(req);
+  const device = deviceKeyFor(req);
+  const official = !!user && BOUT_WRITERS.has(user.role);
+  if (!official && !device) {
+    res.status(user ? 403 : 401).json({ error: 'Нет права изменять бои. Войдите как судья/секретарь или откройте пульт по ссылке татами.' });
+    return;
+  }
+  const { bouts, replaceAll } = req.body || {};
+  if (!Array.isArray(bouts) || bouts.some((b: any) => !b || typeof b.id !== 'string')) {
+    res.status(400).json({ error: 'Ожидается список боёв.' });
+    return;
+  }
+  if (replaceAll && !official) {
+    res.status(403).json({ error: 'Полная замена сетки доступна только судьям и организатору.' });
+    return;
+  }
+
+  const current: any[] = Array.isArray(db.state.bouts?.value) ? (db.state.bouts!.value as any[]) : [];
+  let next: any[];
+  if (replaceAll) {
+    next = bouts;
+  } else {
+    if (device) {
+      // The device must be touching a bout of its own tatami; other changed bouts must be
+      // in the same categories (winner moved to the next round, repechage).
+      const own = bouts.filter((b: any) => Number(b.tatamiNumber) === device.tatamiNumber);
+      const cats = new Set(own.map((b: any) => b.categoryId));
+      if (own.length === 0 || bouts.some((b: any) => !cats.has(b.categoryId))) {
+        res.status(403).json({ error: `Этот пульт управляет только татами №${device.tatamiNumber}.` });
+        return;
+      }
+    }
+    const byId = new Map(bouts.map((b: any) => [b.id, b]));
+    next = current.map((b) => (byId.has(b.id) ? byId.get(b.id) : b));
+    for (const b of bouts) if (!current.some((c) => c.id === b.id)) next.push(b);
+  }
+
+  const version = (db.state.bouts?.version ?? 0) + 1;
+  db.state.bouts = { version, value: next, updatedAt: new Date().toISOString(), updatedBy: user?.id || `device:${device!.tatamiNumber}` };
+  saveDb();
+  broadcast({ type: 'state', key: 'bouts', version });
+  res.json({ success: true, version });
+});
+
+/** Tells a device what it is allowed to do (used by the tablet console). */
+app.get('/api/device', (req: Request, res: Response) => {
+  const device = deviceKeyFor(req);
+  if (!device) {
+    res.status(401).json({ error: 'Ключ пульта недействителен или истёк. Попросите организатора новый QR-код.' });
+    return;
+  }
+  res.json({ tatamiNumber: device.tatamiNumber, expiresAt: device.expiresAt });
+});
+
+app.get('/api/admin/device-keys', (req: Request, res: Response) => {
+  if (!isRequestAuthorizedAdmin(req)) {
+    res.status(403).json({ error: 'Доступно только Администратору.' });
+    return;
+  }
+  const now = Date.now();
+  res.json({
+    keys: Object.entries(db.deviceKeys)
+      .filter(([, k]) => k.expiresAt > now)
+      .map(([key, k]) => ({ key, ...k }))
+  });
+});
+
+app.post('/api/admin/device-keys', (req: Request, res: Response) => {
+  const admin = getSessionUser(req);
+  if (!admin || admin.role !== 'admin') {
+    res.status(403).json({ error: 'Доступно только Администратору.' });
+    return;
+  }
+  const tatamiNumber = Number(req.body?.tatamiNumber);
+  if (!Number.isInteger(tatamiNumber) || tatamiNumber < 1 || tatamiNumber > 20) {
+    res.status(400).json({ error: 'Неверный номер татами.' });
+    return;
+  }
+  const hours = Math.min(Math.max(Number(req.body?.hours) || 24, 1), 24 * 7);
+  // One active key per tatami: creating a new one revokes the old one.
+  for (const [k, v] of Object.entries(db.deviceKeys)) if (v.tatamiNumber === tatamiNumber) delete db.deviceKeys[k];
+  const key = crypto.randomBytes(16).toString('base64url');
+  db.deviceKeys[key] = { tatamiNumber, createdBy: admin.id, createdAt: new Date().toISOString(), expiresAt: Date.now() + hours * 3600_000 };
+  saveDb();
+  res.status(201).json({ key, ...db.deviceKeys[key] });
+});
+
+app.delete('/api/admin/device-keys/:key', (req: Request, res: Response) => {
+  if (!isRequestAuthorizedAdmin(req)) {
+    res.status(403).json({ error: 'Доступно только Администратору.' });
+    return;
+  }
+  delete db.deviceKeys[req.params.key];
+  saveDb();
+  res.json({ success: true });
+});
+
+/** LAN addresses of this computer, so phones and TVs in the hall can open the screens. */
+app.get('/api/network', (req: Request, res: Response) => {
+  if (!isRequestAuthorizedAdmin(req)) {
+    res.status(403).json({ error: 'Доступно только Администратору.' });
+    return;
+  }
+  const addresses: string[] = [];
+  for (const list of Object.values(os.networkInterfaces())) {
+    for (const ni of list || []) if (ni.family === 'IPv4' && !ni.internal) addresses.push(`http://${ni.address}:${PORT}`);
+  }
+  res.json({ addresses });
 });
 
 // Comprehensive Karate Domain Fallback Engine
@@ -1199,6 +1361,11 @@ app.post('/api/ai/federation-report', aiLimiter, async (req: Request, res: Respo
 async function startServer() {
   const isProduction = IS_PRODUCTION;
   ensureAdminAccount(isProduction);
+  // Bouts are saved one by one, so the server must hold the full list from the start.
+  if (!db.state.bouts) {
+    db.state.bouts = { version: 1, value: JSON.parse(JSON.stringify(SAMPLE_BOUTS)), updatedAt: new Date().toISOString(), updatedBy: 'seed' };
+    saveDb();
+  }
   seedDevDemoAccounts();
 
   // Support official Uventex /GWTClient.html?&locale=ru#home entry point URLs
