@@ -59,9 +59,9 @@ interface MultiStepRegistrationProps {
 }
 
 const POPULAR_COUNTRIES = [
-  'Россия',
+  'Кыргызстан',
   'Казахстан',
-  'Беларусь',
+  'Узбекистан',
   'Армения',
   'Узбекистан',
   'Азербайджан',
@@ -118,8 +118,8 @@ export const MultiStepRegistration: React.FC<MultiStepRegistrationProps> = ({
 
   // Affiliation (Mandatory for WKF smart seeding separation)
   const [clubId, setClubId] = useState(clubs[0]?.id || 'c1');
-  const [city, setCity] = useState(clubs[0]?.city || 'Москва');
-  const [country, setCountry] = useState('Россия');
+  const [city, setCity] = useState(clubs[0]?.city || 'Бишкек');
+  const [country, setCountry] = useState('Кыргызстан');
   const [customClubName, setCustomClubName] = useState('');
   const [isCustomClub, setIsCustomClub] = useState(false);
 
@@ -874,7 +874,7 @@ export const MultiStepRegistration: React.FC<MultiStepRegistrationProps> = ({
                       setLastName(e.target.value);
                       if (errors.lastName) setErrors((prev) => ({ ...prev, lastName: '' }));
                     }}
-                    placeholder="Иванов"
+                    placeholder="Абдыкадыров"
                     className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border text-xs text-white placeholder:text-slate-500 focus:outline-none transition-all ${
                       errors.lastName ? 'border-rose-500' : 'border-slate-700 focus:border-blue-500'
                     }`}
@@ -1045,7 +1045,7 @@ export const MultiStepRegistration: React.FC<MultiStepRegistrationProps> = ({
                       setCity(e.target.value);
                       if (errors.city) setErrors((prev) => ({ ...prev, city: '' }));
                     }}
-                    placeholder="Москва"
+                    placeholder="Бишкек"
                     className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border text-xs text-white placeholder:text-slate-500 focus:outline-none transition-all ${
                       errors.city ? 'border-rose-500' : 'border-slate-700 focus:border-blue-500'
                     }`}
@@ -1081,7 +1081,7 @@ export const MultiStepRegistration: React.FC<MultiStepRegistrationProps> = ({
                     type="text"
                     value={customClubName}
                     onChange={(e) => setCustomClubName(e.target.value)}
-                    placeholder="Например, СК «Бусидо»"
+                    placeholder="Например, СК «Ала-Тоо»"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-blue-500 text-xs text-white focus:outline-none transition-all"
                   />
                 </div>

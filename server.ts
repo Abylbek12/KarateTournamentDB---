@@ -342,7 +342,7 @@ app.get('/api/events/:id/live-scoring', (req: Request, res: Response) => {
     activeMats: [
       { ring: 1, label: 'ПТ / 1', category: 'KO-10 Kobudo 6-7 yrs', timeRemaining: '06:30', status: 'upcoming', aka: { name: 'S. Robinson', score: 0 }, ao: { name: 'C. Martinez', score: 0 } },
       { ring: 2, label: 'ПТ / 2', category: 'KO-51 Kobudo 14 yrs', timeRemaining: '06:30', status: 'upcoming', aka: { name: 'D. Walker', score: 0 }, ao: { name: 'J. Bennett', score: 0 } },
-      { ring: 3, label: 'ПТ / 3', category: 'EF-25 Extreme Forms 18+', timeRemaining: '06:30', status: 'upcoming', aka: { name: 'T. Henderson', score: 0 }, ao: { name: 'R. Cooper', score: 0 } },
+      { ring: 3, label: 'ПТ / 3', category: 'EF-25 Extreme Forms 18+', timeRemaining: '06:30', status: 'upcoming', aka: { name: 'Т. Бакиров', score: 0 }, ao: { name: 'R. Cooper', score: 0 } },
       { ring: 4, label: 'ПТ / 4', category: 'HC-1 Para Divisions', timeRemaining: '06:30', status: 'upcoming', aka: { name: 'L. Young', score: 0 }, ao: { name: 'E. Hughes', score: 0 } }
     ]
   });
@@ -361,19 +361,19 @@ app.get('/api/events/:id/results', (req: Request, res: Response) => {
       {
         category: 'Мужчины 18+ Кумитэ -75 кг',
         finishers: [
-          { place: '1st', name: 'Иванов Артем', club: 'СК "Самурай"', country: 'Россия', points: 30 },
-          { place: '2nd', name: 'Петров Дмитрий', club: 'Додзё "Бусидо"', country: 'Россия', points: 20 },
-          { place: '3rd', name: 'James Miller', club: 'Tigers Karate Dojo', country: 'United States', points: 10 },
-          { place: '3rd', name: 'Marco Rossi', club: 'Milano Martial Arts', country: 'Italy', points: 10 }
+          { place: '1st', name: 'Абдыкадыров Адилет', club: 'СК "Тигр"', country: 'Кыргызстан', points: 30 },
+          { place: '2nd', name: 'Орозбеков Бакыт', club: 'Клуб "Ала-Тоо"', country: 'Кыргызстан', points: 20 },
+          { place: '3rd', name: 'Токтосунов Эмир', club: 'СК "Тигр"', country: 'Кыргызстан', points: 10 },
+          { place: '3rd', name: 'Исаков Бектур', club: 'СК "Манас"', country: 'Кыргызстан', points: 10 }
         ]
       },
       {
         category: 'Женщины 18+ Кумитэ -61 кг',
         finishers: [
-          { place: '1st', name: 'Смирнова Екатерина', club: 'СШОР "Олимп"', country: 'Россия', points: 30 },
-          { place: '2nd', name: 'Emily Clark', club: 'Boston MA Academy', country: 'United States', points: 20 },
-          { place: '3rd', name: 'Ковалева Анна', club: 'ЦБИ "Восток"', country: 'Россия', points: 10 },
-          { place: '3rd', name: 'Olena Shevchenko', club: 'Kyiv Budo Center', country: 'Ukraine', points: 10 }
+          { place: '1st', name: 'Жумабекова Айгерим', club: 'СК "Манас"', country: 'Кыргызстан', points: 30 },
+          { place: '2nd', name: 'Мамытова Айзада', club: 'Клуб "Ала-Тоо"', country: 'Кыргызстан', points: 20 },
+          { place: '3rd', name: 'Мамытова Анна', club: 'СК "Тянь-Шань"', country: 'Кыргызстан', points: 10 },
+          { place: '3rd', name: 'Касымова Айпери', club: 'Клуб "Барс"', country: 'Кыргызстан', points: 10 }
         ]
       }
     ],
@@ -387,11 +387,11 @@ app.get('/api/studios', (req: Request, res: Response) => {
   const q = (req.query.q as string || '').toLowerCase().trim();
   
   const studios = [
-    { id: 'c1', name: 'СК "Самурай"', city: 'Москва', headCoach: 'Алексеев Владимир Сергеевич', phone: '+7 (495) 123-45-67', studentCount: 160, isVerified: true },
-    { id: 'c2', name: 'Додзё "Бусидо"', city: 'Санкт-Петербург', headCoach: 'Ковалев Михаил Дмитриевич', phone: '+7 (812) 987-65-43', studentCount: 125, isVerified: true },
-    { id: 'c3', name: 'СШОР "Олимп"', city: 'Казань', headCoach: 'Хабибуллин Рустем Ильнурович', phone: '+7 (843) 555-12-34', studentCount: 210, isVerified: true },
-    { id: 'c4', name: 'Клуб "Торнадо"', city: 'Екатеринбург', headCoach: 'Григорьев Андрей Павлович', phone: '+7 (343) 222-33-44', studentCount: 95, isVerified: true },
-    { id: 'c5', name: 'ЦБИ "Восток"', city: 'Новосибирск', headCoach: 'Морозов Сергей Николаевич', phone: '+7 (383) 777-88-99', studentCount: 110, isVerified: true }
+    { id: 'c1', name: 'СК "Тигр"', city: 'Бишкек', headCoach: 'Асанов Бакыт Таалайбекович', phone: '+996 (495) 123-45-67', studentCount: 160, isVerified: true },
+    { id: 'c2', name: 'Клуб "Ала-Тоо"', city: 'Ош', headCoach: 'Мамытов Улан Кубанычбекович', phone: '+996 (812) 987-65-43', studentCount: 125, isVerified: true },
+    { id: 'c3', name: 'СК "Манас"', city: 'Каракол', headCoach: 'Токтогулов Эрлан Маратович', phone: '+996 (843) 555-12-34', studentCount: 210, isVerified: true },
+    { id: 'c4', name: 'Клуб "Барс"', city: 'Кант', headCoach: 'Исаков Нурбек Жыргалбекович', phone: '+996 (343) 222-33-44', studentCount: 95, isVerified: true },
+    { id: 'c5', name: 'СК "Тянь-Шань"', city: 'Джалал-Абад', headCoach: 'Сулайманов Азамат Бакытович', phone: '+996 (383) 777-88-99', studentCount: 110, isVerified: true }
   ];
 
   let filtered = studios;
@@ -409,14 +409,14 @@ app.get('/api/rankings', (_req: Request, res: Response) => {
   res.json({
     season: '2026',
     athletes: [
-      { rank: 1, name: 'Иванов Артем', club: 'СК "Самурай"', points: 480, gold: 8, silver: 2, bronze: 1 },
-      { rank: 2, name: 'Петров Дмитрий', club: 'Додзё "Бусидо"', points: 395, gold: 6, silver: 3, bronze: 2 },
-      { rank: 3, name: 'Смирнова Екатерина', club: 'СШОР "Олимп"', points: 370, gold: 6, silver: 2, bronze: 1 }
+      { rank: 1, name: 'Абдыкадыров Адилет', club: 'СК "Тигр"', points: 480, gold: 8, silver: 2, bronze: 1 },
+      { rank: 2, name: 'Орозбеков Бакыт', club: 'Клуб "Ала-Тоо"', points: 395, gold: 6, silver: 3, bronze: 2 },
+      { rank: 3, name: 'Жумабекова Айгерим', club: 'СК "Манас"', points: 370, gold: 6, silver: 2, bronze: 1 }
     ],
     clubs: [
-      { rank: 1, name: 'СК "Самурай"', points: 1450, medals: 51 },
-      { rank: 2, name: 'Tigers Karate Dojo', points: 1220, medals: 45 },
-      { rank: 3, name: 'Додзё "Бусидо"', points: 1150, medals: 41 }
+      { rank: 1, name: 'СК "Тигр"', points: 1450, medals: 51 },
+      { rank: 2, name: 'СК "Тигр"', points: 1220, medals: 45 },
+      { rank: 3, name: 'Клуб "Ала-Тоо"', points: 1150, medals: 41 }
     ]
   });
 });
@@ -433,8 +433,8 @@ const SELF_SERVICE_ROLES = new Set(['athlete', 'club_coach']);
 function seedDevDemoAccounts() {
   if (IS_PRODUCTION) return;
   const demo = [
-    { email: 'coach.smr@samurai.club', password: 'Coach2026!', fullName: 'Алексеев Владимир Сергеевич', role: 'club_coach', clubName: 'СК "Самурай"' },
-    { email: 'chief.referee@karate-fed.ru', password: 'Pass2026!', fullName: 'Белов Артем Геннадьевич', role: 'chief_referee', licenseCode: 'INT-REF-0104' }
+    { email: 'coach.smr@samurai.club', password: 'Coach2026!', fullName: 'Асанов Бакыт Таалайбекович', role: 'club_coach', clubName: 'СК "Тигр"' },
+    { email: 'chief.referee@karate-fed.ru', password: 'Pass2026!', fullName: 'Эсенбаев Адилет Геннадьевич', role: 'chief_referee', licenseCode: 'INT-REF-0104' }
   ];
   for (const d of demo) {
     if (findAccountByEmail(d.email)) continue;
@@ -624,7 +624,17 @@ app.post('/api/auth/login', authLimiter, (req: Request, res: Response) => {
 
 // 5. Registration (self-service roles only) — also opens a session.
 app.post('/api/auth/register', authLimiter, (req: Request, res: Response) => {
-  const { fullName, email, phone, password, role } = req.body || {};
+  const { fullName, email, phone, password, role, inviteToken } = req.body || {};
+
+  // An invite link fixes the role (e.g. referee). Without one, only self-service roles are possible.
+  let invite: ReturnType<typeof findValidInvite> = null;
+  if (inviteToken) {
+    invite = findValidInvite(String(inviteToken));
+    if (!invite) {
+      res.status(400).json({ error: 'Ссылка-приглашение недействительна или истекла. Попросите администратора новую.' });
+      return;
+    }
+  }
 
   if (!fullName || typeof fullName !== 'string' || !fullName.trim()) {
     res.status(400).json({ error: 'Пожалуйста, укажите ваши имя и фамилию.' });
@@ -649,13 +659,17 @@ app.post('/api/auth/register', authLimiter, (req: Request, res: Response) => {
     passwordHash: hashPassword(password),
     fullName: fullName.trim().slice(0, 120),
     phone: phone ? String(phone).trim().slice(0, 40) : undefined,
-    role: SELF_SERVICE_ROLES.has(role) ? role : 'club_coach',
+    role: invite ? invite.record.role : SELF_SERVICE_ROLES.has(role) ? role : 'athlete',
     provider: 'credentials',
     isVerified: true,
     confirmedAt: new Date().toISOString(),
     createdAt: new Date().toISOString()
   };
   addAccount(account);
+  if (invite) {
+    invite.record.uses += 1;
+    saveDb();
+  }
   createSession(req, res, account.id);
 
   res.json({ success: true, requiresProfileConfirmation: true, user: publicUser(account) });
@@ -699,6 +713,74 @@ app.get('/api/auth/me', (req: Request, res: Response) => {
 app.post('/api/auth/logout', (req: Request, res: Response) => {
   destroySession(req, res);
   res.json({ success: true, message: 'Сессия завершена' });
+});
+
+// ---------------- Invite links ----------------
+// Staff roles are never self-selected: the admin creates a secret, expiring link for them.
+const INVITE_ROLES = new Set(['tatami_referee', 'scorekeeper', 'chief_referee', 'medical_officer', 'club_coach']);
+
+function findValidInvite(token: string) {
+  const record = db.invites[token];
+  if (!record) return null;
+  if (record.expiresAt < Date.now() || record.uses >= record.maxUses) return null;
+  return { token, record };
+}
+
+app.get('/api/invites/:token', (req: Request, res: Response) => {
+  const invite = findValidInvite(req.params.token);
+  if (!invite) {
+    res.status(404).json({ valid: false, error: 'Ссылка-приглашение недействительна или истекла.' });
+    return;
+  }
+  res.json({ valid: true, role: invite.record.role, expiresAt: invite.record.expiresAt });
+});
+
+app.get('/api/admin/invites', (req: Request, res: Response) => {
+  if (!isRequestAuthorizedAdmin(req)) {
+    res.status(403).json({ error: 'Доступно только Администратору.' });
+    return;
+  }
+  const now = Date.now();
+  const invites = Object.entries(db.invites)
+    .map(([token, r]) => ({ token, ...r, active: r.expiresAt > now && r.uses < r.maxUses }))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  res.json({ invites });
+});
+
+app.post('/api/admin/invites', (req: Request, res: Response) => {
+  const admin = getSessionUser(req);
+  if (!admin || admin.role !== 'admin') {
+    res.status(403).json({ error: 'Доступно только Администратору.' });
+    return;
+  }
+  const { role, note, days, maxUses } = req.body || {};
+  if (!INVITE_ROLES.has(role)) {
+    res.status(400).json({ error: 'Для этой роли приглашение создать нельзя.' });
+    return;
+  }
+  const token = crypto.randomBytes(18).toString('base64url');
+  const lifeDays = Math.min(Math.max(Number(days) || 7, 1), 60);
+  db.invites[token] = {
+    role,
+    note: note ? String(note).slice(0, 120) : undefined,
+    createdBy: admin.id,
+    createdAt: new Date().toISOString(),
+    expiresAt: Date.now() + lifeDays * 24 * 60 * 60 * 1000,
+    maxUses: Math.min(Math.max(Number(maxUses) || 1, 1), 100),
+    uses: 0
+  };
+  saveDb();
+  res.status(201).json({ token, ...db.invites[token] });
+});
+
+app.delete('/api/admin/invites/:token', (req: Request, res: Response) => {
+  if (!isRequestAuthorizedAdmin(req)) {
+    res.status(403).json({ error: 'Доступно только Администратору.' });
+    return;
+  }
+  delete db.invites[req.params.token];
+  saveDb();
+  res.json({ success: true });
 });
 
 // 10. Admin: list users and assign roles (referees, medical officers, etc.)
@@ -1051,7 +1133,7 @@ app.post('/api/ai/federation-report', aiLimiter, async (req: Request, res: Respo
 
 Данные турнира:
 - Название: ${tournamentTitle || 'Открытый Кубок по каратэ WKF 2026'}
-- Главный судья: ${chiefReferee || 'Соколов В.И.'}
+- Главный судья: ${chiefReferee || 'Турдубаев В.И.'}
 - Количество боев: ${stats?.totalBouts || 148}
 - Всего баллов: ${stats?.totalPoints || 612}
 - Доля Yuko: ${stats?.yukoPct || 65}%

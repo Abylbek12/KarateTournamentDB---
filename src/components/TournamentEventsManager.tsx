@@ -395,9 +395,9 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
       setTitle(tr('Юношеский турнир «Надежды Каратэ» U10-U16', '«Каратэ Үмүттөрү» U10-U16 өспүрүмдөр мелдеши', 'Youth Karate Hopes Open U10-U16'));
       setOrganization('Youth Karate Federation');
       setRulesType('wkf');
-      setVenueName(tr('Дворец Единоборств «Олимп»', '«Олимп» Мушташ Өнөрү Ордосу', 'Olymp Combat Sports Palace'));
-      setCity(tr('Москва', 'Москва', 'Moscow'));
-      setCountry(tr('Россия', 'Россия', 'Russia'));
+      setVenueName(tr('Дворец Единоборств «Манас»', '«Манас» Мушташ Өнөрү Ордосу', 'Olymp Combat Sports Palace'));
+      setCity(tr('Бишкек', 'Бишкек', 'Bishkek'));
+      setCountry(tr('Кыргызстан', 'Кыргызстан', 'Kyrgyzstan'));
       setStartDate('2027-02-14');
       setEndDate('2027-02-15');
       setRegistrationDeadline('2027-02-07 18:00');

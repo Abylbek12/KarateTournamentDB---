@@ -56,21 +56,21 @@ export const StudiosView: React.FC<StudiosPortalProps> = ({
   const studiosData = [
     {
       id: 'c1',
-      cityKey: 'Москва',
+      cityKey: 'Бишкек',
       name: tr(
-        'СК "Самурай" — Центр Спортивного Каратэ WKF',
-        'СК "Самурай" — WKF Спорттук Каратэ Борбору',
-        'SC "Samurai" — WKF Sport Karate Center'
+        'СК "Тигр" — Центр Спортивного Каратэ WKF',
+        'СК "Тигр" — WKF Спорттук Каратэ Борбору',
+        'SC "Tiger" — WKF Sport Karate Center'
       ),
-      city: tr('Москва', 'Москва', 'Moscow'),
+      city: tr('Бишкек', 'Бишкек', 'Bishkek'),
       address: tr(
-        'Ленинградский проспект, 39, стр. 1 (СК ЦСКА)',
-        'Ленинград проспектиси, 39, 1-к. (СК ЦСКА)',
-        '39 Leningradsky Ave, Bldg 1 (CSKA Arena)'
+        'пр. Чуй, 100 (пример адреса)',
+        'Чүй пр., 100 (дарек үлгүсү)',
+        '100 Chuy Ave (example address)'
       ),
-      headCoach: tr('Алексеев Владимир Сергеевич', 'Алексеев Владимир Сергеевич', 'Vladimir Alekseev'),
-      rank: tr('5 Дан WKF, Заслуженный тренер России', '5 Дан WKF, Россиянын эмгек сиңирген машыктыруучусу', '5th Dan WKF, Honored Coach'),
-      phone: '+7 (495) 123-45-67',
+      headCoach: tr('Асанов Бакыт Таалайбекович', 'Асанов Бакыт Таалайбекович', 'Vladimir Asanov'),
+      rank: tr('5 Дан WKF, Заслуженный тренер Кыргызстана', '5 Дан WKF, Россиянын эмгек сиңирген машыктыруучусу', '5th Dan WKF, Honored Coach'),
+      phone: '+996 (495) 123-45-67',
       email: 'info@samurai-karate.ru',
       rating: 4.9,
       reviewsCount: 84,
@@ -87,26 +87,26 @@ export const StudiosView: React.FC<StudiosPortalProps> = ({
         'Дш, Шр, Жм: 17:00 (балдар), 19:30 (чоңдор)',
         'Mon, Wed, Fri: 17:00 (Kids), 19:30 (Adults)'
       ),
-      feeMonth: tr('7 500 ₽/мес', '7 500 ₽/ай', '7,500 RUB/mo'),
+      feeMonth: tr('7 500 сом/мес', '7 500 сом/ай', '7,500 RUB/mo'),
       isVerified: true
     },
     {
       id: 'c2',
-      cityKey: 'Санкт-Петербург',
+      cityKey: 'Ош',
       name: tr(
-        'Додзё "Бусидо" — Академия Традиционных Единоборств',
-        '"Бусидо" Додзёсу — Салттуу Жекпе-жек Академиясы',
-        'Dojo "Bushido" — Traditional Martial Arts Academy'
+        'Клуб "Ала-Тоо" — Академия Традиционных Единоборств',
+        '"Ала-Тоо" Додзёсу — Салттуу Жекпе-жек Академиясы',
+        'Dojo "Ala-Too" — Traditional Martial Arts Academy'
       ),
-      city: tr('Санкт-Петербург', 'Санкт-Петербург', 'Saint Petersburg'),
+      city: tr('Ош', 'Ош', 'Osh'),
       address: tr(
-        'Каменноостровский проспект, 42',
-        'Каменноостровский проспектиси, 42',
-        '42 Kamennoostrovsky Ave'
+        'ул. Ленина, 25 (пример адреса)',
+        'Ленин көч., 25 (дарек үлгүсү)',
+        '25 Lenin St (example address)'
       ),
-      headCoach: tr('Ковалев Михаил Дмитриевич', 'Ковалев Михаил Дмитриевич', 'Mikhail Kovalev'),
+      headCoach: tr('Мамытов Улан Кубанычбекович', 'Мамытов Улан Кубанычбекович', 'Mikhail Kovalev'),
       rank: tr('6 Дан Сётокан SKIF, СВК', '6 Дан Сётокан SKIF, Эл аралык калыс', '6th Dan Shotokan SKIF, Chief Referee'),
-      phone: '+7 (812) 987-65-43',
+      phone: '+996 (812) 987-65-43',
       email: 'dojo@bushido-spb.ru',
       rating: 4.8,
       reviewsCount: 62,
@@ -123,26 +123,26 @@ export const StudiosView: React.FC<StudiosPortalProps> = ({
         'Шш, Бш, Иш: 18:00 (өспүрүмдөр), 20:00 (чеберлер)',
         'Tue, Thu, Sat: 18:00 (Juniors), 20:00 (Masters)'
       ),
-      feeMonth: tr('6 800 ₽/мес', '6 800 ₽/ай', '6,800 RUB/mo'),
+      feeMonth: tr('6 800 сом/мес', '6 800 сом/ай', '6,800 RUB/mo'),
       isVerified: true
     },
     {
       id: 'c3',
-      cityKey: 'Казань',
+      cityKey: 'Каракол',
       name: tr(
-        'СШОР "Олимп" — Центр Олимпийского Резерва',
-        '"Олимп" СШОР — Олимпиадалык Резерв Борбору',
-        'Olympic Reserve Center "Olymp"'
+        'СК "Манас" — Центр Олимпийского Резерва',
+        '"Манас" СШОР — Олимпиадалык Резерв Борбору',
+        'Olympic Reserve Center "Manas"'
       ),
-      city: tr('Казань', 'Казань', 'Kazan'),
+      city: tr('Каракол', 'Каракол', 'Karakol'),
       address: tr(
-        'ул. Фатыха Амирхана, 1г (Дворец Единоборств)',
-        'Фатых Амирхан көч., 1г (Жекпе-жек сарайы)',
-        '1G Fatykh Amirkhan St (Martial Arts Palace)'
+        'ул. Абдрахманова, 10 (пример адреса)',
+        'Абдрахманов көч., 10 (дарек үлгүсү)',
+        '10 Abdrakhmanov St (example address)'
       ),
-      headCoach: tr('Хабибуллин Рустем Ильнурович', 'Хабибуллин Рустем Ильнурович', 'Rustem Khabibullin'),
+      headCoach: tr('Токтогулов Эрлан Маратович', 'Токтогулов Эрлан Маратович', 'Rustem Khabibullin'),
       rank: tr('Мастер спорта международного класса (МСМК)', 'Эл аралык класстагы спорт чебери', 'International Master of Sports'),
-      phone: '+7 (843) 555-12-34',
+      phone: '+996 (843) 555-12-34',
       email: 'olymp.kazan@sport.tatar.ru',
       rating: 4.9,
       reviewsCount: 95,
@@ -159,26 +159,26 @@ export const StudiosView: React.FC<StudiosPortalProps> = ({
         'Күн сайын: эртең мененки жана кечки машыгуулар',
         'Daily: morning and evening training sessions'
       ),
-      feeMonth: tr('Бесплатно (Бюджет) / 4 500 ₽', 'Акысыз (Бюджет) / 4 500 ₽', 'Free (Scholarship) / 4,500 RUB'),
+      feeMonth: tr('Бесплатно (Бюджет) / 4 500 сом', 'Акысыз (Бюджет) / 4 500 сом', 'Free (Scholarship) / 4,500 RUB'),
       isVerified: true
     },
     {
       id: 'c4',
-      cityKey: 'Екатеринбург',
+      cityKey: 'Кант',
       name: tr(
-        'Клуб Единоборств "Торнадо"',
-        '"Торнадо" Жекпе-жек Клубу',
-        'Martial Arts Club "Tornado"'
+        'Клуб Единоборств "Барс"',
+        '"Барс" Жекпе-жек Клубу',
+        'Martial Arts Club "Bars"'
       ),
-      city: tr('Екатеринбург', 'Екатеринбург', 'Yekaterinburg'),
+      city: tr('Кант', 'Кант', 'Kant'),
       address: tr(
-        'ул. Радищева, 28 (ТЦ Гермес)',
-        'Радищев көч., 28 (Гермес СБ)',
-        '28 Radishcheva St (Hermes Center)'
+        'ул. Манаса, 5 (пример адреса)',
+        'Манас көч., 5 (дарек үлгүсү)',
+        '5 Manas St (example address)'
       ),
-      headCoach: tr('Григорьев Андрей Павлович', 'Григорьев Андрей Павлович', 'Andrey Grigoriev'),
+      headCoach: tr('Исаков Нурбек Жыргалбекович', 'Исаков Нурбек Жыргалбекович', 'Andrey Grigoriev'),
       rank: tr('4 Дан JKA, Судья Международной категории', '4 Дан JKA, Эл аралык категориядагы калыс', '4th Dan JKA, International Referee'),
-      phone: '+7 (343) 222-33-44',
+      phone: '+996 (343) 222-33-44',
       email: 'tornado@ekb-karate.ru',
       rating: 4.7,
       reviewsCount: 48,
@@ -195,26 +195,26 @@ export const StudiosView: React.FC<StudiosPortalProps> = ({
         'Дш, Шр, Жм: 16:30, 18:30, 20:30',
         'Mon, Wed, Fri: 16:30, 18:30, 20:30'
       ),
-      feeMonth: tr('5 500 ₽/мес', '5 500 ₽/ай', '5,500 RUB/mo'),
+      feeMonth: tr('5 500 сом/мес', '5 500 сом/ай', '5,500 RUB/mo'),
       isVerified: true
     },
     {
       id: 'c5',
-      cityKey: 'Новосибирск',
+      cityKey: 'Джалал-Абад',
       name: tr(
-        'ЦБИ "Восток" — Центр Боевых Искусств',
-        '"Восток" ЖӨБ — Согуш Өнөрлөр Борбору',
-        '"Vostok" Martial Arts Center'
+        'СК "Тянь-Шань" — Центр Боевых Искусств',
+        '"Тянь-Шань" ЖӨБ — Согуш Өнөрлөр Борбору',
+        '"Tian-Shan" Martial Arts Center'
       ),
-      city: tr('Новосибирск', 'Новосибирск', 'Novosibirsk'),
+      city: tr('Джалал-Абад', 'Джалал-Абад', 'Jalal-Abad'),
       address: tr(
-        'Красный проспект, 163',
-        'Красный проспектиси, 163',
-        '163 Krasny Ave'
+        'ул. Токтогула, 12 (пример адреса)',
+        'Токтогул көч., 12 (дарек үлгүсү)',
+        '12 Toktogul St (example address)'
       ),
-      headCoach: tr('Морозов Сергей Николаевич', 'Морозов Сергей Николаевич', 'Sergey Morozov'),
+      headCoach: tr('Сулайманов Азамат Бакытович', 'Сулайманов Азамат Бакытович', 'Sergey Morozov'),
       rank: tr('5 Дан Сито-рю, Чемпион Европы', '5 Дан Сито-рю, Европа Чемпиону', '5th Dan Shito-Ryu, European Champion'),
-      phone: '+7 (383) 777-88-99',
+      phone: '+996 (383) 777-88-99',
       email: 'vostok@budo-nsk.ru',
       rating: 4.8,
       reviewsCount: 53,
@@ -231,7 +231,7 @@ export const StudiosView: React.FC<StudiosPortalProps> = ({
         'Шш, Бш, Иш: 17:30, 19:30',
         'Tue, Thu, Sat: 17:30, 19:30'
       ),
-      feeMonth: tr('5 900 ₽/мес', '5 900 ₽/ай', '5,900 RUB/mo'),
+      feeMonth: tr('5 900 сом/мес', '5 900 сом/ай', '5,900 RUB/mo'),
       isVerified: true
     }
   ];
@@ -353,11 +353,11 @@ export const StudiosView: React.FC<StudiosPortalProps> = ({
                 className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 font-medium focus:outline-none focus:border-sky-500 cursor-pointer"
               >
                 <option value="all">{tr('Все города', 'Бардык шаарлар', 'All Cities')}</option>
-                <option value="Москва">{tr('Москва', 'Москва', 'Moscow')}</option>
-                <option value="Санкт-Петербург">{tr('Санкт-Петербург', 'Санкт-Петербург', 'Saint Petersburg')}</option>
-                <option value="Казань">{tr('Казань', 'Казань', 'Kazan')}</option>
-                <option value="Екатеринбург">{tr('Екатеринбург', 'Екатеринбург', 'Yekaterinburg')}</option>
-                <option value="Новосибирск">{tr('Новосибирск', 'Новосибирск', 'Novosibirsk')}</option>
+                <option value="Бишкек">{tr('Бишкек', 'Бишкек', 'Bishkek')}</option>
+                <option value="Ош">{tr('Ош', 'Ош', 'Osh')}</option>
+                <option value="Каракол">{tr('Каракол', 'Каракол', 'Karakol')}</option>
+                <option value="Кант">{tr('Кант', 'Кант', 'Kant')}</option>
+                <option value="Джалал-Абад">{tr('Джалал-Абад', 'Джалал-Абад', 'Jalal-Abad')}</option>
               </select>
 
               <select
@@ -559,11 +559,11 @@ export const RankingsView: React.FC<{ language: 'ru' | 'en' | 'ky' }> = ({ langu
   const athletesRankData = [
     {
       rank: 1,
-      name: tr('Иванов Артем', 'Иванов Артем', 'Artem Ivanov'),
-      club: tr('СК "Самурай"', 'СК "Самурай"', 'SC "Samurai"'),
-      city: tr('Москва', 'Москва', 'Moscow'),
-      country: tr('Россия', 'Россия', 'Russia'),
-      flag: '🇷🇺',
+      name: tr('Абдыкадыров Адилет', 'Абдыкадыров Адилет', 'Adilet Abdykadyrov'),
+      club: tr('СК "Тигр"', 'СК "Тигр"', 'SC "Tiger"'),
+      city: tr('Бишкек', 'Бишкек', 'Bishkek'),
+      country: tr('Кыргызстан', 'Кыргызстан', 'Kyrgyzstan'),
+      flag: '🇰🇬',
       points: 480,
       gold: 8,
       silver: 2,
@@ -572,11 +572,11 @@ export const RankingsView: React.FC<{ language: 'ru' | 'en' | 'ky' }> = ({ langu
     },
     {
       rank: 2,
-      name: tr('Петров Дмитрий', 'Петров Дмитрий', 'Dmitry Petrov'),
-      club: tr('Додзё "Бусидо"', '"Бусидо" Додзёсу', 'Dojo "Bushido"'),
-      city: tr('Санкт-Петербург', 'Санкт-Петербург', 'Saint Petersburg'),
-      country: tr('Россия', 'Россия', 'Russia'),
-      flag: '🇷🇺',
+      name: tr('Орозбеков Бакыт', 'Орозбеков Бакыт', 'Bakyt Orozbekov'),
+      club: tr('Клуб "Ала-Тоо"', 'Клуб "Ала-Тоо"', 'Club "Ala-Too"'),
+      city: tr('Ош', 'Ош', 'Osh'),
+      country: tr('Кыргызстан', 'Кыргызстан', 'Kyrgyzstan'),
+      flag: '🇰🇬',
       points: 395,
       gold: 6,
       silver: 3,
@@ -585,11 +585,11 @@ export const RankingsView: React.FC<{ language: 'ru' | 'en' | 'ky' }> = ({ langu
     },
     {
       rank: 3,
-      name: tr('Смирнова Екатерина', 'Смирнова Екатерина', 'Ekaterina Smirnova'),
-      club: tr('СШОР "Олимп"', '"Олимп" СШОР', 'Olympic Center "Olymp"'),
-      city: tr('Казань', 'Казань', 'Kazan'),
-      country: tr('Россия', 'Россия', 'Russia'),
-      flag: '🇷🇺',
+      name: tr('Жумабекова Айгерим', 'Жумабекова Айгерим', 'Aigerim Zhumabekova'),
+      club: tr('СК "Манас"', 'СК "Манас"', 'SC "Manas"'),
+      city: tr('Каракол', 'Каракол', 'Karakol'),
+      country: tr('Кыргызстан', 'Кыргызстан', 'Kyrgyzstan'),
+      flag: '🇰🇬',
       points: 370,
       gold: 6,
       silver: 2,
@@ -598,78 +598,104 @@ export const RankingsView: React.FC<{ language: 'ru' | 'en' | 'ky' }> = ({ langu
     },
     {
       rank: 4,
-      name: 'James Miller',
-      club: 'Tigers Karate Dojo',
-      city: 'Hampton',
-      country: tr('США', 'АКШ', 'United States'),
-      flag: '🇺🇸',
+      name: tr('Токтосунов Эмир', 'Токтосунов Эмир', 'Emir Toktosunov'),
+      club: tr('Клуб "Барс"', 'Клуб "Барс"', 'Club "Bars"'),
+      city: tr('Кант', 'Кант', 'Kant'),
+      country: tr('Кыргызстан', 'Кыргызстан', 'Kyrgyzstan'),
+      flag: '🇰🇬',
       points: 320,
       gold: 5,
       silver: 2,
       bronze: 3,
-      division: tr('Мужчины Кумитэ -84 кг', 'Эркектер Кумитэ -84 кг', 'Senior Kumite -84 kg')
+      division: tr('Мужчины Кумитэ -84 кг', 'Эркектер Кумитэ -84 кг', 'Male Kumite -84 kg')
     },
     {
       rank: 5,
-      name: tr('Морозов Сергей', 'Морозов Сергей', 'Sergey Morozov'),
-      club: 'Kyoto Shotokan Assoc.',
-      city: tr('Москва', 'Москва', 'Moscow'),
-      country: tr('Россия', 'Россия', 'Russia'),
-      flag: '🇷🇺',
+      name: tr('Сулайманов Нурсултан', 'Сулайманов Нурсултан', 'Nursultan Sulaimanov'),
+      club: tr('СК "Тянь-Шань"', 'СК "Тянь-Шань"', 'SC "Tian-Shan"'),
+      city: tr('Джалал-Абад', 'Джалал-Абад', 'Jalal-Abad'),
+      country: tr('Кыргызстан', 'Кыргызстан', 'Kyrgyzstan'),
+      flag: '🇰🇬',
       points: 310,
       gold: 5,
       silver: 1,
       bronze: 1,
-      division: tr('Ката Индивидуальное', 'Жеке Ката', 'Individual Kata')
+      division: tr('Ката индивидуальное', 'Жеке ката', 'Individual Kata')
     },
     {
       rank: 6,
-      name: 'Marco Rossi',
-      club: 'Milano Martial Arts',
-      city: 'Milano',
-      country: tr('Италия', 'Италия', 'Italy'),
-      flag: '🇮🇹',
+      name: tr('Мамытова Айзада', 'Мамытова Айзада', 'Aizada Mamytova'),
+      club: tr('Клуб "Ала-Тоо"', 'Клуб "Ала-Тоо"', 'Club "Ala-Too"'),
+      city: tr('Ош', 'Ош', 'Osh'),
+      country: tr('Кыргызстан', 'Кыргызстан', 'Kyrgyzstan'),
+      flag: '🇰🇬',
       points: 290,
       gold: 4,
       silver: 3,
       bronze: 2,
-      division: tr('Мужчины Кумитэ -67 кг', 'Эркектер Кумитэ -67 кг', 'Senior Kumite -67 kg')
+      division: tr('Женщины Кумитэ -55 кг', 'Аялдар Кумитэ -55 кг', 'Female Kumite -55 kg')
     },
     {
       rank: 7,
-      name: 'Emily Clark',
-      club: 'Boston MA Academy',
-      city: 'Boston',
-      country: tr('США', 'АКШ', 'United States'),
-      flag: '🇺🇸',
+      name: tr('Исаков Бектур', 'Исаков Бектур', 'Bektur Isakov'),
+      club: tr('СК "Тигр"', 'СК "Тигр"', 'SC "Tiger"'),
+      city: tr('Бишкек', 'Бишкек', 'Bishkek'),
+      country: tr('Кыргызстан', 'Кыргызстан', 'Kyrgyzstan'),
+      flag: '🇰🇬',
       points: 285,
       gold: 4,
       silver: 2,
       bronze: 2,
-      division: tr('Женщины Кумитэ -55 кг', 'Аялдар Кумитэ -55 кг', 'Female Kumite -55 kg')
+      division: tr('Мужчины Кумитэ -67 кг', 'Эркектер Кумитэ -67 кг', 'Male Kumite -67 kg')
     },
     {
       rank: 8,
-      name: 'Olena Shevchenko',
-      club: 'Kyiv Budo Center',
-      city: 'Kyiv',
-      country: tr('Украина', 'Украина', 'Ukraine'),
-      flag: '🇺🇦',
+      name: tr('Касымова Айпери', 'Касымова Айпери', 'Aiperi Kasymova'),
+      club: tr('СК "Манас"', 'СК "Манас"', 'SC "Manas"'),
+      city: tr('Каракол', 'Каракол', 'Karakol'),
+      country: tr('Кыргызстан', 'Кыргызстан', 'Kyrgyzstan'),
+      flag: '🇰🇬',
       points: 260,
       gold: 3,
       silver: 4,
-      bronze: 1,
-      division: tr('Женщины Кумитэ -68 кг', 'Аялдар Кумитэ -68 кг', 'Female Kumite -68 kg')
+      bronze: 2,
+      division: tr('Женщины Ката', 'Аялдар Ката', 'Female Kata')
+    },
+    {
+      rank: 9,
+      name: tr('Иманалиев Дастан', 'Иманалиев Дастан', 'Dastan Imanaliev'),
+      club: tr('Клуб "Барс"', 'Клуб "Барс"', 'Club "Bars"'),
+      city: tr('Кант', 'Кант', 'Kant'),
+      country: tr('Кыргызстан', 'Кыргызстан', 'Kyrgyzstan'),
+      flag: '🇰🇬',
+      points: 240,
+      gold: 3,
+      silver: 3,
+      bronze: 3,
+      division: tr('Кадеты Кумитэ -57 кг', 'Кадеттер Кумитэ -57 кг', 'Cadet Kumite -57 kg')
+    },
+    {
+      rank: 10,
+      name: tr('Турдубаева Айсулуу', 'Турдубаева Айсулуу', 'Aisuluu Turdubaeva'),
+      club: tr('СК "Тянь-Шань"', 'СК "Тянь-Шань"', 'SC "Tian-Shan"'),
+      city: tr('Джалал-Абад', 'Джалал-Абад', 'Jalal-Abad'),
+      country: tr('Кыргызстан', 'Кыргызстан', 'Kyrgyzstan'),
+      flag: '🇰🇬',
+      points: 215,
+      gold: 2,
+      silver: 4,
+      bronze: 3,
+      division: tr('Юниорки Кумитэ -59 кг', 'Юниорлор Кумитэ -59 кг', 'Junior Female Kumite -59 kg')
     }
   ];
 
   const clubsRankData = [
     {
       rank: 1,
-      name: tr('СК "Самурай"', 'СК "Самурай"', 'SC "Samurai"'),
-      city: tr('Москва', 'Москва', 'Moscow'),
-      country: tr('Россия', 'Россия', 'Russia'),
-      coach: tr('Алексеев В.С.', 'Алексеев В.С.', 'V. Alekseev'),
+      name: tr('СК "Тигр"', 'СК "Тигр"', 'SC "Tiger"'),
+      city: tr('Бишкек', 'Бишкек', 'Bishkek'),
+      country: tr('Кыргызстан', 'Кыргызстан', 'Kyrgyzstan'),
+      coach: tr('Асанов Б.Т.', 'Асанов Б.Т.', 'B. Asanov'),
       points: 1450,
       gold: 24,
       silver: 16,
@@ -678,10 +704,10 @@ export const RankingsView: React.FC<{ language: 'ru' | 'en' | 'ky' }> = ({ langu
     },
     {
       rank: 2,
-      name: 'Tigers Karate Dojo',
-      city: 'Hampton, VA',
-      country: tr('США', 'АКШ', 'USA'),
-      coach: 'Robert Henderson',
+      name: tr('Клуб "Ала-Тоо"', 'Клуб "Ала-Тоо"', 'Club "Ala-Too"'),
+      city: tr('Ош', 'Ош', 'Osh'),
+      country: tr('Кыргызстан', 'Кыргызстан', 'Kyrgyzstan'),
+      coach: tr('Мамытов У.К.', 'Мамытов У.К.', 'U. Mamytov'),
       points: 1220,
       gold: 19,
       silver: 14,
@@ -690,39 +716,75 @@ export const RankingsView: React.FC<{ language: 'ru' | 'en' | 'ky' }> = ({ langu
     },
     {
       rank: 3,
-      name: tr('Додзё "Бусидо"', '"Бусидо" Додзёсу', 'Dojo "Bushido"'),
-      city: tr('Санкт-Петербург', 'Санкт-Петербург', 'Saint Petersburg'),
-      country: tr('Россия', 'Россия', 'Russia'),
-      coach: tr('Ковалев М.Д.', 'Ковалев М.Д.', 'M. Kovalev'),
-      points: 1150,
-      gold: 18,
-      silver: 13,
+      name: tr('СК "Манас"', 'СК "Манас"', 'SC "Manas"'),
+      city: tr('Каракол', 'Каракол', 'Karakol'),
+      country: tr('Кыргызстан', 'Кыргызстан', 'Kyrgyzstan'),
+      coach: tr('Токтогулов Э.М.', 'Токтогулов Э.М.', 'E. Toktogulov'),
+      points: 1080,
+      gold: 16,
+      silver: 15,
       bronze: 10,
       totalMedals: 41
     },
     {
       rank: 4,
-      name: tr('СШОР "Олимп"', '"Олимп" СШОР', 'Olympic Center "Olymp"'),
-      city: tr('Казань', 'Казань', 'Kazan'),
-      country: tr('Россия', 'Россия', 'Russia'),
-      coach: tr('Хабибуллин Р.И.', 'Хабибуллин Р.И.', 'R. Khabibullin'),
-      points: 980,
-      gold: 15,
-      silver: 10,
-      bronze: 9,
-      totalMedals: 34
+      name: tr('Клуб "Барс"', 'Клуб "Барс"', 'Club "Bars"'),
+      city: tr('Кант', 'Кант', 'Kant'),
+      country: tr('Кыргызстан', 'Кыргызстан', 'Kyrgyzstan'),
+      coach: tr('Исаков Н.Ж.', 'Исаков Н.Ж.', 'N. Isakov'),
+      points: 910,
+      gold: 13,
+      silver: 12,
+      bronze: 14,
+      totalMedals: 39
     },
     {
       rank: 5,
-      name: 'Boston Martial Arts Academy',
-      city: 'Boston, MA',
-      country: tr('США', 'АКШ', 'USA'),
-      coach: 'David Clark',
-      points: 890,
-      gold: 13,
+      name: tr('СК "Тянь-Шань"', 'СК "Тянь-Шань"', 'SC "Tian-Shan"'),
+      city: tr('Джалал-Абад', 'Джалал-Абад', 'Jalal-Abad'),
+      country: tr('Кыргызстан', 'Кыргызстан', 'Kyrgyzstan'),
+      coach: tr('Сулайманов А.Б.', 'Сулайманов А.Б.', 'A. Sulaimanov'),
+      points: 780,
+      gold: 10,
       silver: 11,
-      bronze: 8,
-      totalMedals: 32
+      bronze: 13,
+      totalMedals: 34
+    },
+    {
+      rank: 6,
+      name: tr('Додзё "Нарын"', 'Додзё "Нарын"', 'Dojo "Naryn"'),
+      city: tr('Нарын', 'Нарын', 'Naryn'),
+      country: tr('Кыргызстан', 'Кыргызстан', 'Kyrgyzstan'),
+      coach: tr('Бейшеналиев К.А.', 'Бейшеналиев К.А.', 'K. Beishenaliev'),
+      points: 540,
+      gold: 6,
+      silver: 8,
+      bronze: 10,
+      totalMedals: 24
+    },
+    {
+      rank: 7,
+      name: tr('СК "Талас"', 'СК "Талас"', 'SC "Talas"'),
+      city: tr('Талас', 'Талас', 'Talas'),
+      country: tr('Кыргызстан', 'Кыргызстан', 'Kyrgyzstan'),
+      coach: tr('Жапаров М.С.', 'Жапаров М.С.', 'M. Zhaparov'),
+      points: 430,
+      gold: 5,
+      silver: 6,
+      bronze: 9,
+      totalMedals: 20
+    },
+    {
+      rank: 8,
+      name: tr('Клуб "Баткен"', 'Клуб "Баткен"', 'Club "Batken"'),
+      city: tr('Баткен', 'Баткен', 'Batken'),
+      country: tr('Кыргызстан', 'Кыргызстан', 'Kyrgyzstan'),
+      coach: tr('Раимов Т.А.', 'Раимов Т.А.', 'T. Raimov'),
+      points: 310,
+      gold: 3,
+      silver: 5,
+      bronze: 7,
+      totalMedals: 15
     }
   ];
 
@@ -916,8 +978,8 @@ export const VirtualStudiosView: React.FC<{ language: 'ru' | 'en' | 'ky'; onNavi
         'Tatami 1 — Main Mat (Senior Kumite Finals)'
       ),
       presenter: tr(
-        'ГСК: Главный судья Белов А.Г.',
-        'БКК: Башкы калыс Белов А.Г.',
+        'ГСК: Главный судья Эсенбаев А.Г.',
+        'БКК: Башкы калыс Эсенбаев А.Г.',
         'Chief Referee Board: A. Belov'
       ),
       viewers: 1420,

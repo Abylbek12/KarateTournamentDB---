@@ -76,9 +76,9 @@ export const RefereeProtocolModule: React.FC<RefereeProtocolModuleProps> = ({
 
   // Editable referee crew state
   const [shushinName, setShushinName] = useState(activeProtocol?.shushinRefereeName || 'Суханов Д. О. (МК-В)');
-  const [kansaName, setKansaName] = useState(activeProtocol?.kansaArbitratorName || 'Белов А. Г. (МК-А)');
-  const [fukushin1, setFukushin1] = useState(activeProtocol?.fukushinReferees?.[0] || 'Кузнецов И. В. (ВК)');
-  const [fukushin2, setFukushin2] = useState(activeProtocol?.fukushinReferees?.[1] || 'Смирнов В. М. (1К)');
+  const [kansaName, setKansaName] = useState(activeProtocol?.kansaArbitratorName || 'Эсенбаев А. Г. (МК-А)');
+  const [fukushin1, setFukushin1] = useState(activeProtocol?.fukushinReferees?.[0] || 'Касымов И. В. (ВК)');
+  const [fukushin2, setFukushin2] = useState(activeProtocol?.fukushinReferees?.[1] || 'Жумабеков В. М. (1К)');
   const [fukushin3, setFukushin3] = useState(activeProtocol?.fukushinReferees?.[2] || 'Орлов П. С. (1К)');
   const [fukushin4, setFukushin4] = useState(activeProtocol?.fukushinReferees?.[3] || 'Михайлов А. Д. (2К)');
 
@@ -86,9 +86,9 @@ export const RefereeProtocolModule: React.FC<RefereeProtocolModuleProps> = ({
   React.useEffect(() => {
     if (activeProtocol) {
       setShushinName(activeProtocol.shushinRefereeName || 'Суханов Д. О. (МК-В)');
-      setKansaName(activeProtocol.kansaArbitratorName || 'Белов А. Г. (МК-А)');
-      setFukushin1(activeProtocol.fukushinReferees?.[0] || 'Кузнецов И. В. (ВК)');
-      setFukushin2(activeProtocol.fukushinReferees?.[1] || 'Смирнов В. М. (1К)');
+      setKansaName(activeProtocol.kansaArbitratorName || 'Эсенбаев А. Г. (МК-А)');
+      setFukushin1(activeProtocol.fukushinReferees?.[0] || 'Касымов И. В. (ВК)');
+      setFukushin2(activeProtocol.fukushinReferees?.[1] || 'Жумабеков В. М. (1К)');
       setFukushin3(activeProtocol.fukushinReferees?.[2] || 'Орлов П. С. (1К)');
       setFukushin4(activeProtocol.fukushinReferees?.[3] || 'Михайлов А. Д. (2К)');
       setIsEditingRefereeCrew(false);
@@ -254,8 +254,8 @@ COMMIT;`;
 Рефери на татами (Шушин): ${proto.shushinRefereeName}
 Арбитр татами (Канса):    ${proto.kansaArbitratorName}
 Боковые судьи (Фукушин):
-  1. ${proto.fukushinReferees?.[0] || 'Кузнецов И. В.'}
-  2. ${proto.fukushinReferees?.[1] || 'Смирнов В. М.'}
+  1. ${proto.fukushinReferees?.[0] || 'Касымов И. В.'}
+  2. ${proto.fukushinReferees?.[1] || 'Жумабеков В. М.'}
   3. ${proto.fukushinReferees?.[2] || 'Орлов П. С.'}
   4. ${proto.fukushinReferees?.[3] || 'Михайлов А. Д.'}
 
@@ -279,7 +279,7 @@ ${proto.notes || 'Нарушений судейского регламента �
 ПОДПИСИ:
 Рефери (Шушин):        ____________________ / ${proto.shushinRefereeName} /
 Арбитр (Канса):        ____________________ / ${proto.kansaArbitratorName} /
-Главный судья турнира: ____________________ / Белов А. Г. (МК-А) /
+Главный судья турнира: ____________________ / Эсенбаев А. Г. (МК-А) /
 ========================================================================
 Электронная фиксация в базе данных PostgreSQL KarateTournamentDB
 `;
@@ -671,11 +671,11 @@ ${proto.notes || 'Нарушений судейского регламента �
                     </div>
                     <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800/80">
                       <div className="text-[10px] text-amber-400 font-bold uppercase">Фукушин 1</div>
-                      <div className="text-white font-medium mt-0.5">{activeProtocol.fukushinReferees?.[0] || 'Кузнецов И. В.'}</div>
+                      <div className="text-white font-medium mt-0.5">{activeProtocol.fukushinReferees?.[0] || 'Касымов И. В.'}</div>
                     </div>
                     <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800/80">
                       <div className="text-[10px] text-amber-400 font-bold uppercase">Фукушин 2</div>
-                      <div className="text-white font-medium mt-0.5">{activeProtocol.fukushinReferees?.[1] || 'Смирнов В. М.'}</div>
+                      <div className="text-white font-medium mt-0.5">{activeProtocol.fukushinReferees?.[1] || 'Жумабеков В. М.'}</div>
                     </div>
                     <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800/80">
                       <div className="text-[10px] text-amber-400 font-bold uppercase">Фукушин 3</div>
@@ -742,7 +742,7 @@ ${proto.notes || 'Нарушений судейского регламента �
                       <span className="text-slate-400">· Запрос тренера АО на Юко. Решение: Отклонено</span>
                     </div>
                     <span className="text-[10px] text-sky-400 bg-sky-950/60 px-2 py-0.5 rounded border border-sky-900/60">
-                      Арбитр Канса (Белов А. Г.)
+                      Арбитр Канса (Эсенбаев А. Г.)
                     </span>
                   </div>
                 </div>

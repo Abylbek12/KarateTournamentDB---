@@ -133,7 +133,7 @@ export const CoachPortalModule: React.FC<CoachPortalModuleProps> = ({
   const [teamRoster, setTeamRoster] = useState<TeamAthleteRow[]>([
     {
       tempId: 'tm_1',
-      firstName: 'Даниил',
+      firstName: 'Данияр',
       lastName: 'Романов',
       gender: 'male',
       birthDate: '2011-04-12',
@@ -149,8 +149,8 @@ export const CoachPortalModule: React.FC<CoachPortalModuleProps> = ({
     },
     {
       tempId: 'tm_2',
-      firstName: 'Екатерина',
-      lastName: 'Смирнова',
+      firstName: 'Айгерим',
+      lastName: 'Жумабекова',
       gender: 'female',
       birthDate: '2010-08-25',
       declaredWeightKg: 47.0,
@@ -166,7 +166,7 @@ export const CoachPortalModule: React.FC<CoachPortalModuleProps> = ({
     {
       tempId: 'tm_3',
       firstName: 'Арсений',
-      lastName: 'Белов',
+      lastName: 'Эсенбаев',
       gender: 'male',
       birthDate: '2009-12-03',
       declaredWeightKg: 57.2,
@@ -182,7 +182,7 @@ export const CoachPortalModule: React.FC<CoachPortalModuleProps> = ({
     {
       tempId: 'tm_4',
       firstName: 'Виктория',
-      lastName: 'Морозова',
+      lastName: 'Сулайманова',
       gender: 'female',
       birthDate: '2011-02-18',
       declaredWeightKg: 54.0,
@@ -220,7 +220,7 @@ export const CoachPortalModule: React.FC<CoachPortalModuleProps> = ({
     {
       id: 'doc_3',
       title: 'Коллективный договор страхования от несчастных случаев',
-      requiredFor: 'Покрытие риска травм на дни соревнований (не менее 100 000 ₽)',
+      requiredFor: 'Покрытие риска травм на дни соревнований (не менее 100 000 сом)',
       fileName: 'Strakhovka_Team_SOGAZ_2026.pdf',
       fileSize: '1.8 МБ',
       uploadedAt: 'Вчера, 16:40',
@@ -264,7 +264,7 @@ export const CoachPortalModule: React.FC<CoachPortalModuleProps> = ({
   const totalAthletes = teamRoster.length;
   const readyAthletes = teamRoster.filter(a => a.hasMedicalCertificate && a.hasInsurance && a.hasParentalConsent && a.categoryId).length;
   const approvedDocsCount = documents.filter(d => d.status === 'approved').length;
-  const entryFeePerStart = 3500; // 3 500 ₽ per category start
+  const entryFeePerStart = 3500; // 3 500 сом per category start
   const totalStartsCount = teamRoster.reduce((acc, a) => acc + (a.disciplines.length || 1), 0);
   const totalTeamFee = totalStartsCount * entryFeePerStart;
 
@@ -320,7 +320,7 @@ export const CoachPortalModule: React.FC<CoachPortalModuleProps> = ({
     const parsedRows: TeamAthleteRow[] = [];
 
     lines.forEach((line, idx) => {
-      // Formats: "Иванов Иван, 2011-05-12, 45, male" or "Иванов Иван"
+      // Formats: "Абдыкадыров Иван, 2011-05-12, 45, male" or "Абдыкадыров Иван"
       const parts = line.split(/[,;\t]/).map(p => p.trim());
       const fullName = parts[0] || `Атлет ${idx + 1}`;
       const nameParts = fullName.split(' ');
@@ -361,12 +361,12 @@ export const CoachPortalModule: React.FC<CoachPortalModuleProps> = ({
 
   // Insert Sample Batch Roster for Quick Demo
   const handleInsertSampleBatch = () => {
-    setImportText(`Васильев Максим, 2011-03-14, 45, male
+    setImportText(`Сыдыков Эмир, 2011-03-14, 45, male
 Семенова Алина, 2010-07-22, 52, female
-Куликов Артем, 2009-11-09, 58, male
+Куликов Адилет, 2009-11-09, 58, male
 Тихонова Дарья, 2012-01-30, 40, female
-Григорьев Кирилл, 2008-09-18, 65, male
-Федорова Полина, 2011-12-05, 48, female`);
+Исаков Бектур, 2008-09-18, 65, male
+Федорова Айзада, 2011-12-05, 48, female`);
   };
 
   // Batch Select Toggle
@@ -436,7 +436,7 @@ export const CoachPortalModule: React.FC<CoachPortalModuleProps> = ({
       clubId: currentClub.id,
       clubName: currentClub.name,
       city: currentClub.city,
-      country: 'Россия',
+      country: 'Кыргызстан',
       categoryId: row.categoryId,
       firstName: row.firstName,
       lastName: row.lastName,
@@ -630,8 +630,8 @@ export const CoachPortalModule: React.FC<CoachPortalModuleProps> = ({
                 <span>Сумма взносов:</span>
                 <Trophy className="w-4 h-4 text-amber-400" />
               </div>
-              <div className="text-2xl font-black text-amber-400 mt-1">{totalTeamFee.toLocaleString('ru-RU')} ₽</div>
-              <div className="text-[11px] text-slate-400 mt-1">{totalStartsCount} стартов × 3 500 ₽</div>
+              <div className="text-2xl font-black text-amber-400 mt-1">{totalTeamFee.toLocaleString('ru-RU')} сом</div>
+              <div className="text-[11px] text-slate-400 mt-1">{totalStartsCount} стартов × 3 500 сом</div>
             </div>
           </div>
         </div>
@@ -811,7 +811,7 @@ export const CoachPortalModule: React.FC<CoachPortalModuleProps> = ({
                   type="text"
                   value={newRow.lastName || ''}
                   onChange={(e) => setNewRow(prev => ({ ...prev, lastName: e.target.value }))}
-                  placeholder="Иванов"
+                  placeholder="Абдыкадыров"
                   className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
                 />
               </div>
@@ -1360,7 +1360,7 @@ export const CoachPortalModule: React.FC<CoachPortalModuleProps> = ({
                 value={importText}
                 onChange={(e) => setImportText(e.target.value)}
                 rows={8}
-                placeholder="Смирнов Артем, 2011-04-12, 48.5, male&#10;Кузнецова София, 2010-08-25, 47.0, female&#10;Попов Денис, 2009-12-03, 57.2, male"
+                placeholder="Жумабеков Адилет, 2011-04-12, 48.5, male&#10;Касымова София, 2010-08-25, 47.0, female&#10;Иманалиев Дастан, 2009-12-03, 57.2, male"
                 className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-xs font-mono text-white placeholder-slate-600 outline-none focus:border-purple-500"
               />
             </div>

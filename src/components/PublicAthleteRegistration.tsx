@@ -45,9 +45,9 @@ interface PublicAthleteRegistrationProps {
 }
 
 const POPULAR_COUNTRIES = [
-  'Россия',
+  'Кыргызстан',
   'Казахстан',
-  'Беларусь',
+  'Узбекистан',
   'Армения',
   'Узбекистан',
   'Азербайджан',
@@ -58,11 +58,11 @@ const POPULAR_COUNTRIES = [
 ];
 
 const POPULAR_CITIES = [
-  'Москва',
-  'Санкт-Петербург',
-  'Казань',
-  'Екатеринбург',
-  'Новосибирск',
+  'Бишкек',
+  'Ош',
+  'Каракол',
+  'Кант',
+  'Джалал-Абад',
   'Красноярск',
   'Нижний Новгород',
   'Самара',
@@ -70,7 +70,7 @@ const POPULAR_CITIES = [
   'Челябинск',
   'Алматы',
   'Астана',
-  'Минск'
+  'Ташкент'
 ];
 
 export const PublicAthleteRegistration: React.FC<PublicAthleteRegistrationProps> = ({
@@ -95,8 +95,8 @@ export const PublicAthleteRegistration: React.FC<PublicAthleteRegistrationProps>
   
   // Mandatory Territory & Club Information
   const [clubId, setClubId] = useState(clubs[0]?.id || 'c1');
-  const [city, setCity] = useState(clubs[0]?.city || 'Москва');
-  const [country, setCountry] = useState('Россия');
+  const [city, setCity] = useState(clubs[0]?.city || 'Бишкек');
+  const [country, setCountry] = useState('Кыргызстан');
   const [customClubName, setCustomClubName] = useState('');
   const [isCustomClub, setIsCustomClub] = useState(false);
 
@@ -183,9 +183,9 @@ export const PublicAthleteRegistration: React.FC<PublicAthleteRegistrationProps>
 
     const resolvedClub = isCustomClub 
       ? { id: `c_custom_${Date.now()}`, name: customClubName.trim() || 'Независимый клуб' }
-      : clubs.find((c) => c.id === clubId) || { id: 'c1', name: 'СК "Самурай"' };
+      : clubs.find((c) => c.id === clubId) || { id: 'c1', name: 'СК "Тигр"' };
 
-    const generatedLicense = licenseNumber.trim() || `${country === 'Россия' ? 'RUS' : country.substring(0, 3).toUpperCase()}-KRT-${Math.floor(1000 + Math.random() * 9000)}`;
+    const generatedLicense = licenseNumber.trim() || `${country === 'Кыргызстан' ? 'RUS' : country.substring(0, 3).toUpperCase()}-KRT-${Math.floor(1000 + Math.random() * 9000)}`;
 
     const newParticipant: Participant = {
       id: `p_reg_${Date.now()}`,
@@ -492,7 +492,7 @@ export const PublicAthleteRegistration: React.FC<PublicAthleteRegistrationProps>
                     required
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    placeholder="Например: Иванов"
+                    placeholder="Например: Абдыкадыров"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:outline-none focus:border-rose-500 transition-colors"
                   />
                 </div>
@@ -506,7 +506,7 @@ export const PublicAthleteRegistration: React.FC<PublicAthleteRegistrationProps>
                     required
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="Например: Даниил"
+                    placeholder="Например: Данияр"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:outline-none focus:border-rose-500 transition-colors"
                   />
                 </div>
@@ -590,7 +590,7 @@ export const PublicAthleteRegistration: React.FC<PublicAthleteRegistrationProps>
                   type="text"
                   value={licenseNumber}
                   onChange={(e) => setLicenseNumber(e.target.value)}
-                  placeholder="Оставьте пустым для автогенерации (например: RUS-KRT-8842)"
+                  placeholder="Оставьте пустым для автогенерации (например: KGZ-KRT-8842)"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs font-mono focus:outline-none focus:border-rose-500 transition-colors"
                 />
               </div>

@@ -72,7 +72,7 @@ export const VintedRegistration: React.FC<VintedRegistrationProps> = ({
   const [username, setUsername] = useState('');
   const [gender, setGender] = useState<'female' | 'male' | 'other' | 'unspecified'>('female');
   const [birthDate, setBirthDate] = useState('2000-01-01');
-  const [city, setCity] = useState('Москва');
+  const [city, setCity] = useState('Бишкек');
 
   // UI & Validation State
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -657,7 +657,7 @@ export const VintedRegistration: React.FC<VintedRegistrationProps> = ({
                         if (errors.lastName) setErrors((prev) => ({ ...prev, lastName: '' }));
                       }}
                       onBlur={handleAutoSuggestUsername}
-                      placeholder="Например, Смирнова"
+                      placeholder="Например, Жумабекова"
                       className={`w-full px-4 py-3 rounded-2xl bg-white border text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none transition-all ${
                         errors.lastName 
                           ? 'border-rose-400 focus:ring-2 focus:ring-rose-200' 
@@ -885,7 +885,7 @@ export const VintedRegistration: React.FC<VintedRegistrationProps> = ({
                     type="text"
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
-                    placeholder="Москва"
+                    placeholder="Бишкек"
                     className="w-full px-4 py-2.5 rounded-2xl bg-white border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-[#09B1BA] focus:ring-2 focus:ring-[#09B1BA]/20 transition-all"
                   />
                   <p className="text-[11px] text-slate-400">

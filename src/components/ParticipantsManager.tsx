@@ -196,7 +196,7 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
                         {p.clubName || club?.name}
                       </div>
                       <div className="text-[11px] text-sky-400 font-mono">
-                        {p.city || club?.city || 'г. Москва'} · {p.country || 'Россия'}
+                        {p.city || club?.city || 'г. Бишкек'} · {p.country || 'Кыргызстан'}
                       </div>
                     </td>
 

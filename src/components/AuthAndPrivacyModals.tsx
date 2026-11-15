@@ -61,7 +61,20 @@ interface AuthModalProps {
   onAuthenticated: (user: AuthenticatedUserProfile) => void;
   onLogout: () => void;
   language: 'ru' | 'en' | 'ky';
+  /** Role fixed by an invitation link (?join=... or ?invite=...); hides the role choice. */
+  lockedRole?: UserRole | null;
+  /** Secret staff invitation token sent with the registration. */
+  inviteToken?: string | null;
 }
+
+const LOCKED_ROLE_LABELS: Partial<Record<UserRole, string>> = {
+  athlete: 'Спортсмен',
+  club_coach: 'Тренер / представитель клуба',
+  tatami_referee: 'Судья татами',
+  scorekeeper: 'Секретарь (оператор табло)',
+  chief_referee: 'Главный судья',
+  medical_officer: 'Врач соревнований'
+};
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
@@ -70,7 +83,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   currentUser,
   onAuthenticated,
   onLogout,
-  language
+  language,
+  lockedRole,
+  inviteToken
 }) => {
   // Mode: 'login' | 'register' | 'confirm_profile'
   const [activeTab, setActiveTab] = useState<'login' | 'register' | 'confirm_profile'>(initialMode);
@@ -104,7 +119,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [regPassword, setRegPassword] = useState('');
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
   const [regRole, setRegRole] = useState<UserRole>('athlete');
-  const [regAgreeTerms, setRegAgreeTerms] = useState(true);
+  const [regAgreeTerms, setRegAgreeTerms] = useState(false);
 
   // Quick fill helper toggle
   const [showDemoAccounts, setShowDemoAccounts] = useState(false);
@@ -258,7 +273,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           email: regEmail,
           phone: regPhone,
           password: regPassword,
-          role: regRole
+          role: lockedRole || regRole,
+          inviteToken: inviteToken || undefined
         })
       });
 
@@ -530,7 +546,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       </label>
                       <input
                         type="text"
-                        placeholder="Алексей Смирнов"
+                        placeholder="Алексей Жумабеков"
                         value={regFullName}
                         onChange={(e) => setRegFullName(e.target.value)}
                         required
@@ -560,7 +576,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       </label>
                       <input
                         type="tel"
-                        placeholder="+7 (999) 000-00-00"
+                        placeholder="+996 (999) 000-00-00"
                         value={regPhone}
                         onChange={(e) => setRegPhone(e.target.value)}
                         className="w-full rounded-full bg-white border border-slate-200/80 px-4 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#38a3a5] shadow-2xs font-sans"
@@ -597,7 +613,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       />
                     </div>
 
-                    {/* Role select */}
+                    {/* Role: fixed by the invitation link, otherwise athlete or coach */}
+                    {lockedRole ? (
+                      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900 font-sans">
+                        {language !== 'en' ? 'Вы регистрируетесь как: ' : 'You are registering as: '}
+                        <b>{LOCKED_ROLE_LABELS[lockedRole] || lockedRole}</b>
+                        <div className="text-[10px] text-emerald-800/80 mt-0.5">
+                          {language !== 'en' ? 'Роль задана ссылкой-приглашением.' : 'The role is set by your invitation link.'}
+                        </div>
+                      </div>
+                    ) : (
                     <div>
                       <label className="block text-[11px] font-semibold text-[#2c5270] mb-1 font-sans">
                         {language !== 'en' ? 'Роль на портале' : 'Platform Role'}
@@ -616,6 +641,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           : 'Referee and organizer roles are granted by an administrator after sign-up.'}
                       </p>
                     </div>
+                    )}
 
                     {/* Terms Checkbox */}
                     <label className="flex items-start gap-2 pt-1 text-[10px] text-slate-600 font-sans cursor-pointer">

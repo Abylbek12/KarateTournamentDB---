@@ -1054,13 +1054,13 @@ export const TournamentAnalyticsModule: React.FC<TournamentAnalyticsModuleProps>
 ВСЕРОССИЙСКИЕ СОРЕВНОВАНИЯ ПО КАРАТЕ WKF 2026
 ========================================================================
 Дата проведения: 04-06 ноября 2026 г.
-Место проведения: Дворец Единоборств, г. Москва
+Место проведения: Дворец Единоборств, г. Бишкек
 Количество регионов: 8 субъектов РФ | Клубов: ${clubs.length} | Участников: ${participants.length}
 Поединков проведено: ${completedBouts.length} из ${bouts.length}
 
 СОСТАВ ГЛАВНОЙ СУДЕЙСКОЙ КОЛЛЕГИИ:
 Главный судья соревнований: Суханов Д. О. (Спортивный судья Всероссийской категории / МК-В)
-Главный секретарь:           Белов А. Г. (Спортивный судья Всероссийской категории / МК-А)
+Главный секретарь:           Эсенбаев А. Г. (Спортивный судья Всероссийской категории / МК-А)
 
 КОМАНДНЫЙ ЗАЧЁТ (МЕДАЛИ И ОЧКИ):
 ${clubStats.map((c, i) => `${i + 1}. ${c.club.name} (${c.club.city}) — Золото: ${c.gold}, Серебро: ${c.silver}, Бронза: ${c.bronze} | Очки: ${c.totalScorePoints}`).join('\n')}
@@ -1206,7 +1206,7 @@ COMMIT;`;
                 {selectedFederationReport === 'judges_commission' && 'СПРАВКА О СОСТАВЕ СУДЕЙСКОЙ КОЛЛЕГИИ ТУРНИРА'}
               </h1>
               <div className="text-xs font-sans text-slate-400 flex flex-wrap items-center justify-center gap-3 pt-1">
-                <span>г. Москва, Дворец Единоборств</span>
+                <span>г. Бишкек, Дворец Единоборств</span>
                 <span>·</span>
                 <span>Сроки проведения: 04–06 ноября 2026 г.</span>
                 <span>·</span>
@@ -1301,21 +1301,21 @@ COMMIT;`;
                               {tc.name || `${tc.ageCategoryName || ''} ${tc.weightCategoryName || ''}`.trim() || tc.id}
                             </td>
                             <td className="p-2.5 border border-slate-800 text-amber-300 font-semibold">
-                              {gold ? `${gold.lastName} ${gold.firstName}` : 'Иванов Даниил'}
+                              {gold ? `${gold.lastName} ${gold.firstName}` : 'Абдыкадыров Данияр'}
                               <div className="text-[10px] text-slate-400 font-normal">
-                                {gold?.clubName || 'СК "Самурай"'} · г. Москва
+                                {gold?.clubName || 'СК "Тигр"'} · г. Бишкек
                               </div>
                             </td>
                             <td className="p-2.5 border border-slate-800 text-slate-300">
-                              {silver ? `${silver.lastName} ${silver.firstName}` : 'Смирнов Артем'}
+                              {silver ? `${silver.lastName} ${silver.firstName}` : 'Жумабеков Адилет'}
                               <div className="text-[10px] text-slate-400 font-normal">
-                                {silver?.clubName || 'Додзё "Бусидо"'} · г. Казань
+                                {silver?.clubName || 'Клуб "Ала-Тоо"'} · г. Каракол
                               </div>
                             </td>
                             <td className="p-2.5 border border-slate-800 text-amber-600">
-                              {bronze ? `${bronze.lastName} ${bronze.firstName}` : 'Кузнецов Максим'}
+                              {bronze ? `${bronze.lastName} ${bronze.firstName}` : 'Касымов Эмир'}
                               <div className="text-[10px] text-slate-400 font-normal">
-                                {bronze?.clubName || 'СК "Тигр"'} · г. Санкт-Петербург
+                                {bronze?.clubName || 'СК "Тигр"'} · г. Ош
                               </div>
                             </td>
                           </tr>
@@ -1418,30 +1418,30 @@ COMMIT;`;
                   </thead>
                   <tbody className="divide-y divide-slate-800">
                     <tr>
-                      <td className="p-2.5 border border-slate-800 font-bold text-white">Суханов Дмитрий Олегович</td>
+                      <td className="p-2.5 border border-slate-800 font-bold text-white">Суханов Бакыт Олегович</td>
                       <td className="p-2.5 border border-slate-800 text-amber-400">МК-В / ВК</td>
-                      <td className="p-2.5 border border-slate-800 text-slate-300">г. Москва</td>
+                      <td className="p-2.5 border border-slate-800 text-slate-300">г. Бишкек</td>
                       <td className="p-2.5 border border-slate-800 text-slate-300">Главный судья / Рефери татами 1</td>
                       <td className="p-2.5 border border-slate-800 text-center text-emerald-400 font-bold">Отлично (5.0)</td>
                     </tr>
                     <tr>
-                      <td className="p-2.5 border border-slate-800 font-bold text-white">Белов Арсений Геннадьевич</td>
+                      <td className="p-2.5 border border-slate-800 font-bold text-white">Эсенбаев Арсений Геннадьевич</td>
                       <td className="p-2.5 border border-slate-800 text-amber-400">МК-А / ВК</td>
-                      <td className="p-2.5 border border-slate-800 text-slate-300">г. Санкт-Петербург</td>
+                      <td className="p-2.5 border border-slate-800 text-slate-300">г. Ош</td>
                       <td className="p-2.5 border border-slate-800 text-slate-300">Главный секретарь / Арбитр VR</td>
                       <td className="p-2.5 border border-slate-800 text-center text-emerald-400 font-bold">Отлично (5.0)</td>
                     </tr>
                     <tr>
-                      <td className="p-2.5 border border-slate-800 font-bold text-white">Кузнецов Игорь Владимирович</td>
+                      <td className="p-2.5 border border-slate-800 font-bold text-white">Касымов Игорь Владимирович</td>
                       <td className="p-2.5 border border-slate-800 text-slate-300">ВК (Всероссийская)</td>
-                      <td className="p-2.5 border border-slate-800 text-slate-300">г. Казань</td>
+                      <td className="p-2.5 border border-slate-800 text-slate-300">г. Каракол</td>
                       <td className="p-2.5 border border-slate-800 text-slate-300">Боковой судья (Фукушин 1)</td>
                       <td className="p-2.5 border border-slate-800 text-center text-emerald-400 font-bold">Отлично (4.9)</td>
                     </tr>
                     <tr>
-                      <td className="p-2.5 border border-slate-800 font-bold text-white">Смирнов Виктор Михайлович</td>
+                      <td className="p-2.5 border border-slate-800 font-bold text-white">Жумабеков Виктор Михайлович</td>
                       <td className="p-2.5 border border-slate-800 text-slate-300">1К (Первая категория)</td>
-                      <td className="p-2.5 border border-slate-800 text-slate-300">г. Екатеринбург</td>
+                      <td className="p-2.5 border border-slate-800 text-slate-300">г. Кант</td>
                       <td className="p-2.5 border border-slate-800 text-slate-300">Боковой судья (Фукушин 2)</td>
                       <td className="p-2.5 border border-slate-800 text-center text-emerald-400 font-bold">Хорошо (4.8)</td>
                     </tr>
@@ -1470,7 +1470,7 @@ COMMIT;`;
                   <strong>Главный секретарь соревнований:</strong>
                   <div className="flex items-end justify-between pt-6 border-b border-slate-700 pb-1">
                     <span className="font-sans text-[11px] text-slate-400">/ подпись /</span>
-                    <span className="font-bold font-sans">Белов А. Г. (МК-А / ВК)</span>
+                    <span className="font-bold font-sans">Эсенбаев А. Г. (МК-А / ВК)</span>
                   </div>
                 </div>
                 <div className="text-[11px] text-slate-400 font-sans">

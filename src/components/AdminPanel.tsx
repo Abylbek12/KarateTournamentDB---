@@ -110,8 +110,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [clubId, setClubId] = useState(clubs[0]?.id || 'c1');
-  const [athleteCity, setAthleteCity] = useState(clubs[0]?.city || 'Москва');
-  const [athleteCountry, setAthleteCountry] = useState('Россия');
+  const [athleteCity, setAthleteCity] = useState(clubs[0]?.city || 'Бишкек');
+  const [athleteCountry, setAthleteCountry] = useState('Кыргызстан');
   const [customClubName, setCustomClubName] = useState('');
   const [gender, setGender] = useState<Gender>('male');
   const [birthDate, setBirthDate] = useState('2002-05-15');
@@ -123,7 +123,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [isMedicalCleared, setIsMedicalCleared] = useState(true);
   const [isWeighedIn, setIsWeighedIn] = useState(false);
   const [actualWeight, setActualWeight] = useState<number | null>(null);
-  const [licenseNumber, setLicenseNumber] = useState(`RUS-KRT-${Math.floor(1000 + Math.random() * 9000)}`);
+  const [licenseNumber, setLicenseNumber] = useState(`KGZ-KRT-${Math.floor(1000 + Math.random() * 9000)}`);
   const [registrationSuccess, setRegistrationSuccess] = useState<string | null>(null);
 
   // Auto compute athlete age based on birthDate
@@ -214,8 +214,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       tournamentId: 'tourn1',
       clubId: clubId === 'custom' ? 'c_custom' : clubId,
       clubName,
-      city: athleteCity.trim() || clubObj?.city || 'Москва',
-      country: athleteCountry.trim() || 'Россия',
+      city: athleteCity.trim() || clubObj?.city || 'Бишкек',
+      country: athleteCountry.trim() || 'Кыргызстан',
       categoryId: targetTournamentCat?.id || 'tc1',
       firstName: firstName.trim(),
       lastName: lastName.trim(),
@@ -239,7 +239,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     // Reset inputs for next registration
     setFirstName('');
     setLastName('');
-    setLicenseNumber(`RUS-KRT-${Math.floor(1000 + Math.random() * 9000)}`);
+    setLicenseNumber(`KGZ-KRT-${Math.floor(1000 + Math.random() * 9000)}`);
     setTimeout(() => setRegistrationSuccess(null), 5000);
   };
 
@@ -747,7 +747,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <input
                     type="text"
                     required
-                    placeholder="напр. Соколов"
+                    placeholder="напр. Турдубаев"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"

@@ -34,10 +34,10 @@ export const TournamentMedalsReportView: React.FC<TournamentMedalsReportViewProp
   const rawMedals: MedalReportRow[] = tournament.medalsReport && tournament.medalsReport.length > 0
     ? tournament.medalsReport
     : [
-        { rank: 1, name: 'Tigers Karate Dojo (Hampton, VA)', type: 'club', gold: 12, silver: 8, bronze: 5, total: 25, points: 57 },
-        { rank: 2, name: 'Boston Martial Arts Academy (MA)', type: 'club', gold: 9, silver: 11, bronze: 7, total: 27, points: 56 },
-        { rank: 3, name: 'Orlando Champions Club (FL)', type: 'club', gold: 8, silver: 6, bronze: 9, total: 23, points: 45 },
-        { rank: 4, name: 'Kyoto Shotokan Association (NY)', type: 'club', gold: 6, silver: 7, bronze: 8, total: 21, points: 40 },
+        { rank: 1, name: 'СК "Тигр" (Бишкек)', type: 'club', gold: 12, silver: 8, bronze: 5, total: 25, points: 57 },
+        { rank: 2, name: 'Клуб "Ала-Тоо" (Ош)', type: 'club', gold: 9, silver: 11, bronze: 7, total: 27, points: 56 },
+        { rank: 3, name: 'СК "Манас" (Каракол)', type: 'club', gold: 8, silver: 6, bronze: 9, total: 23, points: 45 },
+        { rank: 4, name: 'Клуб "Барс" (Кант)', type: 'club', gold: 6, silver: 7, bronze: 8, total: 21, points: 40 },
         { rank: 5, name: 'Samurai Budo Center (TX)', type: 'club', gold: 5, silver: 4, bronze: 6, total: 15, points: 29 },
         { rank: 1, name: 'Amateur Athletic Union (AAU Karate)', type: 'federation', gold: 38, silver: 32, bronze: 28, total: 98, points: 206 },
         { rank: 2, name: 'United States Karate Federation', type: 'federation', gold: 24, silver: 22, bronze: 19, total: 65, points: 135 },

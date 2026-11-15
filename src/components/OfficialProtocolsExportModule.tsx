@@ -56,8 +56,8 @@ export const OfficialProtocolsExportModule: React.FC<OfficialProtocolsExportModu
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
   const [includeOfficialStamps, setIncludeOfficialStamps] = useState<boolean>(true);
   const [includeRefereeSignatures, setIncludeRefereeSignatures] = useState<boolean>(true);
-  const [customSignatoryChief, setCustomSignatoryChief] = useState<string>('В. Н. Смирнов (Судья Всероссийской категории / WKF Referee A)');
-  const [customSignatorySecretary, setCustomSignatorySecretary] = useState<string>('Е. А. Кузнецова (Судья 1-й категории / Главный секретарь)');
+  const [customSignatoryChief, setCustomSignatoryChief] = useState<string>('В. Н. Жумабеков (Судья Всероссийской категории / WKF Referee A)');
+  const [customSignatorySecretary, setCustomSignatorySecretary] = useState<string>('Е. А. Касымова (Судья 1-й категории / Главный секретарь)');
 
   // 1. Calculate Category Final Standings
   const categoryStandings = useMemo(() => {

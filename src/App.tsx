@@ -83,6 +83,7 @@ import { canAccess, ROLE_LABELS, type AccessRole } from './utils/access';
 import { AccessGate } from './components/AccessGate';
 import { TatamiMark, TatamiWordmark } from './components/BrandLogo';
 import { UsersRolesPanel } from './components/UsersRolesPanel';
+import { InviteLinksPanel } from './components/InviteLinksPanel';
 
 // Heavy screens are loaded on demand so the first page opens faster.
 const SchemaVisualizer = React.lazy(() => import('./components/SchemaVisualizer').then((m) => ({ default: m.SchemaVisualizer })));
@@ -608,6 +609,35 @@ function AppContent() {
     venueLocalServerIp: '192.168.1.100',
     offlineModeActive: true
   });
+
+  // Invitation links: ?join=athlete | ?join=coach (public) and ?invite=<secret> (staff, created by admin).
+  const [inviteRole, setInviteRole] = useState<UserRole | null>(null);
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const join = params.get('join');
+    const token = params.get('invite');
+    if (join === 'athlete' || join === 'coach') {
+      setInviteRole(join === 'coach' ? 'club_coach' : 'athlete');
+      setAuthModalMode('register');
+      setIsAuthModalOpen(true);
+    } else if (token) {
+      fetch(`/api/invites/${encodeURIComponent(token)}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.valid) {
+            setInviteRole(data.role);
+            setInviteToken(token);
+            setAuthModalMode('register');
+            setIsAuthModalOpen(true);
+          } else {
+            setGlobalSystemToast(data.error || 'Ссылка-приглашение недействительна.');
+            setTimeout(() => setGlobalSystemToast(null), 6000);
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
 
   // Deep-link & Uventex GWTClient hash support (#home, #studios, #info;id=..., ?locale=ru)
   React.useEffect(() => {
@@ -2091,6 +2121,7 @@ function AppContent() {
           )}
 
           {activeTab === 'admin' && effectiveRole === 'admin' && <UsersRolesPanel currentUserId={currentUser?.id} />}
+          {activeTab === 'admin' && effectiveRole === 'admin' && <InviteLinksPanel />}
 
           {activeTab === 'admin' && (
             <AdminPanel
@@ -2437,6 +2468,8 @@ function AppContent() {
         }}
         onLogout={handleLogout}
         language={language}
+        lockedRole={inviteRole}
+        inviteToken={inviteToken}
       />
 
       {/* Official Privacy Policy & Data Protection Modal */}

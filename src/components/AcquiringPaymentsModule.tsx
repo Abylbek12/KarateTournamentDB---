@@ -69,7 +69,7 @@ export const AcquiringPaymentsModule: React.FC<AcquiringPaymentsModuleProps> = (
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethodType>('sbp_qr');
   const [payerName, setPayerName] = useState('');
   const [payerEmail, setPayerEmail] = useState('');
-  const [payerPhone, setPayerPhone] = useState('+7 (9');
+  const [payerPhone, setPayerPhone] = useState('+996 (9');
   const [customAmountRub, setCustomAmountRub] = useState<number>(3500);
   const [cardDetails, setCardDetails] = useState({ number: '4400 8912 3456 7890', exp: '12/28', cvc: '741' });
   const [smsCode, setSmsCode] = useState('7729');
@@ -133,7 +133,7 @@ export const AcquiringPaymentsModule: React.FC<AcquiringPaymentsModuleProps> = (
     if (p) {
       setPayerName(`${p.lastName} ${p.firstName}`);
       setPayerEmail(`${p.firstName.toLowerCase()}.${p.lastName.toLowerCase()}@karate-mail.ru`);
-      setPayerPhone('+7 (916) 789-22-33');
+      setPayerPhone('+996 (916) 789-22-33');
       const cat = p.categoryId?.includes('kumite') ? 3500 : 3000;
       setCustomAmountRub(cat);
     }
@@ -163,7 +163,7 @@ export const AcquiringPaymentsModule: React.FC<AcquiringPaymentsModuleProps> = (
         fiscalSign: `${Math.floor(1000000000 + Math.random() * 9000000000)}`,
         payerName: payerName || 'Представитель команды',
         payerEmail: payerEmail || 'billing@karate-event.ru',
-        payerPhone: payerPhone || '+7 (900) 000-00-00',
+        payerPhone: payerPhone || '+996 (900) 000-00-00',
         categoryName: selectedFeeCategory === 'athlete_entry' ? 'Стартовый взнос участника WKF' : 'Командный сбор',
         description: `Оплата взноса через ${selectedMethod.toUpperCase()} в системе эквайринга Tatami.kg`
       };
@@ -177,7 +177,7 @@ export const AcquiringPaymentsModule: React.FC<AcquiringPaymentsModuleProps> = (
       if (onNotifySystem) {
         onNotifySystem(
           'Оплата взноса подтверждена',
-          `Успешно получен взнос ${customAmountRub.toLocaleString('ru-RU')} ₽ за участника ${newTx.participantName} (${newTx.clubName}). Чек ${newTx.fiscalReceiptNumber}.`,
+          `Успешно получен взнос ${customAmountRub.toLocaleString('ru-RU')} сом за участника ${newTx.participantName} (${newTx.clubName}). Чек ${newTx.fiscalReceiptNumber}.`,
           'payment'
         );
       }
@@ -190,7 +190,7 @@ export const AcquiringPaymentsModule: React.FC<AcquiringPaymentsModuleProps> = (
 
   // Issue Refund Handler
   const handleRefundTransaction = (tx: PaymentTransaction) => {
-    if (confirm(`Вы действительно хотите выполнить возврат платежа ${tx.orderNumber} на сумму ${tx.amountRub.toLocaleString('ru-RU')} ₽?`)) {
+    if (confirm(`Вы действительно хотите выполнить возврат платежа ${tx.orderNumber} на сумму ${tx.amountRub.toLocaleString('ru-RU')} сом?`)) {
       setPayments(prev => prev.map(p => {
         if (p.id === tx.id) {
           return {
@@ -212,7 +212,7 @@ export const AcquiringPaymentsModule: React.FC<AcquiringPaymentsModuleProps> = (
 
   // Export transactions ledger as CSV with UTF-8 BOM
   const handleExportCsv = () => {
-    const headers = ['Номер заказа', 'Дата оплаты', 'ФИО плательщика', 'Спортсмен', 'Клуб', 'Категория взноса', 'Способ оплаты', 'Сумма (₽)', 'Статус', 'Фискальный чек ФД', 'ФПД'];
+    const headers = ['Номер заказа', 'Дата оплаты', 'ФИО плательщика', 'Спортсмен', 'Клуб', 'Категория взноса', 'Способ оплаты', 'Сумма ( сом)', 'Статус', 'Фискальный чек ФД', 'ФПД'];
     const rows = payments.map(p => [
       p.orderNumber,
       p.paidAt ? new Date(p.paidAt).toLocaleString('ru-RU') : 'Не оплачен',
@@ -364,7 +364,7 @@ export const AcquiringPaymentsModule: React.FC<AcquiringPaymentsModuleProps> = (
               <DollarSign className="w-4 h-4 text-emerald-400" />
             </div>
             <div className="text-2xl font-black font-mono text-emerald-300">
-              {stats.totalRevenue.toLocaleString('ru-RU')} ₽
+              {stats.totalRevenue.toLocaleString('ru-RU')} сом
             </div>
             <div className="text-[11px] font-mono text-slate-500 mt-1 flex items-center gap-1">
               <span className="text-emerald-400 font-bold">94%</span> от планового фонда
@@ -533,7 +533,7 @@ export const AcquiringPaymentsModule: React.FC<AcquiringPaymentsModuleProps> = (
 
                     <td className="py-3.5 px-4">
                       <div className="font-black text-sm text-emerald-300">
-                        {tx.amountRub.toLocaleString('ru-RU')} ₽
+                        {tx.amountRub.toLocaleString('ru-RU')} сом
                       </div>
                       <div className="text-[10px] text-slate-500 uppercase">
                         {tx.feeCategory.replace('_', ' ')}
@@ -644,16 +644,16 @@ export const AcquiringPaymentsModule: React.FC<AcquiringPaymentsModuleProps> = (
                         }}
                         className="w-full bg-slate-950 border border-slate-700 rounded-2xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
                       >
-                        <option value="athlete_entry">Стартовый взнос Кумитэ/Ката (3 500 ₽)</option>
-                        <option value="team_entry">Командная заявка (7 000 ₽)</option>
-                        <option value="medical_insurance">Страховка и медосмотр (750 ₽)</option>
-                        <option value="coach_license">Лицензия тренера (1 500 ₽)</option>
+                        <option value="athlete_entry">Стартовый взнос Кумитэ/Ката (3 500 сом)</option>
+                        <option value="team_entry">Командная заявка (7 000 сом)</option>
+                        <option value="medical_insurance">Страховка и медосмотр (750 сом)</option>
+                        <option value="coach_license">Лицензия тренера (1 500 сом)</option>
                       </select>
                     </div>
 
                     <div>
                       <label className="text-xs text-slate-300 font-bold block mb-1">
-                        Сумма к списанию (₽)
+                        Сумма к списанию ( сом)
                       </label>
                       <input
                         type="number"
@@ -670,7 +670,7 @@ export const AcquiringPaymentsModule: React.FC<AcquiringPaymentsModuleProps> = (
                     </label>
                     <input
                       type="text"
-                      placeholder="Иванов Даниил Сергеевич"
+                      placeholder="Абдыкадыров Данияр Сергеевич"
                       value={payerName}
                       onChange={(e) => setPayerName(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-700 rounded-2xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
@@ -804,7 +804,7 @@ export const AcquiringPaymentsModule: React.FC<AcquiringPaymentsModuleProps> = (
                           Откройте приложение любого банка (Сбер, Т-Банк, ВТБ, Альфа) и наведите камеру на QR-код.
                         </p>
                         <div className="text-[11px] text-teal-400 font-mono font-bold pt-1">
-                          Сумма к оплате: {customAmountRub.toLocaleString('ru-RU')} ₽ · Без комиссии
+                          Сумма к оплате: {customAmountRub.toLocaleString('ru-RU')} сом · Без комиссии
                         </div>
                       </div>
                     </div>
@@ -859,7 +859,7 @@ export const AcquiringPaymentsModule: React.FC<AcquiringPaymentsModuleProps> = (
                       className="px-5 py-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold font-mono flex items-center gap-2 shadow-lg shadow-emerald-900/40 cursor-pointer"
                     >
                       <Check className="w-4 h-4" />
-                      <span>Подтвердить оплату {customAmountRub.toLocaleString('ru-RU')} ₽</span>
+                      <span>Подтвердить оплату {customAmountRub.toLocaleString('ru-RU')} сом</span>
                     </button>
                   </div>
                 </div>
@@ -963,8 +963,8 @@ export const AcquiringPaymentsModule: React.FC<AcquiringPaymentsModuleProps> = (
                   {selectedReceipt.description || 'Стартовый взнос за участие в соревнованиях'}
                 </div>
                 <div className="flex justify-between text-slate-400 text-[11px]">
-                  <span>1 шт × {selectedReceipt.amountRub.toLocaleString('ru-RU')} ₽</span>
-                  <span className="text-white font-bold">{selectedReceipt.amountRub.toLocaleString('ru-RU')} ₽</span>
+                  <span>1 шт × {selectedReceipt.amountRub.toLocaleString('ru-RU')} сом</span>
+                  <span className="text-white font-bold">{selectedReceipt.amountRub.toLocaleString('ru-RU')} сом</span>
                 </div>
                 <div className="text-[10px] text-slate-500">
                   Ставка НДС: Без НДС (ст. 149 НК РФ)
@@ -973,7 +973,7 @@ export const AcquiringPaymentsModule: React.FC<AcquiringPaymentsModuleProps> = (
 
               <div className="flex justify-between text-sm font-black text-white pt-1">
                 <span>ИТОГ К ОПЛАТЕ:</span>
-                <span className="text-emerald-400">{selectedReceipt.amountRub.toLocaleString('ru-RU')} ₽</span>
+                <span className="text-emerald-400">{selectedReceipt.amountRub.toLocaleString('ru-RU')} сом</span>
               </div>
 
               <div className="space-y-1 text-[10px] text-slate-400 border-t border-dashed border-slate-800 pt-2">
@@ -1015,7 +1015,7 @@ export const AcquiringPaymentsModule: React.FC<AcquiringPaymentsModuleProps> = (
                   </svg>
                 </div>
                 <div className="text-[10px] text-slate-500">
-                  Проверка чека в приложении ФНС России
+                  Проверка чека в приложении ФНС Кыргызстана
                 </div>
               </div>
             </div>

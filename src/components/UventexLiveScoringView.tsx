@@ -214,7 +214,7 @@ export const UventexLiveScoringView: React.FC<UventexLiveScoringViewProps> = ({
               <div className="bg-rose-950/40 border border-rose-800/50 rounded-xl p-2.5 flex items-center justify-between">
                 <div>
                   <span className="text-[10px] font-bold text-rose-400 uppercase">AKA (Красный)</span>
-                  <div className="text-xs font-bold text-white truncate">T. Henderson</div>
+                  <div className="text-xs font-bold text-white truncate">Т. Бакиров</div>
                 </div>
                 <div className="text-xl font-black font-mono text-rose-400">0</div>
               </div>
