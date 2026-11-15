@@ -732,6 +732,90 @@ app.put('/api/admin/users/:id/role', (req: Request, res: Response) => {
   res.json({ success: true, user: publicUser(target) });
 });
 
+// ========================================================
+// SHARED TOURNAMENT DATA (participants, bouts, protocols)
+// Stored on the server so it survives page reloads and is the same on every device.
+// Each key has a version number; a write must name the version it was based on,
+// so two devices cannot silently overwrite each other (409 = reload and retry).
+// ========================================================
+const SHARED_STATE_WRITERS: Record<string, Set<string>> = {
+  participants: new Set(['admin', 'chief_referee', 'scorekeeper', 'club_coach']),
+  bouts: new Set(['admin', 'chief_referee', 'tatami_referee', 'scorekeeper']),
+  protocols: new Set(['admin', 'chief_referee', 'tatami_referee', 'scorekeeper'])
+};
+
+const stateEnvelope = (key: string) => {
+  const entry = db.state[key];
+  return entry
+    ? { key, version: entry.version, value: entry.value, updatedAt: entry.updatedAt }
+    : { key, version: 0, value: null, updatedAt: null };
+};
+
+// Coaches may only add new participants; they cannot change or remove existing ones.
+function isAppendOnlyChange(previous: unknown, next: unknown[]): boolean {
+  if (!Array.isArray(previous)) return true;
+  const nextById = new Map(next.map((item: any) => [item?.id, JSON.stringify(item)]));
+  return previous.every((item: any) => nextById.get(item?.id) === JSON.stringify(item));
+}
+
+app.get('/api/state/:key', (req: Request, res: Response) => {
+  const { key } = req.params;
+  if (!SHARED_STATE_WRITERS[key]) {
+    res.status(404).json({ error: 'Неизвестный раздел данных.' });
+    return;
+  }
+  const since = Number(req.query.since);
+  const current = db.state[key]?.version ?? 0;
+  if (Number.isFinite(since) && since === current) {
+    res.json({ key, version: current, changed: false });
+    return;
+  }
+  res.json({ ...stateEnvelope(key), changed: true });
+});
+
+app.put('/api/state/:key', (req: Request, res: Response) => {
+  const { key } = req.params;
+  const writers = SHARED_STATE_WRITERS[key];
+  if (!writers) {
+    res.status(404).json({ error: 'Неизвестный раздел данных.' });
+    return;
+  }
+  const user = getSessionUser(req);
+  if (!user) {
+    res.status(401).json({ error: 'Войдите в аккаунт, чтобы изменения сохранялись на сервере.' });
+    return;
+  }
+  if (!writers.has(user.role)) {
+    res.status(403).json({ error: 'У вашей роли нет права изменять эти данные.' });
+    return;
+  }
+
+  const { baseVersion, value } = req.body || {};
+  if (!Array.isArray(value)) {
+    res.status(400).json({ error: 'Ожидается список записей.' });
+    return;
+  }
+  const current = db.state[key];
+  const currentVersion = current?.version ?? 0;
+  if (baseVersion !== currentVersion) {
+    res.status(409).json({ error: 'Данные уже изменены с другого устройства.', ...stateEnvelope(key) });
+    return;
+  }
+  if (user.role === 'club_coach' && !isAppendOnlyChange(current?.value, value)) {
+    res.status(403).json({ error: 'Тренер может только добавлять своих спортсменов.' });
+    return;
+  }
+
+  db.state[key] = {
+    version: currentVersion + 1,
+    value,
+    updatedAt: new Date().toISOString(),
+    updatedBy: user.id
+  };
+  saveDb();
+  res.json(stateEnvelope(key));
+});
+
 // Comprehensive Karate Domain Fallback Engine
 function generateExpertFallbackResponse(prompt: string, context: Record<string, any>): string {
   const q = prompt.toLowerCase();

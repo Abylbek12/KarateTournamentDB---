@@ -78,6 +78,7 @@ import { Bout, Participant, TournamentRules, RefereeProtocol, UserRole, Tourname
 
 import { AppProvider, useApp } from './context/AppContext';
 import { useGlobalDomTranslator, trLang } from './utils/globalDomTranslator';
+import { useServerSyncedState } from './utils/useServerSyncedState';
 
 // Heavy screens are loaded on demand so the first page opens faster.
 const SchemaVisualizer = React.lazy(() => import('./components/SchemaVisualizer').then((m) => ({ default: m.SchemaVisualizer })));
@@ -363,9 +364,17 @@ function AppContent() {
     setTimeout(() => setGlobalSystemToast(null), 4500);
   };
 
-  const [bouts, setBouts] = useState<Bout[]>(SAMPLE_BOUTS);
-  const [participants, setParticipants] = useState<Participant[]>(SAMPLE_PARTICIPANTS);
-  const [protocols, setProtocols] = useState<RefereeProtocol[]>(SAMPLE_REFEREE_PROTOCOLS);
+  // Participants, bouts and protocols are stored on the server and shared between devices.
+  const sharedStateOptions = {
+    canWrite: !!currentUser,
+    onError: (message: string) => {
+      setGlobalSystemToast(message);
+      setTimeout(() => setGlobalSystemToast(null), 6000);
+    }
+  };
+  const [bouts, setBouts] = useServerSyncedState<Bout[]>('bouts', SAMPLE_BOUTS, sharedStateOptions);
+  const [participants, setParticipants] = useServerSyncedState<Participant[]>('participants', SAMPLE_PARTICIPANTS, sharedStateOptions);
+  const [protocols, setProtocols] = useServerSyncedState<RefereeProtocol[]>('protocols', SAMPLE_REFEREE_PROTOCOLS, sharedStateOptions);
   const [activeScoreboardBout, setActiveScoreboardBout] = useState<Bout | null>(null);
   const [selectedConsoleBoutId, setSelectedConsoleBoutId] = useState<string>(SAMPLE_BOUTS[0].id);
   const [isGlobalManualModalOpen, setIsGlobalManualModalOpen] = useState<boolean>(false);

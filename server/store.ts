@@ -33,8 +33,16 @@ interface ImageMeta {
   uploadedAt: string;
 }
 
+export interface SharedStateEntry {
+  version: number;
+  value: unknown;
+  updatedAt: string;
+  updatedBy: string;
+}
+
 interface DbShape {
   events: any[] | null;
+  state: Record<string, SharedStateEntry>;
   accounts: StoredUserAccount[];
   sessions: Record<string, SessionRecord>;
   images: Record<string, ImageMeta>;
@@ -51,12 +59,13 @@ function loadDb(): DbShape {
     const raw = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
     return {
       events: Array.isArray(raw.events) ? raw.events : null,
+      state: raw.state && typeof raw.state === 'object' ? raw.state : {},
       accounts: Array.isArray(raw.accounts) ? raw.accounts : [],
       sessions: raw.sessions && typeof raw.sessions === 'object' ? raw.sessions : {},
       images: raw.images && typeof raw.images === 'object' ? raw.images : {}
     };
   } catch {
-    return { events: null, accounts: [], sessions: {}, images: {} };
+    return { events: null, state: {}, accounts: [], sessions: {}, images: {} };
   }
 }
 
