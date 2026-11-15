@@ -6,6 +6,8 @@ import type { UventexEventItem, EventActionType } from '../data/uventexEventsDat
 import { belongsToEvent } from '../data/sampleTournamentData';
 import { ELIMINATION_ORDER, computeStandings, repechageHalf, repechageStep, stageLabel } from '../utils/bracketProgression';
 import * as E from '../utils/boutEngine';
+import { displayName, displayClub, localizeCategoryName, nameModeFor, participantFlag, participantNoc, participantCountry, type NameMode } from '../utils/names';
+import { countryName, flagEmoji } from '../utils/countries';
 import { currentBoutOf, upcomingOf } from './TatamiScreens';
 
 type Lang = 'ru' | 'ky' | 'en';
@@ -22,7 +24,21 @@ interface BaseProps {
 
 const t = (lang: Lang, ru: string, ky: string, en: string) => (lang === 'ky' ? ky : lang === 'en' ? en : ru);
 
-const fullName = (p?: Participant) => (p ? `${p.lastName} ${p.firstName}`.trim() : '');
+/** Local (Cyrillic) or international (SURNAME Name, Latin) names for the current page. */
+let currentMode: NameMode = 'local';
+const fullName = (p?: Participant) => (p ? displayName(p, currentMode) : '');
+const useEventNameMode = (bouts: Bout[], lang: Lang) => {
+  const mode = nameModeFor(bouts.flatMap((b) => [b.akaParticipant, b.aoParticipant]) as Participant[], lang);
+  currentMode = mode;
+  return mode;
+};
+const Flag: React.FC<{ p?: Participant }> = ({ p }) =>
+  p && participantNoc(p) ? (
+    <span className="inline-flex items-center gap-1 text-xs text-[var(--app-text-muted)] whitespace-nowrap">
+      <span className="text-sm leading-none">{participantFlag(p)}</span>
+      {participantNoc(p)}
+    </span>
+  ) : null;
 
 /** Categories of this event that have at least one bout, with a readable name. */
 function useEventCategories(event: UventexEventItem, bouts: Bout[], categories: TournamentCategory[]) {
@@ -107,7 +123,12 @@ const BoutCard: React.FC<{ bout: Bout; language: Lang }> = ({ bout, language }) 
           <span className={`block truncate text-sm ${p ? 'text-[var(--app-text-primary)]' : 'text-[var(--app-text-muted)] italic'}`}>
             {p ? fullName(p) : t(language, 'ожидается', 'күтүлүүдө', 'TBD')}
           </span>
-          {p?.clubName && <span className="block truncate text-xs text-[var(--app-text-muted)]">{p.clubName}</span>}
+          {p && (
+            <span className="flex items-center gap-1.5 text-xs text-[var(--app-text-muted)] min-w-0">
+              <Flag p={p as Participant} />
+              <span className="truncate">{displayClub(p as Participant, currentMode)}</span>
+            </span>
+          )}
         </span>
         {(bout.status !== 'scheduled' || score > 0) && (
           <span className="text-sm tabular-nums text-[var(--app-text-primary)]">{score}</span>
@@ -136,6 +157,7 @@ const BoutCard: React.FC<{ bout: Bout; language: Lang }> = ({ bout, language }) 
 export const PublicBracketsView: React.FC<BaseProps> = (props) => {
   const { event, bouts, categories, language } = props;
   const { eventBouts, cats } = useEventCategories(event, bouts, categories);
+  useEventNameMode(eventBouts, language);
   const [catId, setCatId] = React.useState<string | null>(null);
   const active = catId && cats.some((c) => c.id === catId) ? catId : cats[0]?.id;
   const catBouts = eventBouts.filter((b) => b.categoryId === active);
@@ -162,7 +184,7 @@ export const PublicBracketsView: React.FC<BaseProps> = (props) => {
                     : 'border-[var(--app-border)] text-[var(--app-text-secondary)] hover:border-[var(--accent)]'
                 }`}
               >
-                {c.name}
+                {localizeCategoryName(c.name, language)}
               </button>
             ))}
           </div>
@@ -205,6 +227,7 @@ export const PublicBracketsView: React.FC<BaseProps> = (props) => {
 export const PublicResultsView: React.FC<BaseProps & { mode: 'results' | 'medals' }> = (props) => {
   const { event, bouts, participants, categories, language, mode } = props;
   const { eventBouts, cats } = useEventCategories(event, bouts, categories);
+  useEventNameMode(eventBouts, language);
 
   const find = (id?: string): Participant | undefined =>
     participants.find((p) => p.id === id) ||
@@ -282,7 +305,7 @@ export const PublicResultsView: React.FC<BaseProps & { mode: 'results' | 'medals
         <div className="grid gap-4 md:grid-cols-2">
           {standings.map(({ id, name, s }) => (
             <section key={id} className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4">
-              <h3 className="font-semibold text-[var(--app-text-primary)]">{name}</h3>
+              <h3 className="font-semibold text-[var(--app-text-primary)]">{localizeCategoryName(name, language)}</h3>
               <ol className="mt-3 space-y-2">
                 {[
                   { place: '1', medal: '🥇', id: s.gold },
@@ -297,7 +320,12 @@ export const PublicResultsView: React.FC<BaseProps & { mode: 'results' | 'medals
                         <span className={`block truncate ${p ? 'text-[var(--app-text-primary)]' : 'text-[var(--app-text-muted)] italic'}`}>
                           {p ? fullName(p) : t(language, 'определяется', 'аныкталууда', 'pending')}
                         </span>
-                        {p && <span className="block truncate text-xs text-[var(--app-text-muted)]">{[p.clubName, p.city, p.country].filter(Boolean).join(' · ')}</span>}
+                        {p && (
+                          <span className="flex items-center gap-1.5 text-xs text-[var(--app-text-muted)] min-w-0">
+                            <Flag p={p} />
+                            <span className="truncate">{[p.clubName, p.city].filter(Boolean).join(' · ')}</span>
+                          </span>
+                        )}
                       </span>
                     </li>
                   );
@@ -312,7 +340,13 @@ export const PublicResultsView: React.FC<BaseProps & { mode: 'results' | 'medals
       ) : (
         <div className="space-y-5">
           <MedalTable title={t(language, 'Медальный зачёт по клубам', 'Клубдар боюнча медалдык эсеп', 'Medal table by club')} rows={table((p) => p.clubName || '')} />
-          <MedalTable title={t(language, 'Медальный зачёт по странам', 'Өлкөлөр боюнча медалдык эсеп', 'Medal table by country')} rows={table((p) => p.country || '')} />
+          <MedalTable
+            title={t(language, 'Медальный зачёт по странам', 'Өлкөлөр боюнча медалдык эсеп', 'Medal table by country')}
+            rows={table((p) => {
+              const c = participantCountry(p);
+              return c ? `${flagEmoji(c.iso2)} ${countryName(c, language)} · ${c.noc}` : p.country || '';
+            })}
+          />
           <p className="text-xs text-[var(--app-text-muted)] inline-flex items-center gap-1">
             <Medal className="w-3.5 h-3.5" />
             {t(language, 'Считается автоматически по итогам боёв. Две бронзы в каждой категории (утешительные бои WKF).', 'Беттештердин жыйынтыгы боюнча автоматтык түрдө эсептелет.', 'Calculated automatically from bout results. Two bronze medals per category (WKF repechage).')}
@@ -327,6 +361,7 @@ export const PublicResultsView: React.FC<BaseProps & { mode: 'results' | 'medals
 export const PublicLiveView: React.FC<BaseProps> = (props) => {
   const { event, bouts, language } = props;
   const eventBouts = bouts.filter((b) => belongsToEvent(b.tournamentId, event.id));
+  useEventNameMode(eventBouts, language);
   const tatamis = Array.from(new Set(eventBouts.map((b) => b.tatamiNumber).filter((n): n is number => !!n))).sort((a, b) => a - b);
   const anyRunning = eventBouts.some((b) => E.isRunning(b));
   const [now, setNow] = React.useState(Date.now());
@@ -354,7 +389,10 @@ export const PublicLiveView: React.FC<BaseProps> = (props) => {
                 <div className={`flex items-center gap-3 px-4 py-3 ${s === 'aka' ? 'bg-red-600' : 'bg-blue-600'} text-white`}>
                   <div className="flex-1 min-w-0">
                     <div className={`truncate text-[15px] ${won ? 'font-bold' : 'font-semibold'}`}>{p ? fullName(p) : '—'}</div>
-                    <div className="truncate text-xs opacity-85">{[p?.clubName, p?.country].filter(Boolean).join(' · ')}</div>
+                    <div className="truncate text-xs opacity-90">
+                      {p && `${participantFlag(p as Participant)} ${participantNoc(p as Participant)} · `}
+                      {p?.clubName}
+                    </div>
                   </div>
                   {(s === 'aka' ? b?.akaSenshu : b?.aoSenshu) && <span className="px-1.5 py-0.5 rounded bg-amber-400 text-black text-[10px] font-black">SENSHU</span>}
                   <div className="text-3xl font-black tabular-nums w-10 text-right">{s === 'aka' ? b?.akaScore : b?.aoScore}</div>
@@ -376,13 +414,13 @@ export const PublicLiveView: React.FC<BaseProps> = (props) => {
                 {b ? (
                   <>
                     <div className="px-4 py-1.5 text-xs text-[var(--app-text-muted)] truncate">
-                      {b.categoryName} · {stageLabel(b.roundStage, language)} · #{b.boutNumber}
+                      {localizeCategoryName(b.categoryName, language)} · {stageLabel(b.roundStage, language)} · #{b.boutNumber}
                     </div>
                     {side('aka')}
                     {side('ao')}
                     {b.status === 'completed' && b.winReason && (
                       <div className="px-4 py-2 text-sm text-[var(--app-text-secondary)]">
-                        {t(language, 'Победа', 'Жеңиш', 'Winner')}: {b.winnerId === b.akaParticipantId ? 'АКА' : 'АО'} · {E.WIN_REASON_LABELS[b.winReason]}
+                        {t(language, 'Победа', 'Жеңиш', 'Winner')}: {b.winnerId === b.akaParticipantId ? 'АКА' : 'АО'} · {E.winReasonLabel(b.winReason, language)}
                       </div>
                     )}
                   </>

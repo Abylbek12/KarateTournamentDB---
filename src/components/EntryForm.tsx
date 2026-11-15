@@ -2,6 +2,8 @@ import React from 'react';
 import { UserPlus, Trash2, Users, CheckCircle2, AlertTriangle, ClipboardList, X } from 'lucide-react';
 import type { AuthenticatedUserProfile, BeltRank, EventCategory, Gender, Participant, Tournament } from '../types/schema';
 import { BELT_LABELS, BELT_ORDER, categoryFits, categoryName, isTeamCategory } from '../utils/eventCategories';
+import { COUNTRIES, flagEmoji, countryByNoc } from '../utils/countries';
+import { transliterate } from '../utils/names';
 
 interface EntryFormProps {
   tournaments: Tournament[];
@@ -21,6 +23,8 @@ interface AthleteDraft {
   weightKg: string;
   beltRank: BeltRank;
   categoryIds: string[];
+  lastNameLatin: string;
+  firstNameLatin: string;
 }
 
 const blankAthlete = (): AthleteDraft => ({
@@ -31,7 +35,9 @@ const blankAthlete = (): AthleteDraft => ({
   gender: 'male',
   weightKg: '',
   beltRank: 'white_10kyu',
-  categoryIds: []
+  categoryIds: [],
+  lastNameLatin: '',
+  firstNameLatin: ''
 });
 
 const field = 'w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-text-primary)] px-3 py-2 text-sm';
@@ -50,7 +56,8 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
 
   const [club, setClub] = React.useState(currentUser.clubName || '');
   const [city, setCity] = React.useState('');
-  const [country, setCountry] = React.useState('Кыргызстан');
+  const [countryCode, setCountryCode] = React.useState('KGZ');
+  const country = countryByNoc(countryCode)?.ru || '';
   const [athletes, setAthletes] = React.useState<AthleteDraft[]>(() => {
     if (isCoach) return [blankAthlete()];
     const [last = '', first = ''] = currentUser.fullName.split(' ');
@@ -88,9 +95,12 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
           gender: a.gender,
           declaredWeightKg: a.weightKg ? Number(a.weightKg) : 0,
           beltRank: a.beltRank,
+          lastNameLatin: a.lastNameLatin || transliterate(a.lastName),
+          firstNameLatin: a.firstNameLatin || transliterate(a.firstName),
           clubName: club,
           city,
-          country
+          country,
+          countryCode
         }))
     ),
     ...teams
@@ -102,7 +112,8 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
         gender: cats.find((c) => c.id === t.categoryId)?.gender,
         clubName: club,
         city,
-        country
+        country,
+        countryCode
       }))
   ];
   const total = entries.reduce((sum, e) => sum + (cats.find((c) => c.id === e.categoryId)?.fee || 0), 0);
@@ -184,8 +195,14 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
           <input id="entry-city" value={city} onChange={(e) => setCity(e.target.value)} className={field} placeholder="Бишкек" />
         </div>
         <div className="md:col-span-2">
-          <label className={label} htmlFor="entry-country">Страна</label>
-          <input id="entry-country" value={country} onChange={(e) => setCountry(e.target.value)} className={field} />
+          <label className={label} htmlFor="entry-country">Страна (код NOC)</label>
+          <select id="entry-country" value={countryCode} onChange={(e) => setCountryCode(e.target.value)} className={field}>
+            {COUNTRIES.map((c) => (
+              <option key={c.noc} value={c.noc}>
+                {flagEmoji(c.iso2)} {c.ru} · {c.noc}
+              </option>
+            ))}
+          </select>
         </div>
       </section>
 
@@ -237,6 +254,14 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
                     </option>
                   ))}
                 </select>
+              </div>
+              <div className="lg:col-span-3">
+                <label className={label} htmlFor={`a-lastlat-${a.key}`}>Фамилия латиницей (как в паспорте)</label>
+                <input id={`a-lastlat-${a.key}`} value={a.lastNameLatin} placeholder={transliterate(a.lastName) || 'Abdykadyrov'} onChange={(e) => update(a.key, { lastNameLatin: e.target.value })} className={field} />
+              </div>
+              <div className="lg:col-span-3">
+                <label className={label} htmlFor={`a-firstlat-${a.key}`}>Имя латиницей</label>
+                <input id={`a-firstlat-${a.key}`} value={a.firstNameLatin} placeholder={transliterate(a.firstName) || 'Adilet'} onChange={(e) => update(a.key, { firstNameLatin: e.target.value })} className={field} />
               </div>
             </div>
 

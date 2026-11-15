@@ -254,6 +254,11 @@ export interface Participant {
   status: ParticipantStatus;
   licenseNumber: string;
   placement?: '1st_gold' | '2nd_silver' | '3rd_bronze_1' | '3rd_bronze_2' | '5th' | '7th';
+  /** NOC (IOC) country code, e.g. KGZ — used for flags and international results. */
+  countryCode?: string;
+  /** Name in Latin letters for international protocols (auto-transliterated if empty). */
+  lastNameLatin?: string;
+  firstNameLatin?: string;
   /** Account that submitted the entry (athlete, parent or coach). */
   createdBy?: string;
   createdAt?: string;

@@ -195,3 +195,34 @@ export const WIN_REASON_LABELS: Record<WinReason, string> = {
   mercy_rule_8pt: 'Разница 8 очков',
   encho_sen_sudden_death: 'Энчо-сэн (до первого балла)'
 };
+
+const WIN_REASON_EN: Record<WinReason, string> = {
+  points_lead: 'On points',
+  senshu_advantage: 'Senshu',
+  hantei_decision: 'Judges’ decision (Hantei)',
+  ippon_kyokushin: 'Ippon',
+  hansoku_dq: 'Opponent disqualified (Hansoku)',
+  kiken_injury: 'Opponent withdrew (Kiken)',
+  ippon_direct: 'Ippon',
+  awasete_ippon: 'Awasete Ippon',
+  shobu_sanbon_win: 'Shobu Sanbon',
+  mercy_rule_8pt: '8-point lead',
+  encho_sen_sudden_death: 'Encho-sen'
+};
+
+const WIN_REASON_KY: Record<WinReason, string> = {
+  points_lead: 'Упай боюнча',
+  senshu_advantage: 'Senshu (биринчи упай)',
+  hantei_decision: 'Калыстардын чечими (Хантей)',
+  ippon_kyokushin: 'Иппон',
+  hansoku_dq: 'Атаандаш четтетилди (Хансоку)',
+  kiken_injury: 'Атаандаш баш тартты (Кикен)',
+  ippon_direct: 'Иппон',
+  awasete_ippon: 'Авасэтэ иппон',
+  shobu_sanbon_win: 'Сёбу санбон',
+  mercy_rule_8pt: '8 упай айырма',
+  encho_sen_sudden_death: 'Энчо-сэн'
+};
+
+export const winReasonLabel = (r: WinReason, lang: 'ru' | 'ky' | 'en' = 'ru') =>
+  lang === 'en' ? WIN_REASON_EN[r] : lang === 'ky' ? WIN_REASON_KY[r] : WIN_REASON_LABELS[r];

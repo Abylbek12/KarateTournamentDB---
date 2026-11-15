@@ -5,8 +5,23 @@ import * as E from '../utils/boutEngine';
 import { stageLabel } from '../utils/bracketProgression';
 import { BoutConsole } from './BoutConsole';
 import { TatamiMark } from './BrandLogo';
+import { useApp } from '../context/AppContext';
+import { displayName, displayClub, localizeCategoryName, nameModeFor, participantFlag, participantNoc, type NameMode } from '../utils/names';
 
-const name = (p?: Participant) => (p ? `${p.lastName} ${p.firstName}`.trim() : '—');
+type Lang = 'ru' | 'ky' | 'en';
+const tr = (lang: Lang, ru: string, ky: string, en: string) => (lang === 'ky' ? ky : lang === 'en' ? en : ru);
+const sideLabel = (lang: Lang, side: 'aka' | 'ao') => (side === 'aka' ? tr(lang, 'АКА', 'АКА', 'AKA') : tr(lang, 'АО', 'АО', 'AO'));
+
+/** Language and name style (local / international with Latin names) for a set of bouts. */
+function useScreenLocale(bouts: Bout[]) {
+  const { language } = useApp();
+  const lang = (language || 'ru') as Lang;
+  const mode: NameMode = nameModeFor(bouts.flatMap((b) => [b.akaParticipant, b.aoParticipant]) as Participant[], lang);
+  const name = (p?: Participant) => (p ? displayName(p, mode) : '—');
+  const club = (p?: Participant) => displayClub(p, mode);
+  const cat = (n?: string) => localizeCategoryName(n, lang);
+  return { lang, mode, name, club, cat };
+}
 
 /** Bout to show on a tatami: the one in progress, else the next one, else the last finished. */
 export function currentBoutOf(bouts: Bout[], tatamiNumber: number): Bout | undefined {
@@ -84,6 +99,7 @@ const Penalties: React.FC<{ c1: number; c2: number; align: 'left' | 'right' }> =
 /** Full-screen spectator scoreboard for one tatami (TV / projector). No sign-in. */
 export const TatamiDisplay: React.FC<{ tatamiNumber: number; bouts: Bout[]; rules: TournamentRules }> = ({ tatamiNumber, bouts, rules }) => {
   useWakeLock();
+  const { lang, name, club, cat } = useScreenLocale(bouts);
   const bout = currentBoutOf(bouts, tatamiNumber);
   const now = useTicker(!!bout && E.isRunning(bout));
   const next = upcomingOf(bouts, tatamiNumber, bout?.id, 2);
@@ -96,8 +112,8 @@ export const TatamiDisplay: React.FC<{ tatamiNumber: number; bouts: Bout[]; rule
     return (
       <div className="theme-keep fixed inset-0 bg-[#0b1220] text-white flex flex-col items-center justify-center gap-6">
         <TatamiMark className="w-24 h-24" />
-        <div className="text-[5vh] font-bold">Татами {tatamiNumber}</div>
-        <div className="text-[2.5vh] opacity-70">Поединков пока нет</div>
+        <div className="text-[5vh] font-bold">{tr(lang, 'Татами', 'Татами', 'Tatami')} {tatamiNumber}</div>
+        <div className="text-[2.5vh] opacity-70">{tr(lang, 'Поединков пока нет', 'Беттештер азырынча жок', 'No bouts yet')}</div>
       </div>
     );
   }
@@ -120,9 +136,13 @@ export const TatamiDisplay: React.FC<{ tatamiNumber: number; bouts: Bout[]; rule
     return (
       <div className={`flex-1 flex flex-col justify-between p-[3vh] ${s === 'aka' ? 'bg-[#b3121f]' : 'bg-[#123fa8]'} ${dim ? 'opacity-40' : ''} transition-opacity`}>
         <div className={s === 'ao' ? 'text-right' : ''}>
-          <div className="text-[2vh] font-semibold uppercase tracking-[0.2em] opacity-80">{s === 'aka' ? 'АКА' : 'АО'}</div>
+          <div className="text-[2vh] font-semibold uppercase tracking-[0.2em] opacity-80">{sideLabel(lang, s)}</div>
           <div className="text-[5.5vh] font-bold leading-tight truncate">{name(p)}</div>
-          <div className="text-[2.6vh] opacity-80 truncate">{[p?.clubName, p?.country].filter(Boolean).join(' · ')}</div>
+          <div className={`flex items-center gap-[1.5vh] text-[2.6vh] opacity-90 ${s === 'ao' ? 'justify-end' : ''}`}>
+            {p && <span className="text-[3.6vh] leading-none">{participantFlag(p)}</span>}
+            {p && participantNoc(p) && <span className="font-black tracking-wider">{participantNoc(p)}</span>}
+            <span className="truncate opacity-80">{club(p)}</span>
+          </div>
         </div>
         <div className={`flex items-end gap-[3vh] ${s === 'ao' ? 'flex-row-reverse' : ''}`}>
           <div className="text-[26vh] font-black leading-[0.85] tabular-nums">{scoreOf(s)}</div>
@@ -139,11 +159,11 @@ export const TatamiDisplay: React.FC<{ tatamiNumber: number; bouts: Bout[]; rule
     <div className="theme-keep fixed inset-0 bg-[#0b1220] text-white flex flex-col select-none">
       <div className="flex items-center gap-[2vh] px-[3vh] py-[1.5vh] bg-black/40">
         <TatamiMark className="w-[4vh] h-[4vh]" />
-        <div className="text-[2.6vh] font-bold">Татами {tatamiNumber}</div>
+        <div className="text-[2.6vh] font-bold">{tr(lang, 'Татами', 'Татами', 'Tatami')} {tatamiNumber}</div>
         <div className="text-[2.2vh] opacity-80 truncate flex-1">
-          {bout.categoryName} · {stageLabel(bout.roundStage)} · бой #{bout.boutNumber}
+          {cat(bout.categoryName)} · {stageLabel(bout.roundStage, lang)} · #{bout.boutNumber}
         </div>
-        <button onClick={fullscreen} className="p-[1vh] rounded hover:bg-white/10 cursor-pointer" title="Во весь экран">
+        <button onClick={fullscreen} className="p-[1vh] rounded hover:bg-white/10 cursor-pointer" title={tr(lang, 'Во весь экран', 'Толук экран', 'Full screen')}>
           <Maximize className="w-[3vh] h-[3vh]" />
         </button>
       </div>
@@ -157,12 +177,12 @@ export const TatamiDisplay: React.FC<{ tatamiNumber: number; bouts: Bout[]; rule
           </div>
           {bout.awaitingDecision && !finished && (
             <div className="mt-[1vh] text-[2.4vh] font-bold text-amber-300 inline-flex items-center gap-2">
-              <Gavel className="w-[2.6vh] h-[2.6vh]" /> Хантей — решение судей
+              <Gavel className="w-[2.6vh] h-[2.6vh]" /> {tr(lang, 'Хантей — решение судей', 'Хантей — калыстардын чечими', 'Hantei — judges’ decision')}
             </div>
           )}
           {finished && (
             <div className="mt-[1vh] text-[2.6vh] font-bold">
-              Победа {winner === 'aka' ? 'АКА' : 'АО'} · {bout.winReason ? E.WIN_REASON_LABELS[bout.winReason] : ''}
+              {tr(lang, 'Победа', 'Жеңиш', 'Winner')} {sideLabel(lang, winner!)} · {bout.winReason ? E.winReasonLabel(bout.winReason, lang) : ''}
             </div>
           )}
         </div>
@@ -170,7 +190,7 @@ export const TatamiDisplay: React.FC<{ tatamiNumber: number; bouts: Bout[]; rule
 
       {next.length > 0 && (
         <div className="flex gap-[3vh] px-[3vh] py-[1.5vh] bg-black/50 text-[2.2vh]">
-          <span className="opacity-60 uppercase tracking-wider">Далее</span>
+          <span className="opacity-60 uppercase tracking-wider">{tr(lang, 'Далее', 'Кийинки', 'Next')}</span>
           {next.map((b) => (
             <span key={b.id} className="truncate">
               #{b.boutNumber} <span className="text-red-300">{name(b.akaParticipant)}</span> — <span className="text-blue-300">{name(b.aoParticipant)}</span>
@@ -185,6 +205,7 @@ export const TatamiDisplay: React.FC<{ tatamiNumber: number; bouts: Bout[]; rule
 /** Warm-up / call area: what is on every tatami now and who must get ready. */
 export const CallRoomDisplay: React.FC<{ bouts: Bout[]; tatamiNumbers: number[] }> = ({ bouts, tatamiNumbers }) => {
   useWakeLock();
+  const { lang, name, cat } = useScreenLocale(bouts);
   React.useEffect(() => {
     document.title = 'Зона разминки · Tatami.kg';
   }, []);
@@ -192,8 +213,8 @@ export const CallRoomDisplay: React.FC<{ bouts: Bout[]; tatamiNumbers: number[] 
     <div className="theme-keep fixed inset-0 bg-[#0b1220] text-white flex flex-col">
       <div className="flex items-center gap-3 px-6 py-4 bg-black/40">
         <ListOrdered className="w-7 h-7" />
-        <div className="text-2xl font-bold flex-1">Вызов спортсменов · зона разминки</div>
-        <button onClick={fullscreen} className="p-2 rounded hover:bg-white/10 cursor-pointer" title="Во весь экран">
+        <div className="text-2xl font-bold flex-1">{tr(lang, 'Вызов спортсменов · зона разминки', 'Спортчуларды чакыруу · жылытуу аймагы', 'Call room · warm-up area')}</div>
+        <button onClick={fullscreen} className="p-2 rounded hover:bg-white/10 cursor-pointer" title={tr(lang, 'Во весь экран', 'Толук экран', 'Full screen')}>
           <Maximize className="w-6 h-6" />
         </button>
       </div>
@@ -203,18 +224,18 @@ export const CallRoomDisplay: React.FC<{ bouts: Bout[]; tatamiNumbers: number[] 
           const queue = upcomingOf(bouts, t, cur?.status === 'completed' ? undefined : cur?.id, 3);
           return (
             <section key={t} className="rounded-2xl bg-white/5 border border-white/10 p-5 flex flex-col gap-4 min-w-0">
-              <div className="text-3xl font-black">Татами {t}</div>
+              <div className="text-3xl font-black">{tr(lang, 'Татами', 'Татами', 'Tatami')} {t}</div>
               {[cur && cur.status !== 'completed' ? cur : undefined, ...queue].filter(Boolean).slice(0, 4).map((b, i) => (
                 <div key={b!.id} className={`rounded-xl p-3 ${i === 0 ? 'bg-emerald-600/30 border border-emerald-400/50' : i === 1 ? 'bg-amber-500/20 border border-amber-400/40' : 'bg-white/5'}`}>
                   <div className="text-sm uppercase tracking-wider opacity-80">
-                    {i === 0 ? 'На татами' : i === 1 ? 'Приготовиться' : 'Далее'} · #{b!.boutNumber} · {b!.scheduledTime}
+                    {i === 0 ? tr(lang, 'На татами', 'Татамиде', 'On tatami') : i === 1 ? tr(lang, 'Приготовиться', 'Даярданыңыз', 'Get ready') : tr(lang, 'Далее', 'Кийинки', 'Next')} · #{b!.boutNumber} · {b!.scheduledTime}
                   </div>
-                  <div className="text-xl font-bold truncate text-red-300">{name(b!.akaParticipant)}</div>
-                  <div className="text-xl font-bold truncate text-blue-300">{name(b!.aoParticipant)}</div>
-                  <div className="text-sm opacity-70 truncate">{b!.categoryName}</div>
+                  <div className="text-xl font-bold truncate text-red-300">{b!.akaParticipant && participantFlag(b!.akaParticipant)} {name(b!.akaParticipant)}</div>
+                  <div className="text-xl font-bold truncate text-blue-300">{b!.aoParticipant && participantFlag(b!.aoParticipant)} {name(b!.aoParticipant)}</div>
+                  <div className="text-sm opacity-70 truncate">{cat(b!.categoryName)}</div>
                 </div>
               ))}
-              {!cur && queue.length === 0 && <div className="opacity-60">Поединков нет</div>}
+              {!cur && queue.length === 0 && <div className="opacity-60">{tr(lang, 'Поединков нет', 'Беттеш жок', 'No bouts')}</div>}
             </section>
           );
         })}
@@ -232,6 +253,7 @@ export const TatamiControl: React.FC<{
   onChange: (b: Bout) => void;
 }> = ({ tatamiNumber, bouts, rules, deviceOk, onChange }) => {
   useWakeLock();
+  const { name } = useScreenLocale(bouts);
   const [selected, setSelected] = React.useState<string | null>(null);
   const [showList, setShowList] = React.useState(false);
   const current = currentBoutOf(bouts, tatamiNumber);

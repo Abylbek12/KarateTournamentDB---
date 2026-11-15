@@ -1,4 +1,5 @@
 import { Participant, TournamentCategory, Tatami, Bout, RoundStage } from '../types/schema';
+import { findCountry } from './countries';
 
 export interface ProtectionCheckResult {
   hasR1Conflict: boolean;
@@ -130,7 +131,8 @@ export function separationKey(p: Participant, level: SeparationLevel): string {
     case 'region':
       return norm((p as Participant & { region?: string }).region) || norm(KG_REGION_BY_CITY[norm(p.city)]) || norm(p.city);
     case 'country':
-      return norm(p.country);
+      // NOC code first, so «Кыргызстан», «Kyrgyzstan» and «KGZ» are one country
+      return norm(p.countryCode) || norm(findCountry(p.country)?.noc) || norm(p.country);
   }
 }
 
