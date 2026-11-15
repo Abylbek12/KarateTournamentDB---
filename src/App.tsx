@@ -135,8 +135,8 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState<string>('tournaments');
   useGlobalDomTranslator(language, activeTab);
   const [tournaments, setTournaments] = useState<UventexEventItem[]>(UVENTEX_SCREENSHOT_EVENTS);
-  const [selectedTournament, setSelectedTournament] = useState<Tournament>(UVENTEX_SCREENSHOT_EVENTS[3]);
-  const [selectedUventexEvent, setSelectedUventexEvent] = useState<UventexEventItem>(UVENTEX_SCREENSHOT_EVENTS[3]);
+  const [selectedTournament, setSelectedTournament] = useState<Tournament>(UVENTEX_SCREENSHOT_EVENTS[0]);
+  const [selectedUventexEvent, setSelectedUventexEvent] = useState<UventexEventItem>(UVENTEX_SCREENSHOT_EVENTS[0]);
   const [tournamentRules, setTournamentRules] = useState<TournamentRules>('wkf');
   const [currentUser, setCurrentUser] = useState<AuthenticatedUserProfile | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>('club_coach');

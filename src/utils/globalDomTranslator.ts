@@ -22,328 +22,50 @@ const EVENT_LOCALIZATIONS: Record<
     en: { title: string; locationLabel: string; description: string };
   }
 > = {
-  'pcl-sanctioning': {
-    ru: {
-      title: 'Санкционирование турниров PCL',
-      locationLabel: 'Международная лига PCL',
-      description: 'Официальная международная система санкционирования турниров и аттестации дивизионов PCL.'
-    },
-    ky: {
-      title: 'PCL мелдештерин расмий санкциялоо',
-      locationLabel: 'Эл аралык PCL лигасы',
-      description: 'Мелдештерди расмий эл аралык санкциялоо жана PCL дивизиондорун аттестациялоо системасы.'
-    },
-    en: {
-      title: 'PCL Event Sanctioning',
-      locationLabel: 'International PCL League',
-      description: 'Official international tournament sanctioning and division certification system for PCL.'
-    }
+  'kg-bishkek-cup-2026': {
+    ru: { title: "Кубок города Бишкек по каратэ WKF 2026", locationLabel: "Кыргызстан, г. Бишкек", description: "Пример турнира на сайте Tatami.kg." },
+    ky: { title: "Бишкек шаарынын каратэ WKF боюнча Кубогу 2026", locationLabel: "Кыргызстан, Бишкек ш.", description: "Tatami.kg сайтындагы мелдештин үлгүсү." },
+    en: { title: "Bishkek City Karate WKF Cup 2026", locationLabel: "Kyrgyzstan, Bishkek", description: "Example tournament on Tatami.kg." }
   },
-  'ukr-championship-2026': {
-    ru: {
-      title: 'Чемпионат Украины 2026 по каратэ (кадеты, юниоры и взрослые)',
-      locationLabel: 'Украина, UA-46, Львов',
-      description: 'Главный национальный старт сезона: кадеты, юниоры и взрослые в борьбе за титул чемпионов.'
-    },
-    ky: {
-      title: 'Каратэ боюнча Украина Чемпионаты 2026 (кадеттер, юниорлор жана чоңдор)',
-      locationLabel: 'Украина, UA-46, Львов',
-      description: 'Сезондун башкы улуттук старты: кадеттер, юниорлор жана чоңдор чемпиондук наам үчүн таймашат.'
-    },
-    en: {
-      title: 'Ukraine National Karate Championship 2026 (Cadets, Juniors & Seniors)',
-      locationLabel: 'Ukraine, UA-46, Lviv',
-      description: 'Flagship national championship of the season featuring cadet, junior, and senior divisions.'
-    }
+  'kg-osh-open-2026': {
+    ru: { title: "Открытый турнир г. Ош среди детей и юношей", locationLabel: "Кыргызстан, Ошская обл., Ош", description: "Пример турнира на сайте Tatami.kg." },
+    ky: { title: "Ош шаарынын балдар жана өспүрүмдөр арасындагы ачык мелдеши", locationLabel: "Кыргызстан, Ош облусу, Ош", description: "Tatami.kg сайтындагы мелдештин үлгүсү." },
+    en: { title: "Osh Open Tournament for Children and Youth", locationLabel: "Kyrgyzstan, Osh Region, Osh", description: "Example tournament on Tatami.kg." }
   },
-  'lviv-karate-open-2026': {
-    ru: {
-      title: '«XIV LVIV KARATE OPEN 2026» (Серия А)',
-      locationLabel: 'Украина, UA-46, Львов',
-      description: 'Международный рейтинговый турнир серии А с электронной судейской системой.'
-    },
-    ky: {
-      title: '«XIV LVIV KARATE OPEN 2026» (UKF А Сериясы)',
-      locationLabel: 'Украина, UA-46, Львов',
-      description: 'Электрондук калыстык системасы бар А сериясындагы эл аралык рейтингдик мелдеш.'
-    },
-    en: {
-      title: '"XIV LVIV KARATE OPEN 2026" (UKF Series A)',
-      locationLabel: 'Ukraine, UA-46, Lviv',
-      description: 'International Series A ranking tournament featuring high-level competition and electronic scoring.'
-    }
+  'kg-national-championship-2026': {
+    ru: { title: "Чемпионат Кыргызской Республики по каратэ 2026", locationLabel: "Кыргызстан, г. Бишкек", description: "Пример турнира на сайте Tatami.kg." },
+    ky: { title: "Кыргыз Республикасынын каратэ боюнча чемпионаты 2026", locationLabel: "Кыргызстан, Бишкек ш.", description: "Tatami.kg сайтындагы мелдештин үлгүсү." },
+    en: { title: "Kyrgyz Republic Karate Championship 2026", locationLabel: "Kyrgyzstan, Bishkek", description: "Example tournament on Tatami.kg." }
   },
-  'bull-moose-2026': {
-    ru: {
-      title: 'Международный турнир Bull-Moose 2026',
-      locationLabel: 'США, Вирджиния, Хэмптон',
-      description: 'Престижный турнир Восточного побережья США AAU Karate среди ведущих додзё.'
-    },
-    ky: {
-      title: 'Bull-Moose 2026 Эл аралык мелдеши',
-      locationLabel: 'АКШ, Вирджиния, Хэмптон',
-      description: 'АКШнын Чыгыш жээгиндеги алдыңкы додзёлор катышкан престиждүү AAU Karate мелдеши.'
-    },
-    en: {
-      title: '2026 Bull-Moose Invitational Tournament',
-      locationLabel: 'United States, VA, Hampton',
-      description: 'Premier East Coast AAU Invitational bringing together elite dojos from Virginia and surrounding states.'
-    }
+  'kg-karakol-kata-2027': {
+    ru: { title: "Турнир по ката «Каракол 2027»", locationLabel: "Кыргызстан, Иссык-Кульская обл., Каракол", description: "Пример турнира на сайте Tatami.kg." },
+    ky: { title: "«Каракол 2027» ката мелдеши", locationLabel: "Кыргызстан, Ысык-Көл облусу, Каракол", description: "Tatami.kg сайтындагы мелдештин үлгүсү." },
+    en: { title: "Karakol 2027 Kata Tournament", locationLabel: "Kyrgyzstan, Issyk-Kul Region, Karakol", description: "Example tournament on Tatami.kg." }
   },
-  'studios-unis-quebec-2026': {
-    ru: {
-      title: 'Открытый турнир Studios Unis Квебек 2026',
-      locationLabel: 'Канада, Квебек',
-      description: 'Ежегодный провинциальный чемпионат боевых искусств Studios Unis в Квебеке.'
-    },
-    ky: {
-      title: 'Studios Unis Квебек 2026 Ачык мелдеши',
-      locationLabel: 'Канада, Квебек',
-      description: 'Квебектеги Studios Unis мушташ өнөрү боюнча жылдык провинциялык чемпионаты.'
-    },
-    en: {
-      title: 'Studios Unis de Québec 2026 Championship',
-      locationLabel: 'Canada, QC, Quebec City',
-      description: 'Annual provincial martial arts tournament hosted by Studios Unis in Quebec City.'
-    }
+  'kg-jalal-abad-youth-2027': {
+    ru: { title: "Первенство Джалал-Абадской области среди юношей", locationLabel: "Кыргызстан, Джалал-Абадская обл.", description: "Пример турнира на сайте Tatami.kg." },
+    ky: { title: "Жалал-Абад облусунун өспүрүмдөр арасындагы биринчилиги", locationLabel: "Кыргызстан, Жалал-Абад облусу", description: "Tatami.kg сайтындагы мелдештин үлгүсү." },
+    en: { title: "Jalal-Abad Region Youth Championship", locationLabel: "Kyrgyzstan, Jalal-Abad Region", description: "Example tournament on Tatami.kg." }
   },
-  'end-of-year-championship': {
-    ru: {
-      title: 'Итоговый Чемпионат Года CMA',
-      locationLabel: 'США, Флорида, Орландо',
-      description: 'Финальный чемпионат сезона Championship Martial Arts с розыгрышем чемпионских поясов.'
-    },
-    ky: {
-      title: 'Жылдын Жыйынтыктоочу Чемпионаты (CMA)',
-      locationLabel: 'АКШ, Флорида, Орландо',
-      description: 'Чемпиондук курлар ойнотулуучу Championship Martial Arts сезонунун финалдык мелдеши.'
-    },
-    en: {
-      title: 'END-OF-YEAR Championship',
-      locationLabel: 'United States, FL, Orlando',
-      description: 'Championship Martial Arts official season finale featuring grand championship belt divisions.'
-    }
+  'kg-talas-cup-2027': {
+    ru: { title: "Кубок Таласа по каратэ", locationLabel: "Кыргызстан, Таласская обл., Талас", description: "Пример турнира на сайте Tatami.kg." },
+    ky: { title: "Талас каратэ кубогу", locationLabel: "Кыргызстан, Талас облусу, Талас", description: "Tatami.kg сайтындагы мелдештин үлгүсү." },
+    en: { title: "Talas Karate Cup", locationLabel: "Kyrgyzstan, Talas Region, Talas", description: "Example tournament on Tatami.kg." }
   },
-  'triple-crown-2026': {
-    ru: {
-      title: 'Кубок Тройной Короны (Triple Crown 2026)',
-      locationLabel: 'США, Кентукки, Шепердсвилл',
-      description: 'Третий этап легендарной серии турниров по традиционным боевым искусствам Triple Crown.'
-    },
-    ky: {
-      title: 'Triple Crown 2026 (Үч Таажы Кубогу)',
-      locationLabel: 'АКШ, Кентукки, Шепердсвилл',
-      description: 'Салттуу мушташ өнөрү боюнча легендарлуу Triple Crown мелдештер сериясынын 3-этабы.'
-    },
-    en: {
-      title: 'Triple Crown 2026',
-      locationLabel: 'United States, KY, Shepherdsville',
-      description: 'Leg 3 of the legendary Triple Crown Midwest martial arts series.'
-    }
+  'kg-issyk-kul-cup-2027': {
+    ru: { title: "Кубок Иссык-Куля по традиционному каратэ", locationLabel: "Кыргызстан, Иссык-Кульская обл., Чолпон-Ата", description: "Пример турнира на сайте Tatami.kg." },
+    ky: { title: "Салттуу каратэ боюнча Ысык-Көл кубогу", locationLabel: "Кыргызстан, Ысык-Көл облусу, Чолпон-Ата", description: "Tatami.kg сайтындагы мелдештин үлгүсү." },
+    en: { title: "Issyk-Kul Traditional Karate Cup", locationLabel: "Kyrgyzstan, Issyk-Kul Region, Cholpon-Ata", description: "Example tournament on Tatami.kg." }
   },
-  'bloodline-seminar': {
-    ru: {
-      title: 'Учебно-тренировочный семинар Bloodline',
-      locationLabel: 'США, Индиана, Индианаполис',
-      description: 'Интенсивный мастер-класс и спарринг-семинар под руководством тренеров чемпионов мира.'
-    },
-    ky: {
-      title: 'Bloodline Окуу-машыгуу семинары',
-      locationLabel: 'АКШ, Индиана, Индианаполис',
-      description: 'Дүйнө чемпиондорунун машыктыруучулары өткөргөн интенсивдүү мастер-класс жана спарринг-семинар.'
-    },
-    en: {
-      title: 'Bloodline Seminar',
-      locationLabel: 'United States, IN, Indianapolis',
-      description: 'High-intensity masterclass and sparring training camp led by world champion coaches.'
-    }
+  'kg-naryn-cup-2026': {
+    ru: { title: "Кубок Нарына 2026", locationLabel: "Кыргызстан, Нарынская обл., Нарын", description: "Пример турнира на сайте Tatami.kg." },
+    ky: { title: "Нарын кубогу 2026", locationLabel: "Кыргызстан, Нарын облусу, Нарын", description: "Tatami.kg сайтындагы мелдештин үлгүсү." },
+    en: { title: "Naryn Cup 2026", locationLabel: "Kyrgyzstan, Naryn Region, Naryn", description: "Example tournament on Tatami.kg." }
   },
-  'aau-massachusetts-2026': {
-    ru: {
-      title: 'Чемпионат округа Массачусетс AAU 2026',
-      locationLabel: 'США, Массачусетс, Хадсон',
-      description: 'Официальный отборочный чемпионат округа среди спортсменов AAU Karate штата Массачусетс.'
-    },
-    ky: {
-      title: 'Массачусетс округунун AAU Чемпионаты 2026',
-      locationLabel: 'АКШ, Массачусетс, Хадсон',
-      description: 'Массачусетс штатынын AAU Karate спортчулары арасындагы расмий тандоо чемпионаты.'
-    },
-    en: {
-      title: 'AAU Massachusetts District Championships',
-      locationLabel: 'United States, MA, Hudson',
-      description: 'Official District Qualifying Championship for Massachusetts AAU Karate athletes.'
-    }
-  },
-  'skw-showdown-2026': {
-    ru: {
-      title: 'Открытый турнир SKW Showdown 2026',
-      locationLabel: 'США, Колорадо, Аврора',
-      description: 'Флагманский открытый турнир региона Скалистых гор с участием национальных сборных.'
-    },
-    ky: {
-      title: 'SKW Showdown 2026 Ачык мелдеши',
-      locationLabel: 'АКШ, Колорадо, Аврора',
-      description: 'Улуттук курама командалардын катышуусундагы Колорадо аймагынын флагмандык мелдеши.'
-    },
-    en: {
-      title: 'SKW Showdown 2026',
-      locationLabel: 'United States, CO, Aurora',
-      description: 'The Rocky Mountain region flagship open tournament featuring national division competitors.'
-    }
-  },
-  'tct-year-end-2026': {
-    ru: {
-      title: 'Финальный чемпионат года TCT 2026',
-      locationLabel: 'США, Южная Каролина, Спартанберг',
-      description: 'Гранд-финал тура The Competitor’s Tour, вручение национальных титулов и турнир чемпионов.'
-    },
-    ky: {
-      title: 'TCT 2026 Жылдык Финалдык Чемпионаты',
-      locationLabel: 'АКШ, Түштүк Каролина, Спартанберг',
-      description: 'The Competitor’s Tour турунун гранд-финалы, улуттук титулдарды тапшыруу жана чемпиондор мелдеши.'
-    },
-    en: {
-      title: 'TCT Year End Championships 2026',
-      locationLabel: 'United States, SC, Spartanburg',
-      description: 'The Competitor’s Tour year-end grand national titles, awards ceremony and tournament of champions.'
-    }
-  },
-  'kobudo-world-championship': {
-    ru: {
-      title: 'Чемпионат мира по Кобудо 2026',
-      locationLabel: 'Италия, Витербо',
-      description: 'Чемпионат мира по классическому окинавскому кобудо и традиционным боевым искусствам.'
-    },
-    ky: {
-      title: 'Кобудо боюнча Дүйнө Чемпионаты 2026',
-      locationLabel: 'Италия, Витербо',
-      description: 'Классикалык Окинава кобудосу жана салттуу жапон будо өнөрү боюнча дүйнө чемпионаты.'
-    },
-    en: {
-      title: 'Kobudo World Championship',
-      locationLabel: 'Italy, Viterbo',
-      description: 'World championship of classical Okinawan weapons and traditional Japanese budo mastery.'
-    }
-  },
-  'best-of-the-best-2026': {
-    ru: {
-      title: 'Чемпионат спаррингов Best of the Best 2026',
-      locationLabel: 'США, Джорджия, Пичтри-Сити',
-      description: 'Турнир лучших мастеров кумитэ и спарринга в штате Джорджия с призовыми дивизионами.'
-    },
-    ky: {
-      title: 'Best of the Best 2026 Спарринг Чемпионаты',
-      locationLabel: 'АКШ, Джорджия, Пичтри-Сити',
-      description: 'Джорджия штатындагы мыкты кумитэ жана спарринг чеберлеринин байгелүү мелдеши.'
-    },
-    en: {
-      title: 'Best of the Best 2026',
-      locationLabel: 'United States, GA, Peachtree City',
-      description: 'Top sparring talent showdown in Georgia, crowning state and regional champion fighters.'
-    }
-  },
-  'dka-combat-event': {
-    ru: {
-      title: 'Бойцовский турнир DKA Combat Sports',
-      locationLabel: 'США, Техас, Сан-Антонио',
-      description: 'Динамичный чемпионат по спортивным единоборствам в Сан-Антонио (Техас).'
-    },
-    ky: {
-      title: 'DKA Combat Sports Күжүрмөн мелдеши',
-      locationLabel: 'АКШ, Техас, Сан-Антонио',
-      description: 'Сан-Антониодогу (Техас) спорттук мушташ өнөрү боюнча динамикалуу чемпионат.'
-    },
-    en: {
-      title: 'DKA - Combat Sports Event',
-      locationLabel: 'United States, TX, San Antonio',
-      description: 'High octane Texas combat sports championship celebrating fierce martial arts competition.'
-    }
-  },
-  'chernivtsi-open-2026': {
-    ru: {
-      title: '«Chernivtsi Open 2026» (Премьер-Лига UKF)',
-      locationLabel: 'Украина, UA-77, Черновцы',
-      description: 'Этап Премьер-Лиги с видеоповторами VR на каждом татами и отбором в сборную.'
-    },
-    ky: {
-      title: '«Chernivtsi Open 2026» (UKF Премьер-Лигасы)',
-      locationLabel: 'Украина, UA-77, Черновцы',
-      description: 'Ар бир татамиде VR видеокайталоосу бар Премьер-Лиганын этабы.'
-    },
-    en: {
-      title: '"Chernivtsi Open 2026" (UKF Premier League)',
-      locationLabel: 'Ukraine, UA-77, Chernivtsi',
-      description: 'UKF Premier League stage featuring VR video review on all tatamis and national team selection.'
-    }
-  },
-  'ktoc-nationals-2026': {
-    ru: {
-      title: 'Национальный чемпионат KTOC 2026',
-      locationLabel: 'США, Нью-Йорк, Куинс',
-      description: 'Флагманский чемпионат Нью-Йорка с участием ведущих клубов Северо-Востока США.'
-    },
-    ky: {
-      title: 'KTOC Улуттук Чемпионаты 2026',
-      locationLabel: 'АКШ, Нью-Йорк, Куинс',
-      description: 'АКШнын Түндүк-Чыгышындагы алдыңкы клубдар катышкан Нью-Йорктун флагмандык чемпионаты.'
-    },
-    en: {
-      title: 'KTOC Nationals 2026',
-      locationLabel: 'United States, NY, Queens',
-      description: 'New York City flagship championship featuring top dojos and karate athletes from the Northeast.'
-    }
-  },
-  'ika-poland-2026': {
-    ru: {
-      title: 'VIII Лига каратэ IKA Польша',
-      locationLabel: 'Польша, Груец',
-      description: 'Восьмой рейтинговый турнир лиги IKA Poland по правилам WUKF с участием клубов со всей Польши.'
-    },
-    ky: {
-      title: 'VIII Каратэ Лигасы IKA Польша',
-      locationLabel: 'Польша, Груец',
-      description: 'Бүткүл Польшанын клубдары катышкан WUKF эрежелери боюнча IKA Poland лигасынын 8-рейтингдик мелдеши.'
-    },
-    en: {
-      title: 'VIII Karate League IKA Poland',
-      locationLabel: 'Poland, Grójec',
-      description: '8th ranking tournament of the IKA Poland League under WUKF rules featuring clubs from across Poland.'
-    }
-  },
-  'uzbekistan-championship-2026': {
-    ru: {
-      title: 'Чемпионат Узбекистана среди молодежи и взрослых',
-      locationLabel: 'Узбекистан, Ташкент',
-      description: 'Национальный чемпионат Узбекистана по каратэ WKF и отбор в республиканскую сборную команду.'
-    },
-    ky: {
-      title: 'Жаштар жана чоңдор арасында Өзбекстан Чемпионаты',
-      locationLabel: 'Өзбекстан, Ташкент',
-      description: 'WKF каратэ боюнча Өзбекстандын улуттук чемпионаты жана республикалык курама командага тандоо мелдеши.'
-    },
-    en: {
-      title: 'Uzbekistan Youth & Seniors National Championship',
-      locationLabel: 'Uzbekistan, Tashkent',
-      description: 'National WKF Karate Championship of Uzbekistan and official selection for the national team.'
-    }
-  },
-  'modiin-open-2026': {
-    ru: {
-      title: 'Открытый турнир Modiin Open 2026',
-      locationLabel: 'Израиль, Модиин',
-      description: 'Международный открытый чемпионат с участием ведущих клубов Израиля и Европы.'
-    },
-    ky: {
-      title: 'Modiin Open 2026 Ачык мелдеши',
-      locationLabel: 'Израиль, Модиин',
-      description: 'Израилдин жана Европанын алдыңкы клубдары катышкан эл аралык ачык чемпионат.'
-    },
-    en: {
-      title: 'Modiin Open 2026',
-      locationLabel: 'Israel, Modiin',
-      description: 'International open championship featuring premier Israeli and European martial arts clubs.'
-    }
+  'kg-bishkek-juniors-2026': {
+    ru: { title: "Первенство Бишкека среди юниоров 2026", locationLabel: "Кыргызстан, г. Бишкек", description: "Пример турнира на сайте Tatami.kg." },
+    ky: { title: "Бишкек шаарынын юниорлор арасындагы биринчилиги 2026", locationLabel: "Кыргызстан, Бишкек ш.", description: "Tatami.kg сайтындагы мелдештин үлгүсү." },
+    en: { title: "Bishkek Junior Championship 2026", locationLabel: "Kyrgyzstan, Bishkek", description: "Example tournament on Tatami.kg." }
   }
 };
 
@@ -393,7 +115,8 @@ export function localizeUventexEventItem(item: UventexEventItem, language: Langu
   const loc = EVENT_LOCALIZATIONS[item.id];
   const localizedDate = localizeDateLabel(item.dateLabel || `${item.startDate} - ${item.endDate}`, language);
 
-  if (loc) {
+  // Russian is the source language: keep the organizer's own (possibly edited) texts.
+  if (loc && language !== 'ru') {
     const target = loc[language] || loc.ru;
     return {
       ...item,

@@ -167,7 +167,7 @@ export const TournamentDivisionsPricingView: React.FC<TournamentDivisionsPricing
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              Kata / Forms
+              Ката
             </button>
             <button
               onClick={() => setSelectedCategoryType('sparring')}
@@ -177,7 +177,7 @@ export const TournamentDivisionsPricingView: React.FC<TournamentDivisionsPricing
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              Kumite / Sparring
+              Кумитэ
             </button>
             <button
               onClick={() => setSelectedCategoryType('weapons')}
@@ -187,7 +187,7 @@ export const TournamentDivisionsPricingView: React.FC<TournamentDivisionsPricing
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              Kobudo / Weapons
+              Кобудо
             </button>
             <button
               onClick={() => setSelectedCategoryType('extreme')}
@@ -197,7 +197,7 @@ export const TournamentDivisionsPricingView: React.FC<TournamentDivisionsPricing
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              Extreme
+              Экстрим
             </button>
           </div>
 
@@ -248,7 +248,7 @@ export const TournamentDivisionsPricingView: React.FC<TournamentDivisionsPricing
                       <div className="font-semibold text-slate-900">{div.name}</div>
                       <div className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-2">
                         <span className={`inline-flex items-center px-1.5 py-0.2 rounded border text-[10px] ${badgeColor}`}>
-                          {div.categoryType.toUpperCase()}
+                          {({ forms: 'Ката', sparring: 'Кумитэ', weapons: 'Кобудо', extreme: 'Экстрим', para: 'Пара' } as Record<string, string>)[div.categoryType] || div.categoryType}
                         </span>
                         {div.scheduledTime && (
                           <span className="flex items-center gap-1">
@@ -276,7 +276,7 @@ export const TournamentDivisionsPricingView: React.FC<TournamentDivisionsPricing
                       {div.participantsCount}
                     </td>
                     <td className="py-3 px-4 text-right font-mono font-bold text-teal-700 text-sm">
-                      ${div.price}
+                      {div.price} сом
                     </td>
                   </tr>
                 );

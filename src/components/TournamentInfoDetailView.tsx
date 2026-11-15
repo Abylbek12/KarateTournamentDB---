@@ -98,7 +98,7 @@ export const TournamentInfoDetailView: React.FC<TournamentInfoDetailViewProps> =
         <div className="p-6 md:p-8 flex flex-col md:flex-row gap-6 md:gap-8 items-start">
           {/* Left Emblem */}
           <div className="shrink-0 flex items-center justify-center p-4 bg-slate-50 rounded-2xl border border-slate-100 shadow-2xs w-32 h-32 md:w-40 md:h-40 mx-auto md:mx-0">
-            <UventexEventEmblem type={tournament.emblemType} imageUrl={tournament.imageUrl} className="w-24 h-24 md:w-32 md:h-32" />
+            <UventexEventEmblem type={tournament.emblemType} imageUrl={tournament.imageUrl} title={tournament.title} color={tournament.accentColor} className="w-24 h-24 md:w-32 md:h-32 text-[18px] md:text-[22px]" />
           </div>
 
           {/* Middle Information */}

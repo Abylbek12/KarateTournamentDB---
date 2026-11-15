@@ -139,13 +139,14 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
       if (!matchSearch) return false;
     }
 
-    // 2. Country
+    // 2. Region of Kyrgyzstan (or tournaments abroad)
     if (selectedCountryFilter !== 'all') {
-      if (
-        !item.locationLabel.toLowerCase().includes(selectedCountryFilter.toLowerCase()) &&
-        !item.country.toLowerCase().includes(selectedCountryFilter.toLowerCase())
-      ) {
-        return false;
+      const isKyrgyzstan = /кыргыз|kyrgyz/i.test(item.country || '');
+      if (selectedCountryFilter === 'abroad') {
+        if (isKyrgyzstan) return false;
+      } else {
+        const haystack = `${item.locationLabel} ${item.city} ${item.country}`.toLowerCase();
+        if (!isKyrgyzstan || !haystack.includes(selectedCountryFilter.toLowerCase())) return false;
       }
     }
 
@@ -275,15 +276,16 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
               onChange={(e) => setSelectedCountryFilter(e.target.value)}
               className="w-full md:w-auto appearance-none bg-white border border-slate-200/90 shadow-2xs rounded-full pl-3.5 pr-8 py-2 sm:py-1.5 text-sm sm:text-xs text-slate-600 hover:text-slate-900 focus:outline-none focus:border-sky-400 cursor-pointer font-sans"
             >
-              <option value="all">{tr('Все страны', 'Бардык өлкөлөр', 'All countries')}</option>
-              <option value="Kyrgyzstan">{tr('Кыргызстан', 'Кыргызстан', 'Kyrgyzstan')}</option>
-              <option value="Ukraine">{tr('Украина', 'Украина', 'Ukraine')}</option>
-              <option value="United States">{tr('США (USA)', 'АКШ (USA)', 'United States (USA)')}</option>
-              <option value="Canada">{tr('Канада', 'Канада', 'Canada')}</option>
-              <option value="Italy">{tr('Италия', 'Италия', 'Italy')}</option>
-              <option value="Poland">{tr('Польша', 'Польша', 'Poland')}</option>
-              <option value="Uzbekistan">{tr('Узбекистан', 'Өзбекстан', 'Uzbekistan')}</option>
-              <option value="Israel">{tr('Израиль', 'Израиль', 'Israel')}</option>
+              <option value="all">{tr('Все регионы', 'Бардык аймактар', 'All regions')}</option>
+              <option value="Бишкек">{tr('Бишкек', 'Бишкек', 'Bishkek')}</option>
+              <option value="Ош">{tr('Ош и Ошская обл.', 'Ош жана Ош облусу', 'Osh')}</option>
+              <option value="Чуй">{tr('Чуйская обл.', 'Чүй облусу', 'Chuy Region')}</option>
+              <option value="Иссык-Куль">{tr('Иссык-Кульская обл.', 'Ысык-Көл облусу', 'Issyk-Kul Region')}</option>
+              <option value="Нарын">{tr('Нарынская обл.', 'Нарын облусу', 'Naryn Region')}</option>
+              <option value="Талас">{tr('Таласская обл.', 'Талас облусу', 'Talas Region')}</option>
+              <option value="Джалал-Абад">{tr('Джалал-Абадская обл.', 'Жалал-Абад облусу', 'Jalal-Abad Region')}</option>
+              <option value="Баткен">{tr('Баткенская обл.', 'Баткен облусу', 'Batken Region')}</option>
+              <option value="abroad">{tr('Зарубежные турниры', 'Чет өлкөлүк мелдештер', 'Abroad')}</option>
             </select>
             <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
@@ -461,7 +463,7 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
             >
               {/* Left: Square Emblem or Uploaded Event Image */}
               <div className="shrink-0 flex items-center justify-center">
-                <UventexEventEmblem type={item.emblemType} imageUrl={item.imageUrl} className="w-[68px] h-[68px] sm:w-[66px] sm:h-[66px]" />
+                <UventexEventEmblem type={item.emblemType} imageUrl={item.imageUrl} title={item.title} color={item.accentColor} className="w-[68px] h-[68px] sm:w-[66px] sm:h-[66px] text-[13px]" />
               </div>
 
               {/* Middle: Content (Location, Title, Dates) */}
