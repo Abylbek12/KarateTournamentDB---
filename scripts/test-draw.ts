@@ -112,7 +112,7 @@ function earliestMeeting(slots: (Participant | null)[], key: (p: Participant) =>
   const firstRound = bouts.filter((b) => b.roundStage === 'round_1_8');
   const inBouts = new Set(firstRound.flatMap((b) => [b.akaParticipantId, b.aoParticipantId]));
   check('16 athletes: 8 first-round bouts with all 16 athletes', firstRound.length === 8 && inBouts.size === 16, `bouts=${bouts.length}`);
-  check('16 athletes: 15 elimination bouts + 2 repechage', bouts.length === 17);
+  check('16 athletes: 15 elimination bouts (repechage is created after the semi-finals)', bouts.length === 15);
 
   const list5 = Array.from({ length: 5 }, (_, i) => athlete(`K${i}`, 'Ош'));
   const { bouts: b5 } = generateProtectedWkfCategoryBouts(category, list5, tatamis);
