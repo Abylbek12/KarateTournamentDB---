@@ -80,6 +80,7 @@ import { AppProvider, useApp } from './context/AppContext';
 import { useGlobalDomTranslator, trLang } from './utils/globalDomTranslator';
 import { useServerSyncedState } from './utils/useServerSyncedState';
 import { canAccess, ROLE_LABELS, type AccessRole } from './utils/access';
+import { applyBoutResult } from './utils/bracketProgression';
 import { AccessGate } from './components/AccessGate';
 import { TatamiMark, TatamiWordmark } from './components/BrandLogo';
 import { UsersRolesPanel } from './components/UsersRolesPanel';
@@ -805,135 +806,9 @@ function AppContent() {
 
   // Automatic playoff bracket progression when a bout finishes
   const handleUpdateBout = (updatedBout: Bout) => {
-    setBouts((prev) => {
-      let nextBouts = prev.map((b) => (b.id === updatedBout.id ? updatedBout : b));
-
-      // If bout is completed with a winner, advance winner to the next round in elimination bracket
-      if (updatedBout.status === 'completed' && updatedBout.winnerId) {
-        const winnerParticipant = participants.find((p) => p.id === updatedBout.winnerId);
-        const loserId = updatedBout.winnerId === updatedBout.akaParticipantId
-          ? updatedBout.aoParticipantId
-          : updatedBout.akaParticipantId;
-        const loserParticipant = participants.find((p) => p.id === loserId);
-
-        // Progression from 1/8 Final to 1/4 Final
-        if (updatedBout.roundStage === 'round_1_8') {
-          const pos = updatedBout.bracketPosition;
-          const targetQfPos = Math.ceil(pos / 2);
-          const isAka = pos % 2 === 1;
-
-          nextBouts = nextBouts.map((b) => {
-            if (
-              b.categoryId === updatedBout.categoryId &&
-              b.roundStage === 'quarter_final' &&
-              b.bracketPosition === targetQfPos
-            ) {
-              return isAka
-                ? { ...b, akaParticipantId: updatedBout.winnerId, akaParticipant: winnerParticipant || b.akaParticipant }
-                : { ...b, aoParticipantId: updatedBout.winnerId, aoParticipant: winnerParticipant || b.aoParticipant };
-            }
-            return b;
-          });
-        }
-
-        // Progression from 1/4 Final to Semi-Final
-        if (updatedBout.roundStage === 'quarter_final') {
-          const qfPos = updatedBout.bracketPosition; // 1, 2, 3, 4
-          const targetSfPos = Math.ceil(qfPos / 2); // QF 1 & 2 -> SF 1; QF 3 & 4 -> SF 2
-          const isAkaSlot = qfPos % 2 === 1; // odd -> AKA, even -> AO
-
-          nextBouts = nextBouts.map((b) => {
-            if (
-              b.categoryId === updatedBout.categoryId &&
-              b.roundStage === 'semi_final' &&
-              b.bracketPosition === targetSfPos
-            ) {
-              return isAkaSlot
-                ? {
-                    ...b,
-                    akaParticipantId: updatedBout.winnerId,
-                    akaParticipant: winnerParticipant || b.akaParticipant
-                  }
-                : {
-                    ...b,
-                    aoParticipantId: updatedBout.winnerId,
-                    aoParticipant: winnerParticipant || b.aoParticipant
-                  };
-            }
-            return b;
-          });
-        }
-
-        // Progression from Semi-Final to Final and Bronze match
-        if (updatedBout.roundStage === 'semi_final') {
-          const sfPos = updatedBout.bracketPosition; // 1 or 2
-          const isAkaSlot = sfPos === 1;
-
-          nextBouts = nextBouts.map((b) => {
-            // Winners advance to Gold Final
-            if (b.categoryId === updatedBout.categoryId && b.roundStage === 'final') {
-              return isAkaSlot
-                ? {
-                    ...b,
-                    akaParticipantId: updatedBout.winnerId,
-                    akaParticipant: winnerParticipant || b.akaParticipant
-                  }
-                : {
-                    ...b,
-                    aoParticipantId: updatedBout.winnerId,
-                    aoParticipant: winnerParticipant || b.aoParticipant
-                  };
-            }
-
-            // Losers advance to Bronze match
-            if (b.categoryId === updatedBout.categoryId && b.roundStage === 'bronze_match' && loserId) {
-              return isAkaSlot
-                ? {
-                    ...b,
-                    akaParticipantId: loserId,
-                    akaParticipant: loserParticipant || b.akaParticipant
-                  }
-                : {
-                    ...b,
-                    aoParticipantId: loserId,
-                    aoParticipant: loserParticipant || b.aoParticipant
-                  };
-            }
-
-            return b;
-          });
-        }
-
-        // Automatic update of participant placements / standings upon Final & Bronze completion
-        if (updatedBout.roundStage === 'final') {
-          const goldId = updatedBout.winnerId;
-          const silverId =
-            updatedBout.winnerId === updatedBout.akaParticipantId
-              ? updatedBout.aoParticipantId
-              : updatedBout.akaParticipantId;
-
-          setParticipants((prevP) =>
-            prevP.map((p) => {
-              if (p.id === goldId) return { ...p, placement: '1st_gold' };
-              if (p.id === silverId) return { ...p, placement: '2nd_silver' };
-              return p;
-            })
-          );
-        }
-
-        if (updatedBout.roundStage === 'bronze_match') {
-          const bronzeId = updatedBout.winnerId;
-          setParticipants((prevP) =>
-            prevP.map((p) => {
-              if (p.id === bronzeId) return { ...p, placement: '3rd_bronze_1' };
-              return p;
-            })
-          );
-        }
-      }
-
-      return nextBouts;
-    });
+    // Winner moves to the next round (any bracket size); repechage for the two bronzes is kept in sync.
+    const find = (id?: string) => (id ? participants.find((p) => p.id === id) : undefined);
+    setBouts((prev) => applyBoutResult(prev, updatedBout, find));
   };
 
   const handleUpdateParticipant = (updatedParticipant: Participant) => {

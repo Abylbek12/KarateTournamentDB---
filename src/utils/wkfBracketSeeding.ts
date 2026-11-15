@@ -361,7 +361,7 @@ export function generateProtectedWkfCategoryBouts(
   category: TournamentCategory,
   athletes: Participant[],
   tatamis: Tatami[],
-  options?: { startTime?: string; boutIntervalMinutes?: number }
+  options?: { startTime?: string; boutIntervalMinutes?: number; durationSeconds?: number }
 ): { bouts: Bout[]; report: WkfSeedingReport } {
   const { tatami: autoTatami, reason: autoTatamiReason } = getAutoAssignedTatami(category, tatamis);
   const startTime = options?.startTime || '12:00';
@@ -384,7 +384,7 @@ export function generateProtectedWkfCategoryBouts(
   const stamp = Date.now();
 
   const makeBout = (stage: RoundStage, position: number, aka?: Participant | null, ao?: Participant | null): Bout => ({
-    id: `bout_${stamp}_cat_${category.id}_${stage}_${position}`,
+    id: `${category.id}_${stage}_${position}_${stamp}`,
     tournamentId: category.tournamentId || 'tourn1',
     categoryId: category.id,
     categoryName: categoryTitle,
@@ -407,7 +407,9 @@ export function generateProtectedWkfCategoryBouts(
     akaPenaltiesC2: 0,
     aoPenaltiesC2: 0,
     status: 'scheduled',
-    timerSecondsRemaining: category.discipline === 'kata' ? 240 : 180
+    durationSeconds: options?.durationSeconds ?? (category.discipline === 'kata' ? 240 : 180),
+    timerSecondsRemaining: options?.durationSeconds ?? (category.discipline === 'kata' ? 240 : 180),
+    timerStartedAt: null
   });
 
   // Known athletes entering each round (null = decided by a previous bout)
@@ -431,11 +433,8 @@ export function generateProtectedWkfCategoryBouts(
     entrants = next;
   }
 
-  // Repechage for the two bronze medals (opponents known after the semi-finals)
-  if (bracketSize >= 8) {
-    bouts.push(makeBout('repechage', 1));
-    bouts.push(makeBout('repechage', 2));
-  }
+  // Repechage bouts for the two bronze medals are created automatically once the
+  // finalists are known (see utils/bracketProgression.ts).
 
   // Run order: earlier rounds first, final last
   const order: RoundStage[] = ['round_1_32', 'round_1_16', 'round_1_8', 'quarter_final', 'semi_final', 'repechage', 'bronze_match', 'final'];

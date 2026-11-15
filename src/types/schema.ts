@@ -294,6 +294,12 @@ export interface Bout {
   aoParticipantId?: string;
   aoParticipant?: Participant;
   scheduledTime: string;
+  /** Full bout length in seconds (depends on the age category). */
+  durationSeconds?: number;
+  /** Epoch ms when the clock was last started; null/undefined while stopped. */
+  timerStartedAt?: number | null;
+  /** Set when time is up with a tie and no Senshu: judges must decide (Hantei). */
+  awaitingDecision?: boolean;
   actualStartTime?: string;
   actualEndTime?: string;
   akaScore: number;
