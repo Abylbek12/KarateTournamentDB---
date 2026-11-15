@@ -802,3 +802,10 @@ export const SAMPLE_TOURNAMENTS: Tournament[] = [
   }
 ];
 
+
+/** Demo data above belongs to this example tournament ('tourn1' is its legacy id). */
+export const DEMO_TOURNAMENT_ID = 'kg-bishkek-cup-2026';
+
+/** True when a record with `tournamentId` belongs to the event `eventId`. */
+export const belongsToEvent = (tournamentId: string | undefined, eventId: string) =>
+  tournamentId === eventId || ((tournamentId === 'tourn1' || !tournamentId) && eventId === DEMO_TOURNAMENT_ID);

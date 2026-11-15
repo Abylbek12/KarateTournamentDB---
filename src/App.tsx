@@ -85,6 +85,7 @@ import { AccessGate } from './components/AccessGate';
 import { TatamiMark, TatamiWordmark } from './components/BrandLogo';
 import { UsersRolesPanel } from './components/UsersRolesPanel';
 import { InviteLinksPanel } from './components/InviteLinksPanel';
+import { PublicBracketsView, PublicResultsView } from './components/PublicEventViews';
 import { MyAccountPanel } from './components/MyAccountPanel';
 import { RoleGuide } from './components/RoleGuide';
 
@@ -106,15 +107,12 @@ const LocalLanTournamentHub = React.lazy(() => import('./components/LocalLanTour
 const TournamentDetailsView = React.lazy(() => import('./components/TournamentDetailsView').then((m) => ({ default: m.TournamentDetailsView })));
 const TournamentInfoDetailView = React.lazy(() => import('./components/TournamentInfoDetailView').then((m) => ({ default: m.TournamentInfoDetailView })));
 const TournamentDivisionsPricingView = React.lazy(() => import('./components/TournamentDivisionsPricingView').then((m) => ({ default: m.TournamentDivisionsPricingView })));
-const TournamentRingsBracketsView = React.lazy(() => import('./components/TournamentRingsBracketsView').then((m) => ({ default: m.TournamentRingsBracketsView })));
-const TournamentMedalsReportView = React.lazy(() => import('./components/TournamentMedalsReportView').then((m) => ({ default: m.TournamentMedalsReportView })));
 const UventexLiveScoringView = React.lazy(() => import('./components/UventexLiveScoringView').then((m) => ({ default: m.UventexLiveScoringView })));
 const RefereeElectronicVotingAndVrModule = React.lazy(() => import('./components/RefereeElectronicVotingAndVrModule').then((m) => ({ default: m.RefereeElectronicVotingAndVrModule })));
 const DoctorTimeMedicalModule = React.lazy(() => import('./components/DoctorTimeMedicalModule').then((m) => ({ default: m.DoctorTimeMedicalModule })));
 const VideoAnalyticsModule = React.lazy(() => import('./components/VideoAnalyticsModule').then((m) => ({ default: m.VideoAnalyticsModule })));
 const AcquiringPaymentsModule = React.lazy(() => import('./components/AcquiringPaymentsModule').then((m) => ({ default: m.AcquiringPaymentsModule })));
 const OfficialProtocolsExportModule = React.lazy(() => import('./components/OfficialProtocolsExportModule').then((m) => ({ default: m.OfficialProtocolsExportModule })));
-const TournamentEventResultsView = React.lazy(() => import('./components/TournamentEventResultsView').then((m) => ({ default: m.TournamentEventResultsView })));
 
 const ScreenLoader = () => (
   <div className="flex items-center justify-center py-16 text-sm text-slate-500">Загрузка…</div>
@@ -1617,29 +1615,40 @@ function AppContent() {
 
           {/* 1.3 Сетки по площадкам и времени (Matching video at 01:40-01:54) */}
           {activeTab === 'event_brackets' && (
-            <TournamentRingsBracketsView
-              tournament={selectedUventexEvent}
-              onBack={() => setActiveTab('tournaments')}
-              onNavigateAction={(action) => handleSelectTournamentAction(selectedUventexEvent, action as EventActionType)}
-              onOpenLiveScoreboard={() => setActiveTab('event_live_scoring')}
+            <PublicBracketsView
+              event={selectedUventexEvent}
+              bouts={bouts}
+              participants={participants}
+              categories={SAMPLE_TOURNAMENT_CATEGORIES}
+              language={language}
+              onBack={() => navigateWithHash('tournaments')}
+              onNavigateAction={(action) => handleSelectTournamentAction(selectedUventexEvent, action)}
             />
           )}
 
           {/* 1.4 Медали (Matching video at 01:27) */}
           {activeTab === 'event_medals' && (
-            <TournamentMedalsReportView
-              tournament={selectedUventexEvent}
-              onBack={() => setActiveTab('tournaments')}
-              onNavigateAction={(action) => handleSelectTournamentAction(selectedUventexEvent, action as EventActionType)}
+            <PublicResultsView mode="medals"
+              event={selectedUventexEvent}
+              bouts={bouts}
+              participants={participants}
+              categories={SAMPLE_TOURNAMENT_CATEGORIES}
+              language={language}
+              onBack={() => navigateWithHash('tournaments')}
+              onNavigateAction={(action) => handleSelectTournamentAction(selectedUventexEvent, action)}
             />
           )}
 
           {/* 1.5 Результаты поединков и пьедестал */}
           {activeTab === 'event_results' && (
-            <TournamentEventResultsView
-              tournament={selectedUventexEvent}
+            <PublicResultsView mode="results"
+              event={selectedUventexEvent}
+              bouts={bouts}
+              participants={participants}
+              categories={SAMPLE_TOURNAMENT_CATEGORIES}
+              language={language}
               onBack={() => navigateWithHash('tournaments')}
-              onNavigateAction={(action) => handleSelectTournamentAction(selectedUventexEvent, action as EventActionType)}
+              onNavigateAction={(action) => handleSelectTournamentAction(selectedUventexEvent, action)}
             />
           )}
 
