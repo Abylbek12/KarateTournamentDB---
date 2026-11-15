@@ -42,8 +42,6 @@ import {
 } from 'lucide-react';
 import { isTournamentDateExpired } from './components/TournamentEventsManager';
 import { Sidebar } from './components/Sidebar';
-import { ScoreboardModal } from './components/ScoreboardModal';
-import { ManualBoutControlModal } from './components/ManualBoutControlModal';
 
 import { ResetTournamentDataModal, ResetOptions } from './components/ResetTournamentDataModal';
 import { TournamentShowcase } from './components/TournamentShowcase';
@@ -71,7 +69,8 @@ import {
   SAMPLE_WEIGHT_CATEGORIES,
   SAMPLE_TOURNAMENT_CATEGORIES,
   SAMPLE_REFEREE_PROTOCOLS,
-  SAMPLE_TOURNAMENTS
+  SAMPLE_TOURNAMENTS,
+  durationForCategory
 } from './data/sampleTournamentData';
 import { POSTGRESQL_DDL_SCRIPT } from './data/dbSchemaDefinition';
 import { Bout, Participant, TournamentRules, RefereeProtocol, UserRole, TournamentRegistrationConfig, Tournament, AppNotification, AuthenticatedUserProfile } from './types/schema';
@@ -86,6 +85,7 @@ import { TatamiMark, TatamiWordmark } from './components/BrandLogo';
 import { UsersRolesPanel } from './components/UsersRolesPanel';
 import { InviteLinksPanel } from './components/InviteLinksPanel';
 import { PublicBracketsView, PublicResultsView } from './components/PublicEventViews';
+import { BoutConsole } from './components/BoutConsole';
 import { MyAccountPanel } from './components/MyAccountPanel';
 import { RoleGuide } from './components/RoleGuide';
 
@@ -862,7 +862,7 @@ function AppContent() {
     SAMPLE_TOURNAMENT_CATEGORIES.forEach((cat) => {
       const catAthletes = participants.filter((p) => p.categoryId === cat.id || (!p.categoryId && cat.id === 'tc1'));
       if (catAthletes.length >= 2) {
-        const { bouts: catBouts } = generateProtectedWkfCategoryBouts(cat, catAthletes, SAMPLE_TATAMIS);
+        const { bouts: catBouts } = generateProtectedWkfCategoryBouts(cat, catAthletes, SAMPLE_TATAMIS, { durationSeconds: durationForCategory(cat) });
         allGeneratedBouts.push(...catBouts);
       }
     });
@@ -1940,7 +1940,7 @@ function AppContent() {
               bouts={bouts}
               onOpenScoreboard={(b) => {
                 setSelectedConsoleBoutId(b.id);
-                setActiveTab('scoreboard');
+                setActiveScoreboardBout(b);
               }}
             />
           )}
@@ -2184,26 +2184,23 @@ function AppContent() {
 
       {/* Chief Referee Manual Override Global Modal */}
       {isGlobalManualModalOpen && (
-        <ManualBoutControlModal
+        <BoutConsole
           bout={bouts.find((b) => b.id === selectedConsoleBoutId) || bouts[0]}
-          isOpen={isGlobalManualModalOpen}
-          tournamentRules={tournamentRules}
-          participants={participants}
+          rules={tournamentRules}
+          onChange={handleUpdateBout}
           onClose={() => setIsGlobalManualModalOpen(false)}
-          onSaveBout={(updated) => {
-            handleUpdateBout(updated);
-            setIsGlobalManualModalOpen(false);
-          }}
         />
       )}
 
       {/* Electronic Scoreboard Interactive Modal */}
-      <ScoreboardModal
-        bout={activeScoreboardBout}
-        isOpen={!!activeScoreboardBout}
-        onClose={() => setActiveScoreboardBout(null)}
-        onSaveBout={handleUpdateBout}
-      />
+      {activeScoreboardBout && (bouts.find((b) => b.id === activeScoreboardBout.id) || activeScoreboardBout) && (
+        <BoutConsole
+          bout={bouts.find((b) => b.id === activeScoreboardBout.id) || activeScoreboardBout}
+          rules={tournamentRules}
+          onChange={handleUpdateBout}
+          onClose={() => setActiveScoreboardBout(null)}
+        />
+      )}
 
       {/* 1-Click Database Reset & Cleanup Modal */}
       <ResetTournamentDataModal

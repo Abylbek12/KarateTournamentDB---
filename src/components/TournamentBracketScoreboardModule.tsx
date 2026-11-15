@@ -1,4 +1,6 @@
+import { durationForCategory } from '../data/sampleTournamentData';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import * as E from '../utils/boutEngine';
 import { 
   Trophy, 
   Tv, 
@@ -99,7 +101,18 @@ export const TournamentBracketScoreboardModule: React.FC<TournamentBracketScoreb
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
 
   // Global Multi-Tatami Running Timers state: map of boutId -> boolean (isRunning)
-  const [runningTimers, setRunningTimers] = useState<Record<string, boolean>>({});
+  // Running clocks come from the bouts themselves (shared by every screen); `now` redraws them.
+  const runningTimers = useMemo<Record<string, boolean>>(
+    () => Object.fromEntries(bouts.map((b) => [b.id, E.isRunning(b)])),
+    [bouts]
+  );
+  const [now, setNow] = useState(Date.now());
+  const anyRunning = bouts.some((b) => E.isRunning(b));
+  useEffect(() => {
+    if (!anyRunning) return;
+    const id = setInterval(() => setNow(Date.now()), 100);
+    return () => clearInterval(id);
+  }, [anyRunning]);
 
   // Active Bout in Referee Console
   const [refereeBoutId, setRefereeBoutId] = useState<string>(
@@ -150,63 +163,24 @@ export const TournamentBracketScoreboardModule: React.FC<TournamentBracketScoreb
   }, [initialBoutId]);
 
   // -------------------------------------------------------------
-  // Multi-Tatami Independent Timer Ticks (1 second intervals)
+  // Clock events: 15-second signal and time-up (rules in utils/boutEngine.ts)
   // -------------------------------------------------------------
+  const warnedRef = useRef<Record<string, boolean>>({});
   useEffect(() => {
-    const timerInterval = setInterval(() => {
-      const activeRunningBoutIds = Object.keys(runningTimers).filter((id) => runningTimers[id]);
-      if (activeRunningBoutIds.length === 0) return;
-
-      activeRunningBoutIds.forEach((bId) => {
-        const bout = bouts.find((b) => b.id === bId);
-        if (!bout || bout.status === 'completed') {
-          setRunningTimers((prev) => ({ ...prev, [bId]: false }));
-          return;
-        }
-
-        const newRemaining = Math.max(0, bout.timerSecondsRemaining - 1);
-
-        // Sound triggers
-        if (soundEnabled) {
-          if (newRemaining === 15) {
-            refereeAudio.playWarning15s();
-          } else if (newRemaining === 0) {
-            refereeAudio.playGong();
-          }
-        }
-
-        const updated: Bout = {
-          ...bout,
-          timerSecondsRemaining: newRemaining,
-          status: newRemaining === 0 ? 'completed' : 'in_progress'
-        };
-
-        if (newRemaining === 0) {
-          setRunningTimers((prev) => ({ ...prev, [bId]: false }));
-          // Auto decide winner if time is up and scores differ
-          if (!updated.winnerId) {
-            if (updated.akaScore > updated.aoScore) {
-              updated.winnerId = updated.akaParticipantId;
-              updated.winReason = 'points_lead';
-            } else if (updated.aoScore > updated.akaScore) {
-              updated.winnerId = updated.aoParticipantId;
-              updated.winReason = 'points_lead';
-            } else if (updated.akaSenshu) {
-              updated.winnerId = updated.akaParticipantId;
-              updated.winReason = 'senshu_advantage';
-            } else if (updated.aoSenshu) {
-              updated.winnerId = updated.aoParticipantId;
-              updated.winReason = 'senshu_advantage';
-            }
-          }
-        }
-
-        onUpdateBout(updated);
-      });
-    }, 1000);
-
-    return () => clearInterval(timerInterval);
-  }, [runningTimers, bouts, soundEnabled, onUpdateBout]);
+    bouts.forEach((bout) => {
+      if (!E.isRunning(bout)) return;
+      const left = E.remainingSeconds(bout, now);
+      if (left > E.WARNING_AT_SECONDS) warnedRef.current[bout.id] = false;
+      else if (!warnedRef.current[bout.id] && left > 0) {
+        warnedRef.current[bout.id] = true;
+        if (soundEnabled) refereeAudio.playWarning15s();
+      }
+      if (left <= 0) {
+        if (soundEnabled) refereeAudio.playGong();
+        onUpdateBout(E.onTimeUp(bout, tournamentRules));
+      }
+    });
+  }, [now]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Doctor 60s Countdown
   useEffect(() => {
@@ -234,180 +208,88 @@ export const TournamentBracketScoreboardModule: React.FC<TournamentBracketScoreb
   // Global Multi-Tatami Master Controls
   // -------------------------------------------------------------
   const handleStartAllTatamiTimers = () => {
-    const nextRunning: Record<string, boolean> = { ...runningTimers };
     let startedCount = 0;
-
     tatamis.forEach((t) => {
-      // Find active or scheduled bout on this tatami
-      const tatamiBout = bouts.find(
-        (b) => b.tatamiId === t.id && b.status !== 'completed' && b.akaParticipantId && b.aoParticipantId
-      );
-      if (tatamiBout && tatamiBout.timerSecondsRemaining > 0) {
-        nextRunning[tatamiBout.id] = true;
+      const tatamiBout = bouts.find((b) => b.tatamiId === t.id && b.status !== 'completed' && b.akaParticipantId && b.aoParticipantId);
+      if (tatamiBout && !E.isRunning(tatamiBout) && E.remainingSeconds(tatamiBout) > 0) {
+        onUpdateBout(E.startClock(tatamiBout));
         startedCount++;
-        if (tatamiBout.status !== 'in_progress') {
-          onUpdateBout({ ...tatamiBout, status: 'in_progress' });
-        }
       }
     });
-
-    setRunningTimers(nextRunning);
     if (soundEnabled && startedCount > 0) refereeAudio.playBuzzer();
-    showToast(`Запущен параллельный бой на ${startedCount} татами!`, 'success');
+    showToast(`Запущен бой на ${startedCount} татами`, 'success');
   };
 
   const handlePauseAllTatamiTimers = () => {
-    const nextRunning: Record<string, boolean> = {};
-    Object.keys(runningTimers).forEach((id) => {
-      nextRunning[id] = false;
-    });
-    setRunningTimers(nextRunning);
+    bouts.filter((b) => E.isRunning(b)).forEach((b) => onUpdateBout(E.stopClock(b)));
     showToast('Все татами поставлены на паузу', 'info');
   };
 
   const handleResetAllTatamiTimers = () => {
-    const resetBouts = bouts.map((b) => {
-      if (b.status === 'in_progress') {
-        return {
-          ...b,
-          timerSecondsRemaining: b.discipline === 'kata' ? 240 : 180,
-          status: 'scheduled' as const
-        };
-      }
-      return b;
-    });
-    setRunningTimers({});
-    if (onBatchUpdateBouts) {
-      onBatchUpdateBouts(resetBouts);
-    } else {
-      resetBouts.forEach((b) => onUpdateBout(b));
-    }
-    showToast('Таймеры активных поединков сброшены на 3:00 / 2:00', 'info');
+    const resetBouts = bouts.map((b) => (b.status === 'in_progress' ? E.resetClock(b) : b));
+    if (onBatchUpdateBouts) onBatchUpdateBouts(resetBouts);
+    else resetBouts.forEach((b) => onUpdateBout(b));
+    showToast('Время идущих боёв возвращено к началу', 'info');
   };
 
-  // Toggle individual bout timer
   const handleToggleTimer = (boutId: string) => {
-    const isCurrentlyRunning = !!runningTimers[boutId];
     const bout = bouts.find((b) => b.id === boutId);
     if (!bout) return;
-
-    if (!isCurrentlyRunning) {
-      if (bout.timerSecondsRemaining <= 0) {
-        onUpdateBout({
-          ...bout,
-          timerSecondsRemaining: bout.discipline === 'kata' ? 240 : 180,
-          status: 'in_progress'
-        });
-      } else if (bout.status !== 'in_progress') {
-        onUpdateBout({ ...bout, status: 'in_progress' });
+    if (E.isRunning(bout)) {
+      onUpdateBout(E.stopClock(bout));
+    } else {
+      const started = E.startClock(bout);
+      if (started === bout) {
+        showToast(bout.awaitingDecision ? 'Нужно решение судей (Хантей)' : 'Бой нельзя начать: нет пары или время вышло', 'warning');
+        return;
       }
       if (soundEnabled) refereeAudio.playBuzzer();
+      onUpdateBout(started);
     }
-
-    setRunningTimers((prev) => ({
-      ...prev,
-      [boutId]: !isCurrentlyRunning
-    }));
   };
 
   const handleAdjustTimer = (boutId: string, deltaSeconds: number) => {
     const bout = bouts.find((b) => b.id === boutId);
-    if (!bout) return;
-    const newRemaining = Math.max(0, bout.timerSecondsRemaining + deltaSeconds);
-    onUpdateBout({ ...bout, timerSecondsRemaining: newRemaining });
+    if (bout) onUpdateBout(E.adjustClock(bout, deltaSeconds));
   };
 
   const handleResetSingleTimer = (boutId: string) => {
     const bout = bouts.find((b) => b.id === boutId);
-    if (!bout) return;
-    setRunningTimers((prev) => ({ ...prev, [boutId]: false }));
-    onUpdateBout({
-      ...bout,
-      timerSecondsRemaining: bout.discipline === 'kata' ? 240 : 180,
-      status: 'scheduled'
-    });
+    if (bout) onUpdateBout(E.resetClock(bout));
   };
 
   // -------------------------------------------------------------
-  // Quick Scoring for Multi-Tatami & Referee station
+  // Scoring (WKF rules from utils/boutEngine.ts)
   // -------------------------------------------------------------
   const handleAddPoints = (boutId: string, side: 'aka' | 'ao', delta: number) => {
     const bout = bouts.find((b) => b.id === boutId);
     if (!bout) return;
-
-    const currentScore = side === 'aka' ? bout.akaScore : bout.aoScore;
-    const otherScore = side === 'aka' ? bout.aoScore : bout.akaScore;
-    const newScore = Math.max(0, currentScore + delta);
-
-    // Auto Senshu: first unreplied score when both were 0
-    let akaSenshu = bout.akaSenshu;
-    let aoSenshu = bout.aoSenshu;
-    if (delta > 0 && currentScore === 0 && otherScore === 0 && !akaSenshu && !aoSenshu) {
-      if (side === 'aka') akaSenshu = true;
-      else aoSenshu = true;
+    const updated = E.addScore(bout, side, delta);
+    if (updated === bout) return;
+    if (soundEnabled && delta > 0) refereeAudio.playPointChime(delta);
+    if (updated.winReason === 'mercy_rule_8pt' && bout.status !== 'completed') {
+      showToast('Разница 8 очков — бой завершён', 'warning');
+      if (soundEnabled) refereeAudio.playGong();
     }
-
-    if (soundEnabled && delta > 0) {
-      refereeAudio.playPointChime(delta);
-    }
-
-    const updated: Bout = {
-      ...bout,
-      status: bout.status === 'scheduled' ? 'in_progress' : bout.status,
-      akaScore: side === 'aka' ? newScore : bout.akaScore,
-      aoScore: side === 'ao' ? newScore : bout.aoScore,
-      akaSenshu,
-      aoSenshu
-    };
-
-    // WKF Mercy rule (8 points lead) check
-    const diff = Math.abs(updated.akaScore - updated.aoScore);
-    if (diff >= 8 && updated.status !== 'completed') {
-      showToast(`Преимущество 8 очков (WKF Mercy Rule)! Рекомендуется остановка поединка.`, 'warning');
-    }
-
     onUpdateBout(updated);
   };
 
   const handleToggleSenshu = (boutId: string, side: 'aka' | 'ao') => {
     const bout = bouts.find((b) => b.id === boutId);
     if (!bout) return;
-    if (side === 'aka') {
-      onUpdateBout({ ...bout, akaSenshu: !bout.akaSenshu, aoSenshu: false });
-    } else {
-      onUpdateBout({ ...bout, aoSenshu: !bout.aoSenshu, akaSenshu: false });
-    }
+    onUpdateBout(E.setSenshu(bout, side, !(side === 'aka' ? bout.akaSenshu : bout.aoSenshu)));
   };
 
   const handleAddPenalty = (boutId: string, side: 'aka' | 'ao', category: 'c1' | 'c2', delta: number) => {
     const bout = bouts.find((b) => b.id === boutId);
     if (!bout) return;
-
-    if (category === 'c1') {
-      const current = side === 'aka' ? bout.akaPenaltiesC1 : bout.aoPenaltiesC1;
-      const next = Math.max(0, Math.min(4, current + delta));
-      const updated: Bout = {
-        ...bout,
-        akaPenaltiesC1: side === 'aka' ? next : bout.akaPenaltiesC1,
-        aoPenaltiesC1: side === 'ao' ? next : bout.aoPenaltiesC1
-      };
-      if (next === 4) {
-        showToast(`Внимание: 4-е замечание C1 (Хансоку)! Спортсмен ${side === 'aka' ? 'AKA' : 'AO'} дисквалифицирован.`, 'warning');
-      }
-      onUpdateBout(updated);
-    } else {
-      const current = side === 'aka' ? bout.akaPenaltiesC2 : bout.aoPenaltiesC2;
-      const next = Math.max(0, Math.min(4, current + delta));
-      const updated: Bout = {
-        ...bout,
-        akaPenaltiesC2: side === 'aka' ? next : bout.akaPenaltiesC2,
-        aoPenaltiesC2: side === 'ao' ? next : bout.aoPenaltiesC2
-      };
-      if (next === 4) {
-        showToast(`Внимание: 4-е замечание C2 (Хансоку)! Спортсмен ${side === 'aka' ? 'AKA' : 'AO'} дисквалифицирован.`, 'warning');
-      }
-      onUpdateBout(updated);
+    const current =
+      category === 'c1' ? (side === 'aka' ? bout.akaPenaltiesC1 : bout.aoPenaltiesC1) : side === 'aka' ? bout.akaPenaltiesC2 : bout.aoPenaltiesC2;
+    const updated = E.setPenalty(bout, side, category, current + delta);
+    if (updated.winReason === 'hansoku_dq' && bout.status !== 'completed') {
+      showToast(`Хансоку (${category.toUpperCase()}): ${side === 'aka' ? 'АКА' : 'АО'} проигрывает бой`, 'warning');
     }
+    onUpdateBout(updated);
   };
 
   // -------------------------------------------------------------
@@ -433,16 +315,7 @@ export const TournamentBracketScoreboardModule: React.FC<TournamentBracketScoreb
     }
 
     const winnerParticipant = participants.find((p) => p.id === winnerId);
-    const updatedBout: Bout = {
-      ...activeRefereeBout,
-      status: 'completed',
-      winnerId,
-      winReason: selectedWinReason,
-      timerSecondsRemaining: 0
-    };
-
-    // Stop timer
-    setRunningTimers((prev) => ({ ...prev, [activeRefereeBout.id]: false }));
+    const updatedBout: Bout = E.declareWinner(activeRefereeBout, pendingWinnerSide, selectedWinReason);
 
     // Update bout (App.tsx will automatically advance winner to next round!)
     onUpdateBout(updatedBout);
@@ -539,7 +412,7 @@ export const TournamentBracketScoreboardModule: React.FC<TournamentBracketScoreb
           cat,
           categoryAthletes,
           tatamis,
-          { startTime: '12:00', boutIntervalMinutes: 12 }
+          { startTime: '12:00', boutIntervalMinutes: 12, durationSeconds: durationForCategory(cat) }
         );
 
         reports[cat.id] = report;
@@ -577,7 +450,7 @@ export const TournamentBracketScoreboardModule: React.FC<TournamentBracketScoreb
       cat,
       categoryAthletes,
       tatamis,
-      { startTime: '12:00', boutIntervalMinutes: 12 }
+      { startTime: '12:00', boutIntervalMinutes: 12, durationSeconds: durationForCategory(cat) }
     );
 
     setSeedingReports((prev) => ({ ...prev, [categoryId]: report }));
@@ -952,7 +825,7 @@ export const TournamentBracketScoreboardModule: React.FC<TournamentBracketScoreb
                               ? 'text-white bg-slate-950 border border-emerald-500/60 shadow-lg shadow-emerald-950/50' 
                               : 'text-slate-400 bg-slate-950/60 border border-slate-800'
                           }`}>
-                            {formatTime(activeBout.timerSecondsRemaining)}
+                            {E.formatClock(E.remainingSeconds(activeBout, now))}
                           </div>
 
                           <div className="flex items-center gap-1 mt-2">
@@ -1490,7 +1363,7 @@ export const TournamentBracketScoreboardModule: React.FC<TournamentBracketScoreb
                       ? 'text-white bg-slate-900 border-2 border-emerald-500 shadow-xl'
                       : 'text-slate-400 bg-slate-900 border border-slate-800'
                   }`}>
-                    {formatTime(activeRefereeBout.timerSecondsRemaining)}
+                    {E.formatClock(E.remainingSeconds(activeRefereeBout, now))}
                   </div>
                 </div>
 

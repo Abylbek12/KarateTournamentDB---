@@ -809,3 +809,7 @@ export const DEMO_TOURNAMENT_ID = 'kg-bishkek-cup-2026';
 /** True when a record with `tournamentId` belongs to the event `eventId`. */
 export const belongsToEvent = (tournamentId: string | undefined, eventId: string) =>
   tournamentId === eventId || ((tournamentId === 'tourn1' || !tournamentId) && eventId === DEMO_TOURNAMENT_ID);
+
+/** Bout length for a category: from its age category (kata gets 4 min as a safe upper bound). */
+export const durationForCategory = (cat: { ageCategoryId?: string; discipline?: string }) =>
+  cat.discipline === 'kata' ? 240 : SAMPLE_AGE_CATEGORIES.find((a) => a.id === cat.ageCategoryId)?.matchDurationSeconds ?? 180;
