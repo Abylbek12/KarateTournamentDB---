@@ -254,6 +254,38 @@ export interface Participant {
   status: ParticipantStatus;
   licenseNumber: string;
   placement?: '1st_gold' | '2nd_silver' | '3rd_bronze_1' | '3rd_bronze_2' | '5th' | '7th';
+  /** Account that submitted the entry (athlete, parent or coach). */
+  createdBy?: string;
+  createdAt?: string;
+  /** Team entries (team kata / team kumite): team name and members. */
+  teamName?: string;
+  teamMembers?: string[];
+  /** Set at weigh-in when the athlete does not fit the category. */
+  eligibilityNote?: string;
+}
+
+/**
+ * A category of one tournament, created by the organizer (stored on the server).
+ * Age is counted on the first day of the tournament.
+ */
+export interface EventCategory {
+  id: string;
+  tournamentId: string;
+  discipline: Discipline;
+  gender: Gender;
+  ageMin: number;
+  ageMax: number | null;
+  /** Kumite only; null = open weight. Upper bound is inclusive ("-60 kg" = up to 60.0). */
+  weightMin: number | null;
+  weightMax: number | null;
+  /** Lowest belt allowed (optional). */
+  minBelt?: BeltRank;
+  /** Entry fee in the tournament currency. */
+  fee: number;
+  durationSeconds: number;
+  /** Optional custom name; otherwise generated. */
+  name?: string;
+  isClosed?: boolean;
 }
 
 export interface Tatami {

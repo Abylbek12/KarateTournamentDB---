@@ -73,7 +73,7 @@ import {
   durationForCategory
 } from './data/sampleTournamentData';
 import { POSTGRESQL_DDL_SCRIPT } from './data/dbSchemaDefinition';
-import { Bout, Participant, TournamentRules, RefereeProtocol, UserRole, TournamentRegistrationConfig, Tournament, AppNotification, AuthenticatedUserProfile } from './types/schema';
+import { Bout, Participant, TournamentRules, RefereeProtocol, UserRole, EventCategory, TournamentCategory, TournamentRegistrationConfig, Tournament, AppNotification, AuthenticatedUserProfile } from './types/schema';
 
 import { AppProvider, useApp } from './context/AppContext';
 import { useGlobalDomTranslator, trLang } from './utils/globalDomTranslator';
@@ -84,8 +84,11 @@ import { AccessGate } from './components/AccessGate';
 import { TatamiMark, TatamiWordmark } from './components/BrandLogo';
 import { UsersRolesPanel } from './components/UsersRolesPanel';
 import { InviteLinksPanel } from './components/InviteLinksPanel';
-import { PublicBracketsView, PublicResultsView, PublicLiveView } from './components/PublicEventViews';
+import { PublicBracketsView, PublicResultsView, PublicLiveView, PublicCategoriesView } from './components/PublicEventViews';
 import { BoutConsole } from './components/BoutConsole';
+import { EntryForm } from './components/EntryForm';
+import { EventSetupPanel } from './components/EventSetupPanel';
+import { activeEntries, categoryName } from './utils/eventCategories';
 import { getDeviceKey, setDeviceKey } from './utils/liveStream';
 import { TatamiDisplay, CallRoomDisplay, TatamiControl } from './components/TatamiScreens';
 import { MyAccountPanel } from './components/MyAccountPanel';
@@ -104,7 +107,6 @@ const TournamentAnalyticsModule = React.lazy(() => import('./components/Tourname
 const TournamentClubAccountingModule = React.lazy(() => import('./components/TournamentClubAccountingModule').then((m) => ({ default: m.TournamentClubAccountingModule })));
 const CoachPortalModule = React.lazy(() => import('./components/CoachPortalModule').then((m) => ({ default: m.CoachPortalModule })));
 const RefereeProtocolModule = React.lazy(() => import('./components/RefereeProtocolModule').then((m) => ({ default: m.RefereeProtocolModule })));
-const MultiStepRegistration = React.lazy(() => import('./components/MultiStepRegistration').then((m) => ({ default: m.MultiStepRegistration })));
 const LocalLanTournamentHub = React.lazy(() => import('./components/LocalLanTournamentHub').then((m) => ({ default: m.LocalLanTournamentHub })));
 const TournamentDetailsView = React.lazy(() => import('./components/TournamentDetailsView').then((m) => ({ default: m.TournamentDetailsView })));
 const TournamentInfoDetailView = React.lazy(() => import('./components/TournamentInfoDetailView').then((m) => ({ default: m.TournamentInfoDetailView })));
@@ -423,6 +425,11 @@ function AppContent() {
   );
   const [participants, setParticipants] = useServerSyncedState<Participant[]>('participants', SAMPLE_PARTICIPANTS, sharedStateOptions);
   const [protocols, setProtocols] = useServerSyncedState<RefereeProtocol[]>('protocols', SAMPLE_REFEREE_PROTOCOLS, sharedStateOptions);
+  // Tournament categories created by the organizer (server-stored).
+  const [eventCategories, setEventCategories] = useServerSyncedState<EventCategory[]>('categories', [], {
+    ...sharedStateOptions,
+    canWrite: !!currentUser && ['admin', 'chief_referee'].includes(currentUser.role)
+  });
   const [activeScoreboardBout, setActiveScoreboardBout] = useState<Bout | null>(null);
   const [selectedConsoleBoutId, setSelectedConsoleBoutId] = useState<string>(SAMPLE_BOUTS[0].id);
   const [isGlobalManualModalOpen, setIsGlobalManualModalOpen] = useState<boolean>(false);
@@ -876,6 +883,37 @@ function AppContent() {
   };
 
   // Automatic playoff bracket progression when a bout finishes
+  /** Draw for one organizer category: bracket from its active entries on the chosen tatami. */
+  const handleDrawCategory = (def: EventCategory, tatamiNumber: number) => {
+    const entries = activeEntries(participants, def.id);
+    const tatami = SAMPLE_TATAMIS.find((t) => t.number === tatamiNumber) || SAMPLE_TATAMIS[0];
+    const generatorCategory = {
+      id: def.id,
+      tournamentId: def.tournamentId,
+      discipline: def.discipline === 'team_kata' ? 'kata' : def.discipline === 'team_kumite' ? 'kumite' : def.discipline,
+      gender: def.gender === 'mixed' ? 'male' : def.gender,
+      bracketType: 'olympic_with_repechage',
+      assignedTatamiId: tatami.id
+    } as unknown as TournamentCategory;
+    const { bouts: catBouts } = generateProtectedWkfCategoryBouts(generatorCategory, entries, [tatami], {
+      durationSeconds: def.durationSeconds,
+      categoryTitle: categoryName(def)
+    });
+    setBouts((prev) => [...prev.filter((b) => b.categoryId !== def.id), ...catBouts]);
+    setParticipants((prev) => prev.map((pp) => (entries.some((e) => e.id === pp.id) ? { ...pp, status: 'draw_seeded' } : pp)));
+    setGlobalSystemToast(`Жеребьёвка проведена: ${categoryName(def)} — ${catBouts.length} боёв на татами ${tatami.number}`);
+    setTimeout(() => setGlobalSystemToast(null), 5000);
+  };
+
+  const handleWithdrawEntry = async (entryId: string) => {
+    const res = await fetch(`/api/entries/${encodeURIComponent(entryId)}/withdraw`, { method: 'POST' });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setGlobalSystemToast(data.error || 'Не удалось отозвать заявку');
+      setTimeout(() => setGlobalSystemToast(null), 5000);
+    }
+  };
+
   const handleUpdateBout = (updatedBout: Bout) => {
     // Winner moves to the next round (any bracket size); repechage for the two bronzes is kept in sync.
     const find = (id?: string) => (id ? participants.find((p) => p.id === id) : undefined);
@@ -1038,96 +1076,6 @@ function AppContent() {
     );
   }
 
-  if (activeTab === 'registration' && canAccess('registration', effectiveRole)) {
-    return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
-        {/* Minimalist Dedicated Top Bar */}
-        <header className="sticky top-0 z-40 bg-slate-950/95 backdrop-blur border-b border-slate-800">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            {/* Top-left clean back to main button */}
-            <button
-              onClick={() => setActiveTab('tournament_details')}
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/80 hover:border-blue-500/60 text-xs font-semibold transition-all cursor-pointer group shadow-sm"
-              title="Вернуться к турниру"
-            >
-              <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-400 group-hover:-translate-x-0.5 transition-transform" />
-              <span>Назад к турниру</span>
-            </button>
-
-            {/* Central Brand */}
-            <div className="flex items-center gap-2.5">
-              <TatamiMark className="w-7 h-7" />
-              <span className="text-xs font-mono font-bold tracking-wider text-slate-200 uppercase hidden sm:inline">
-                TATAMI.KG
-              </span>
-            </div>
-
-            {/* Top-right Security badge */}
-            <div className="flex items-center gap-2">
-              <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-mono text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-800">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>SSL 256-bit</span>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Global Toast if active */}
-        {globalSystemToast && (
-          <div className="bg-emerald-600/90 text-white border-y border-emerald-500 px-4 py-2.5 shadow-lg backdrop-blur sticky top-[65px] z-40 flex items-center justify-between text-xs sm:text-sm font-medium animate-fadeIn">
-            <div className="max-w-5xl mx-auto w-full flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-200" />
-                {globalSystemToast}
-              </span>
-              <button 
-                onClick={() => setGlobalSystemToast(null)}
-                className="text-emerald-200 hover:text-white text-xs px-2 py-0.5 rounded bg-emerald-800/60"
-              >
-                ✕ Закрыть
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Dedicated Clean Registration Page Container */}
-        <main className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fadeIn">
-          <React.Suspense fallback={<ScreenLoader />}>
-          <MultiStepRegistration
-            tournament={selectedTournament}
-            clubs={SAMPLE_CLUBS}
-            tournamentCategories={SAMPLE_TOURNAMENT_CATEGORIES}
-            tatamis={SAMPLE_TATAMIS}
-            isRegistrationOpen={registrationConfig.isRegistrationOpen}
-            registrationDeadline={registrationConfig.registrationDeadline}
-            onBackToHome={() => setActiveTab('tournament_details')}
-            onRegisterAthlete={(newAthlete) => {
-              handleAddParticipant(newAthlete);
-              setGlobalSystemToast(`✓ Спортсмен ${newAthlete.firstName} ${newAthlete.lastName} успешно зарегистрирован на «${selectedTournament.title}» и занесен в базу данных!`);
-              setTimeout(() => setGlobalSystemToast(null), 6000);
-            }}
-            onNavigateToBracket={() => setActiveTab('bracket')}
-            onNavigateToParticipants={() => setActiveTab('participants')}
-            onNavigateToScoreboard={() => setActiveTab('scoreboard')}
-          />
-          </React.Suspense>
-        </main>
-
-        {/* Supreme AI Assistant: Sensei AI powered by Gemini 3.8 Flash */}
-        <SenseiAiChatbot
-          currentTournament={selectedTournament}
-          tournamentRules={tournamentRules}
-          participantCount={participants.length}
-          tatamiCount={SAMPLE_TATAMIS.length}
-        />
-
-        {/* Minimalist Clean Footer */}
-        <footer className="py-6 border-t border-slate-900 text-center text-xs text-slate-600 font-mono">
-          © 2026 Tatami.kg · Международные протоколы соревнований · Реляционная БД PostgreSQL
-        </footer>
-      </div>
-    );
-  }
 
   return (
     <div className="flex h-[100dvh] w-full overflow-hidden bg-[#f0f2f5] text-slate-800 font-sans selection:bg-blue-600 selection:text-white">
@@ -1697,7 +1645,23 @@ function AppContent() {
           )}
 
           {/* 1.2 Категории и цены (Matching video at 00:32-00:36) */}
-          {activeTab === 'event_categories_prices' && (
+          {activeTab === 'event_categories_prices' && eventCategories.some((c) => c.tournamentId === selectedUventexEvent.id) && (
+            <PublicCategoriesView
+              event={selectedUventexEvent}
+              bouts={bouts}
+              participants={participants}
+              categories={SAMPLE_TOURNAMENT_CATEGORIES}
+              eventCategories={eventCategories}
+              language={language}
+              onBack={() => navigateWithHash('tournaments')}
+              onNavigateAction={(action) => handleSelectTournamentAction(selectedUventexEvent, action)}
+              onEnter={() => {
+                setSelectedTournament(selectedUventexEvent);
+                navigateWithHash('registration');
+              }}
+            />
+          )}
+          {activeTab === 'event_categories_prices' && !eventCategories.some((c) => c.tournamentId === selectedUventexEvent.id) && (
             <TournamentDivisionsPricingView
               tournament={selectedUventexEvent}
               onBack={() => setActiveTab('tournaments')}
@@ -2041,6 +2005,30 @@ function AppContent() {
             />
           )}
 
+          {activeTab === 'registration' && currentUser && (
+            <EntryForm
+              tournaments={tournaments}
+              categories={eventCategories}
+              participants={participants}
+              currentUser={currentUser}
+              initialTournamentId={selectedTournament?.id}
+            />
+          )}
+
+          {activeTab === 'event_setup' && (
+            <EventSetupPanel
+              tournaments={tournaments}
+              initialTournamentId={selectedTournament?.id}
+              categories={eventCategories}
+              onChangeCategories={setEventCategories}
+              participants={participants}
+              bouts={bouts}
+              tatamiNumbers={SAMPLE_TATAMIS.map((t) => t.number)}
+              onDraw={handleDrawCategory}
+              onWithdraw={handleWithdrawEntry}
+            />
+          )}
+
           {activeTab === 'screens' && <ScreensQrPanel tatamiNumbers={SAMPLE_TATAMIS.map((t) => t.number)} />}
 
           {activeTab === 'lan' && (
@@ -2089,6 +2077,9 @@ function AppContent() {
           {activeTab === 'participants' && (
             <ParticipantsManager
               participants={participants}
+              tournaments={tournaments}
+              categories={eventCategories}
+              defaultTournamentId={selectedTournament?.id}
               onUpdateParticipant={handleUpdateParticipant}
               onNavigateToRegister={() => setActiveTab('admin')}
             />

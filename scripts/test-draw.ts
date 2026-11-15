@@ -125,5 +125,14 @@ function earliestMeeting(slots: (Participant | null)[], key: (p: Participant) =>
   check('detect: two clubs in one city = local', scope === 'local');
 }
 
+{
+  const a = athlete('x', 'Ош'); a.clubId = 'id-1'; a.clubName = 'СК "Тигр"';
+  const b = athlete('y', 'Ош'); b.clubId = 'id-2'; b.clubName = 'СК «Тигр»';
+  const { levels } = detectSeparation([a, b, athlete('z', 'Ош')]);
+  const { slots } = seedWkfBracketWithProtection([a, b, athlete('z', 'Ош'), athlete('w', 'Ош')]);
+  const ia = slots.indexOf(a), ib = slots.indexOf(b);
+  check('club names with different quotes are one club', Math.floor(ia / 2) !== Math.floor(ib / 2), `levels=${levels}`);
+}
+
 console.log(failures ? `\n${failures} check(s) failed` : '\nAll draw checks passed');
 process.exit(failures ? 1 : 0);

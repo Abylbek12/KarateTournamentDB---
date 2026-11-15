@@ -37,7 +37,7 @@ app.set('trust proxy', 1);
 app.use(express.json({ limit: '10mb' }));
 
 import { UVENTEX_SCREENSHOT_EVENTS } from './src/data/uventexEventsData';
-import { SAMPLE_BOUTS } from './src/data/sampleTournamentData';
+import { SAMPLE_BOUTS, SAMPLE_PARTICIPANTS } from './src/data/sampleTournamentData';
 
 const hasGeminiKey = () => {
   const k = process.env.GEMINI_API_KEY;
@@ -847,7 +847,8 @@ app.put('/api/admin/users/:id/role', (req: Request, res: Response) => {
 const SHARED_STATE_WRITERS: Record<string, Set<string>> = {
   participants: new Set(['admin', 'chief_referee', 'scorekeeper', 'medical_officer', 'club_coach', 'athlete']),
   bouts: new Set(['admin', 'chief_referee', 'tatami_referee', 'scorekeeper']),
-  protocols: new Set(['admin', 'chief_referee', 'tatami_referee', 'scorekeeper'])
+  protocols: new Set(['admin', 'chief_referee', 'tatami_referee', 'scorekeeper']),
+  categories: new Set(['admin', 'chief_referee'])
 };
 
 const stateEnvelope = (key: string) => {
@@ -921,6 +922,125 @@ app.put('/api/state/:key', (req: Request, res: Response) => {
   saveDb();
   broadcast({ type: 'state', key, version: db.state[key].version });
   res.json(stateEnvelope(key));
+});
+
+// ========================================================
+// ENTRIES (заявки): athletes, parents and coaches enter tournaments.
+// Each entry is appended on its own, so many coaches can submit at once.
+// ========================================================
+const ENTRY_ROLES = new Set(['athlete', 'club_coach', 'admin', 'chief_referee', 'scorekeeper']);
+
+const participantsList = (): any[] => (Array.isArray(db.state.participants?.value) ? (db.state.participants!.value as any[]) : []);
+
+function saveParticipants(list: any[], userId: string) {
+  const version = (db.state.participants?.version ?? 0) + 1;
+  db.state.participants = { version, value: list, updatedAt: new Date().toISOString(), updatedBy: userId };
+  saveDb();
+  broadcast({ type: 'state', key: 'participants', version });
+}
+
+app.post('/api/entries', (req: Request, res: Response) => {
+  const user = getSessionUser(req);
+  if (!user) {
+    res.status(401).json({ error: 'Войдите в аккаунт, чтобы подать заявку.' });
+    return;
+  }
+  if (!ENTRY_ROLES.has(user.role)) {
+    res.status(403).json({ error: 'Ваша роль не может подавать заявки.' });
+    return;
+  }
+  const entries = req.body?.entries;
+  if (!Array.isArray(entries) || entries.length === 0 || entries.length > 200) {
+    res.status(400).json({ error: 'Нет заявок для отправки.' });
+    return;
+  }
+  const categories: any[] = Array.isArray(db.state.categories?.value) ? (db.state.categories!.value as any[]) : [];
+  const list = participantsList();
+  const created: any[] = [];
+  for (const e of entries) {
+    const cat = categories.find((c) => c.id === e?.categoryId);
+    if (!cat) {
+      res.status(400).json({ error: 'Категория не найдена. Обновите страницу и выберите категорию заново.' });
+      return;
+    }
+    if (cat.isClosed) {
+      res.status(400).json({ error: 'Приём заявок в эту категорию закрыт.' });
+      return;
+    }
+    const isTeam = cat.discipline === 'team_kata' || cat.discipline === 'team_kumite';
+    const last = String(e.lastName || '').trim().slice(0, 80);
+    const first = String(e.firstName || '').trim().slice(0, 80);
+    if (!isTeam && (!last || !first || !/^\d{4}-\d{2}-\d{2}$/.test(String(e.birthDate || '')))) {
+      res.status(400).json({ error: 'Укажите фамилию, имя и дату рождения спортсмена.' });
+      return;
+    }
+    const duplicate = list.some(
+      (p) =>
+        p.tournamentId === cat.tournamentId &&
+        p.categoryId === cat.id &&
+        p.status !== 'withdrawn' &&
+        (isTeam
+          ? String(p.teamName || '').toLowerCase() === String(e.teamName || '').trim().toLowerCase()
+          : String(p.lastName).toLowerCase() === last.toLowerCase() && String(p.firstName).toLowerCase() === first.toLowerCase() && p.birthDate === e.birthDate)
+    );
+    if (duplicate) {
+      res.status(409).json({ error: `${isTeam ? e.teamName : `${last} ${first}`}: уже заявлен(а) в эту категорию.` });
+      return;
+    }
+    created.push({
+      id: `p-${crypto.randomUUID()}`,
+      tournamentId: cat.tournamentId,
+      categoryId: cat.id,
+      clubId: String(e.clubName || '').trim().toLowerCase() || `solo-${user.id}`,
+      clubName: String(e.clubName || '').trim().slice(0, 120),
+      city: String(e.city || '').trim().slice(0, 80),
+      country: String(e.country || '').trim().slice(0, 80),
+      firstName: isTeam ? String(e.teamName || '').trim().slice(0, 80) : first,
+      lastName: isTeam ? '' : last,
+      gender: ['male', 'female', 'mixed'].includes(e.gender) ? e.gender : cat.gender,
+      birthDate: isTeam ? '' : String(e.birthDate),
+      beltRank: String(e.beltRank || 'white_10kyu'),
+      declaredWeightKg: Number(e.declaredWeightKg) || 0,
+      actualWeightKg: null,
+      isWeighedIn: false,
+      isMedicalCleared: false,
+      feePaymentStatus: cat.fee > 0 ? 'pending' : 'exempt',
+      status: 'registered',
+      licenseNumber: String(e.licenseNumber || '').trim().slice(0, 40),
+      teamName: isTeam ? String(e.teamName || '').trim().slice(0, 80) : undefined,
+      teamMembers: isTeam && Array.isArray(e.teamMembers) ? e.teamMembers.map((m: unknown) => String(m).trim().slice(0, 80)).filter(Boolean).slice(0, 8) : undefined,
+      createdBy: user.id,
+      createdAt: new Date().toISOString()
+    });
+  }
+  saveParticipants([...list, ...created], user.id);
+  res.status(201).json({ success: true, entries: created });
+});
+
+/** Withdraw an entry: its author (before the draw) or an official. */
+app.post('/api/entries/:id/withdraw', (req: Request, res: Response) => {
+  const user = getSessionUser(req);
+  if (!user) {
+    res.status(401).json({ error: 'Войдите в аккаунт.' });
+    return;
+  }
+  const list = participantsList();
+  const entry = list.find((p) => p.id === req.params.id);
+  if (!entry) {
+    res.status(404).json({ error: 'Заявка не найдена.' });
+    return;
+  }
+  const official = ['admin', 'chief_referee', 'scorekeeper'].includes(user.role);
+  if (!official && entry.createdBy !== user.id) {
+    res.status(403).json({ error: 'Можно отозвать только свою заявку.' });
+    return;
+  }
+  if (!official && entry.status !== 'registered') {
+    res.status(400).json({ error: 'После взвешивания или жеребьёвки заявку отзывает только организатор.' });
+    return;
+  }
+  saveParticipants(list.map((p) => (p.id === entry.id ? { ...p, status: 'withdrawn' } : p)), user.id);
+  res.json({ success: true });
 });
 
 // ========================================================
@@ -1364,6 +1484,10 @@ async function startServer() {
   // Bouts are saved one by one, so the server must hold the full list from the start.
   if (!db.state.bouts) {
     db.state.bouts = { version: 1, value: JSON.parse(JSON.stringify(SAMPLE_BOUTS)), updatedAt: new Date().toISOString(), updatedBy: 'seed' };
+    saveDb();
+  }
+  if (!db.state.participants) {
+    db.state.participants = { version: 1, value: JSON.parse(JSON.stringify(SAMPLE_PARTICIPANTS)), updatedAt: new Date().toISOString(), updatedBy: 'seed' };
     saveDb();
   }
   seedDevDemoAccounts();

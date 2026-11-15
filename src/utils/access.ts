@@ -49,6 +49,7 @@ export const TAB_ACCESS: Record<string, 'public' | AccessRole[]> = {
   exports: ['admin', 'chief_referee'],
   lan: ['admin'],
   screens: ['admin'],
+  event_setup: ['admin', 'chief_referee'],
   categories: ['admin'],
   schema: ['admin'],
   sql: ['admin']

@@ -118,11 +118,13 @@ const KG_REGION_BY_CITY: Record<string, string> = {
 };
 
 const norm = (v?: string | null) => (v || '').trim().toLowerCase();
+const clubKey = (v?: string | null) => norm(v).replace(/[«»"'“”„`]/g, '').replace(/\s+/g, ' ').trim();
 
 export function separationKey(p: Participant, level: SeparationLevel): string {
   switch (level) {
     case 'club':
-      return norm(p.clubId) || norm(p.clubName);
+      // Club names typed by different people: ignore quotes and extra spaces ("Тигр" = «Тигр»)
+      return clubKey(p.clubName) || norm(p.clubId);
     case 'city':
       return norm(p.city);
     case 'region':
@@ -361,7 +363,7 @@ export function generateProtectedWkfCategoryBouts(
   category: TournamentCategory,
   athletes: Participant[],
   tatamis: Tatami[],
-  options?: { startTime?: string; boutIntervalMinutes?: number; durationSeconds?: number }
+  options?: { startTime?: string; boutIntervalMinutes?: number; durationSeconds?: number; categoryTitle?: string }
 ): { bouts: Bout[]; report: WkfSeedingReport } {
   const { tatami: autoTatami, reason: autoTatamiReason } = getAutoAssignedTatami(category, tatamis);
   const startTime = options?.startTime || '12:00';
@@ -374,7 +376,7 @@ export function generateProtectedWkfCategoryBouts(
 
   const { slots, report: rawReport } = seedWkfBracketWithProtection(athletes);
   const bracketSize = rawReport.bracketSize;
-  const categoryTitle = `${category.ageCategoryName || 'Взрослые 18+'} · ${category.gender === 'male' ? 'Мужчины' : 'Женщины'} · ${
+  const categoryTitle = options?.categoryTitle || `${category.ageCategoryName || 'Взрослые 18+'} · ${category.gender === 'male' ? 'Мужчины' : 'Женщины'} · ${
     category.discipline === 'kata' ? 'Ката' : category.weightCategoryName || 'Кумитэ'
   }`;
 

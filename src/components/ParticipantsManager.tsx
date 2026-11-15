@@ -12,20 +12,32 @@ import {
   ShieldCheck,
   FileCheck
 } from 'lucide-react';
-import { Participant, Club, BeltRank } from '../types/schema';
+import { Participant, Club, BeltRank, EventCategory, Tournament } from '../types/schema';
+import { belongsToEvent } from '../data/sampleTournamentData';
+import { categoryName, weighInFits, findCategoryForWeight } from '../utils/eventCategories';
 import { SAMPLE_PARTICIPANTS, SAMPLE_CLUBS } from '../data/sampleTournamentData';
 
 interface ParticipantsManagerProps {
   participants: Participant[];
   onUpdateParticipant: (updated: Participant) => void;
   onNavigateToRegister?: () => void;
+  tournaments?: Tournament[];
+  categories?: EventCategory[];
+  defaultTournamentId?: string;
 }
 
 export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
   participants,
   onUpdateParticipant,
-  onNavigateToRegister
+  onNavigateToRegister,
+  tournaments = [],
+  categories = [],
+  defaultTournamentId
 }) => {
+  const [tournamentId, setTournamentId] = useState(defaultTournamentId || tournaments[0]?.id || '');
+  const inTournament = participants.filter((p) => p.status !== 'withdrawn' && (!tournamentId || belongsToEvent(p.tournamentId, tournamentId)));
+  const catOf = (p: Participant) => categories.find((c) => c.id === p.categoryId);
+  const flagged = inTournament.filter((p) => p.eligibilityNote);
   const [search, setSearch] = useState('');
   const [selectedClub, setSelectedClub] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -35,7 +47,7 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
   const [actualWeightInput, setActualWeightInput] = useState<number>(0);
   const [medicalClearedInput, setMedicalClearedInput] = useState<boolean>(true);
 
-  const filtered = participants.filter((p) => {
+  const filtered = inTournament.filter((p) => {
     const matchesSearch = search === '' || 
       `${p.lastName} ${p.firstName}`.toLowerCase().includes(search.toLowerCase()) ||
       p.licenseNumber.toLowerCase().includes(search.toLowerCase());
@@ -54,12 +66,15 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
 
   const handleSaveWeighIn = () => {
     if (!weighInAthlete) return;
+    const cat = catOf(weighInAthlete);
+    const fits = weighInFits(cat, actualWeightInput);
     const updated: Participant = {
       ...weighInAthlete,
       actualWeightKg: actualWeightInput,
       isWeighedIn: true,
       isMedicalCleared: medicalClearedInput,
-      status: medicalClearedInput ? 'weighed_in' : 'disqualified'
+      status: medicalClearedInput ? 'weighed_in' : 'disqualified',
+      eligibilityNote: fits || !cat ? undefined : `Вес ${actualWeightInput} кг не подходит для «${categoryName(cat)}»`
     };
     onUpdateParticipant(updated);
     setWeighInAthlete(null);
@@ -80,6 +95,38 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
 
   return (
     <div className="space-y-6">
+      {tournaments.length > 0 && (
+        <div className="theme-keep flex flex-wrap items-center gap-2">
+          <label htmlFor="weighin-tournament" className="text-sm text-[var(--app-text-secondary)]">Турнир:</label>
+          <select id="weighin-tournament" value={tournamentId} onChange={(e) => setTournamentId(e.target.value)} className="rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-text-primary)] px-3 py-2 text-sm max-w-full">
+            {tournaments.map((t) => (
+              <option key={t.id} value={t.id}>{t.title}</option>
+            ))}
+          </select>
+        </div>
+      )}
+      {flagged.length > 0 && (
+        <div className="theme-keep rounded-2xl border-2 border-amber-500 bg-[var(--app-surface)] p-4 space-y-2">
+          <div className="font-semibold text-[var(--app-text-primary)] flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-amber-600" /> Не прошли по весу ({flagged.length})</div>
+          {flagged.map((p) => {
+            const cat = catOf(p);
+            const target = cat && p.actualWeightKg != null ? findCategoryForWeight(categories, cat, p.actualWeightKg) : undefined;
+            return (
+              <div key={p.id} className="flex flex-wrap items-center gap-2 text-sm">
+                <span className="flex-1 min-w-[200px] text-[var(--app-text-primary)]">{p.lastName} {p.firstName}: {p.eligibilityNote}</span>
+                {target && (
+                  <button onClick={() => onUpdateParticipant({ ...p, categoryId: target.id, eligibilityNote: undefined })} className="h-8 px-3 rounded-lg bg-[var(--accent)] text-white text-xs font-semibold cursor-pointer">
+                    Перевести в «{categoryName(target)}»
+                  </button>
+                )}
+                <button onClick={() => onUpdateParticipant({ ...p, status: 'withdrawn', eligibilityNote: undefined })} className="h-8 px-3 rounded-lg border border-[var(--app-border)] text-xs text-[var(--app-text-secondary)] cursor-pointer">
+                  Снять с турнира
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
       {/* Banner */}
       <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-slate-900 border border-slate-800">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

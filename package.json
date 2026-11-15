@@ -14,8 +14,9 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "test:draw": "tsx scripts/test-draw.ts",
-    "test": "npm run test:draw && npm run test:bouts",
-    "test:bouts": "tsx scripts/test-bouts.ts"
+    "test": "npm run test:draw && npm run test:bouts && npm run test:categories",
+    "test:bouts": "tsx scripts/test-bouts.ts",
+    "test:categories": "tsx scripts/test-categories.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowLeft, Trophy, Radio, Medal } from 'lucide-react';
-import type { Bout, Participant, TournamentCategory } from '../types/schema';
+import type { Bout, Participant, TournamentCategory, EventCategory } from '../types/schema';
+import { categoryName, activeEntries, DISCIPLINE_LABELS } from '../utils/eventCategories';
 import type { UventexEventItem, EventActionType } from '../data/uventexEventsData';
 import { belongsToEvent } from '../data/sampleTournamentData';
 import { ELIMINATION_ORDER, computeStandings, repechageHalf, repechageStep, stageLabel } from '../utils/bracketProgression';
@@ -414,6 +415,61 @@ export const PublicLiveView: React.FC<BaseProps> = (props) => {
           })}
         </div>
       )}
+    </div>
+  );
+};
+
+/** Public list of the tournament's categories with fee and number of entries. */
+export const PublicCategoriesView: React.FC<
+  BaseProps & { eventCategories: EventCategory[]; onEnter: () => void; currency?: string }
+> = (props) => {
+  const { event, participants, language, eventCategories, onEnter, currency = 'сом' } = props;
+  const cats = eventCategories.filter((c) => c.tournamentId === event.id);
+  const groups = (['kata', 'kumite', 'team_kata', 'team_kumite'] as const)
+    .map((d) => ({ d, list: cats.filter((c) => c.discipline === d) }))
+    .filter((g) => g.list.length > 0);
+  return (
+    <div className="theme-keep space-y-5 pb-8">
+      <EventHeader {...props} active="categories_prices" />
+      <div className="flex flex-wrap items-center gap-3">
+        <p className="flex-1 text-sm text-[var(--app-text-secondary)]">
+          {t(language, 'Возраст считается на первый день турнира. Вес — по взвешиванию.', 'Жаш мелдештин биринчи күнүнө эсептелет.', 'Age is counted on the first day of the tournament.')}
+        </p>
+        <button onClick={onEnter} className="h-10 px-5 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white text-sm font-semibold cursor-pointer">
+          {t(language, 'Подать заявку', 'Табыштама берүү', 'Enter')}
+        </button>
+      </div>
+      {groups.map(({ d, list }) => (
+        <section key={d} className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] overflow-hidden">
+          <h2 className="px-4 py-3 font-semibold text-[var(--app-text-primary)] border-b border-[var(--app-border)]">{DISCIPLINE_LABELS[d]}</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-[var(--app-text-primary)]">
+              <thead className="text-xs text-[var(--app-text-muted)] bg-[var(--app-surface-subtle)]">
+                <tr>
+                  <th className="px-4 py-2 text-left">{t(language, 'Категория', 'Категория', 'Category')}</th>
+                  <th className="px-4 py-2 text-right">{t(language, 'Заявок', 'Табыштама', 'Entries')}</th>
+                  <th className="px-4 py-2 text-right">{t(language, 'Взнос', 'Төлөм', 'Fee')}</th>
+                  <th className="px-4 py-2 text-right">{t(language, 'Статус', 'Абалы', 'Status')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {list.map((c) => (
+                  <tr key={c.id} className="border-t border-[var(--app-border)]">
+                    <td className="px-4 py-2">{categoryName(c)}</td>
+                    <td className="px-4 py-2 text-right tabular-nums">{activeEntries(participants, c.id).length}</td>
+                    <td className="px-4 py-2 text-right tabular-nums whitespace-nowrap">{c.fee ? `${c.fee} ${currency}` : '—'}</td>
+                    <td className="px-4 py-2 text-right text-xs">
+                      <span className={c.isClosed ? 'text-[var(--app-text-muted)]' : 'text-emerald-700'}>
+                        {c.isClosed ? t(language, 'приём закрыт', 'жабык', 'closed') : t(language, 'приём заявок', 'ачык', 'open')}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ))}
     </div>
   );
 };

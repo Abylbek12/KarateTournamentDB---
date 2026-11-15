@@ -23,7 +23,8 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   X,
-  QrCode
+  QrCode,
+  Layers
 } from 'lucide-react';
 import { canAccess, type AccessRole } from '../utils/access';
 import { TournamentRules, UserRole, Tournament } from '../types/schema';
@@ -55,7 +56,8 @@ export type NavTabId =
   | 'schema'
   | 'sql'
   | 'registration'
-  | 'screens';
+  | 'screens'
+  | 'event_setup';
 
 interface SidebarProps {
   activeTab: string;
@@ -147,7 +149,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { id: 'participants' as NavTabId, label: tr('Взвешивание и допуск', 'Таразалоо жана уруксат', 'Weigh-in & clearance'), icon: Scale },
         { id: 'protocols' as NavTabId, label: tr('Протоколы', 'Протоколдор', 'Protocols'), icon: FileText },
         { id: 'referee_vr' as NavTabId, label: tr('Видеоповтор (VR)', 'Видеокайталоо (VR)', 'Video review'), icon: Shield },
-        { id: 'doctor' as NavTabId, label: tr('Медконтроль', 'Медкөзөмөл', 'Medical'), icon: Stethoscope }
+        { id: 'doctor' as NavTabId, label: tr('Медконтроль', 'Медкөзөмөл', 'Medical'), icon: Stethoscope },
+        // Chief referee runs the draw too (admins have it under «Организатор»)
+        ...(isAdmin ? [] : [{ id: 'event_setup' as NavTabId, label: tr('Категории и жеребьёвка', 'Категориялар жана чүчүкулак', 'Categories & draw'), icon: Layers }])
       ]
     },
     {
@@ -156,6 +160,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       items: isAdmin
         ? [
             { id: 'admin' as NavTabId, label: tr('Турниры и пользователи', 'Мелдештер жана колдонуучулар', 'Events & users'), icon: ShieldCheck },
+            { id: 'event_setup' as NavTabId, label: tr('Категории и жеребьёвка', 'Категориялар жана чүчүкулак', 'Categories & draw'), icon: Layers },
             { id: 'screens' as NavTabId, label: tr('Экраны и QR-коды', 'Экрандар жана QR', 'Screens & QR'), icon: QrCode },
             { id: 'bracket' as NavTabId, label: tr('Сетки и жеребьёвка', 'Торчолор жана чүчүкулак', 'Brackets & draw'), icon: GitBranch },
             { id: 'acquiring' as NavTabId, label: tr('Оплаты и взносы', 'Төлөмдөр', 'Payments'), icon: CreditCard },
