@@ -1119,8 +1119,17 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`[Server] ${isProduction ? 'Production' : 'Dev'} server listening on http://0.0.0.0:${PORT}`);
+    console.log(`[Server] Откройте в браузере: http://localhost:${PORT}`);
+  });
+  server.on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`\n[Server] Порт ${PORT} уже занят — скорее всего, сайт уже запущен в другом окне терминала.`);
+      console.error(`[Server] Откройте http://localhost:${PORT} или остановите другой сервер (Ctrl+C в его окне).\n`);
+      process.exit(1);
+    }
+    throw err;
   });
 }
 
