@@ -367,7 +367,7 @@ export const RefereeElectronicVotingAndVrModule: React.FC<RefereeElectronicVotin
       )}
 
       {/* Main Header */}
-      <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-850 border border-slate-800 shadow-xl flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-900 border border-slate-800 shadow-xl flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-md bg-rose-500/10 border border-rose-500/30 text-[10px] font-mono font-bold text-rose-400 uppercase tracking-wider flex items-center gap-1">
@@ -890,7 +890,7 @@ export const RefereeElectronicVotingAndVrModule: React.FC<RefereeElectronicVotin
                 <button
                   onClick={() => setVrGridActive(!vrGridActive)}
                   className={`px-2 py-1 rounded text-[10px] font-mono transition-colors cursor-pointer ${
-                    vrGridActive ? 'bg-slate-700 text-white' : 'bg-slate-850 text-slate-500'
+                    vrGridActive ? 'bg-slate-700 text-white' : 'bg-slate-900 text-slate-500'
                   }`}
                   title="Сетка линии татами"
                 >

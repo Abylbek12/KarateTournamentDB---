@@ -197,7 +197,7 @@ export const TournamentClubAccountingModule: React.FC<TournamentClubAccountingMo
   return (
     <div className="space-y-6">
       {/* 1. TOURNAMENT SELECTOR & SEPARATE ACCOUNTING HEADER */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-slate-850 border border-slate-800 shadow-md">
+      <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-slate-900 border border-slate-800 shadow-md">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-rose-400">
@@ -410,7 +410,7 @@ export const TournamentClubAccountingModule: React.FC<TournamentClubAccountingMo
                   </div>
 
                   {/* Bout Fighters Pair */}
-                  <div className="mt-3 pt-3 border-t border-slate-850 space-y-1.5 font-mono text-xs">
+                  <div className="mt-3 pt-3 border-t border-slate-900 space-y-1.5 font-mono text-xs">
                     <div className="flex items-center justify-between text-slate-300">
                       <span className="flex items-center gap-1.5 truncate">
                         <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
@@ -429,7 +429,7 @@ export const TournamentClubAccountingModule: React.FC<TournamentClubAccountingMo
                   </div>
 
                   {/* Result & Decision Summary */}
-                  <div className="mt-3 p-2.5 rounded-xl bg-slate-900 border border-slate-850 font-mono text-xs space-y-1">
+                  <div className="mt-3 p-2.5 rounded-xl bg-slate-900 border border-slate-900 font-mono text-xs space-y-1">
                     <div className="flex justify-between items-center">
                       <span className="text-slate-400 text-[11px]">Счёт встречи:</span>
                       <span className="font-bold text-white">{proto.scoreSummary}</span>
@@ -466,7 +466,7 @@ export const TournamentClubAccountingModule: React.FC<TournamentClubAccountingMo
                 </div>
 
                 {/* Card Actions */}
-                <div className="mt-4 pt-3 border-t border-slate-850 flex items-center justify-between text-xs font-mono">
+                <div className="mt-4 pt-3 border-t border-slate-900 flex items-center justify-between text-xs font-mono">
                   <span className="text-slate-500 text-[10px]">Подписан в {proto.certifiedAt}</span>
                   <div className="flex items-center gap-2">
                     <button
@@ -538,7 +538,7 @@ export const TournamentClubAccountingModule: React.FC<TournamentClubAccountingMo
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-850 space-y-1.5 text-xs font-mono">
+                  <div className="pt-2 border-t border-slate-900 space-y-1.5 text-xs font-mono">
                     <div className="flex justify-between">
                       <span className="text-slate-500">Руководитель делегации:</span>
                       <span className="text-slate-300 font-bold">{tc.teamLeaderName}</span>
@@ -557,7 +557,7 @@ export const TournamentClubAccountingModule: React.FC<TournamentClubAccountingMo
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-850 flex items-center justify-between text-xs font-mono text-slate-400">
+                  <div className="pt-2 border-t border-slate-900 flex items-center justify-between text-xs font-mono text-slate-400">
                     <span className="text-[10px]">Регистрация: {tc.registeredAt}</span>
                     <button
                       onClick={() => {
@@ -627,9 +627,9 @@ export const TournamentClubAccountingModule: React.FC<TournamentClubAccountingMo
                     <th className="px-5 py-3.5 text-right">Лицензия</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-850">
+                <tbody className="divide-y divide-slate-800">
                   {filteredParticipants.map((p) => (
-                    <tr key={p.id} className="hover:bg-slate-850/50 transition-colors">
+                    <tr key={p.id} className="hover:bg-slate-900/50 transition-colors">
                       <td className="px-5 py-3.5 font-bold text-white">
                         <div>{p.lastName} {p.firstName}</div>
                         <div className="text-[10px] text-slate-500 font-normal">
@@ -747,7 +747,7 @@ export const TournamentClubAccountingModule: React.FC<TournamentClubAccountingMo
                 </div>
 
                 {b.winnerId && (
-                  <div className="pt-2 border-t border-slate-850 flex items-center justify-between text-[11px] font-mono text-emerald-400">
+                  <div className="pt-2 border-t border-slate-900 flex items-center justify-between text-[11px] font-mono text-emerald-400">
                     <span>Победитель: {b.winnerId === b.akaParticipantId ? 'АКА' : 'АО'} ({b.winReason})</span>
                     <button
                       onClick={() => onNavigateToScoreboard(b.id)}
@@ -831,7 +831,7 @@ export const TournamentClubAccountingModule: React.FC<TournamentClubAccountingMo
                 </div>
 
                 {/* Formula breakdown */}
-                <div className="p-3 rounded-xl bg-slate-900 border border-slate-850 grid grid-cols-3 gap-2 text-center text-xs font-mono">
+                <div className="p-3 rounded-xl bg-slate-900 border border-slate-900 grid grid-cols-3 gap-2 text-center text-xs font-mono">
                   <div>
                     <span className="text-slate-500 text-[10px] block">Техника (70%)</span>
                     <span className="font-bold text-slate-200 mt-0.5 block">{ke.technicalScore}</span>

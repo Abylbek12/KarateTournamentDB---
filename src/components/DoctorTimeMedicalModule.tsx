@@ -380,7 +380,7 @@ export const DoctorTimeMedicalModule: React.FC<DoctorTimeMedicalModuleProps> = (
       )}
 
       {/* Top Banner */}
-      <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-850 border border-slate-800 shadow-xl flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-900 border border-slate-800 shadow-xl flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-md bg-teal-500/10 border border-teal-500/30 text-[10px] font-mono font-bold text-teal-400 uppercase tracking-wider flex items-center gap-1">
@@ -406,7 +406,7 @@ export const DoctorTimeMedicalModule: React.FC<DoctorTimeMedicalModuleProps> = (
             className={`px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'call_panel'
                 ? 'bg-rose-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-white hover:bg-slate-850'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900'
             }`}
           >
             <Clock className="w-3.5 h-3.5" />
@@ -418,7 +418,7 @@ export const DoctorTimeMedicalModule: React.FC<DoctorTimeMedicalModuleProps> = (
             className={`px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'clearance_form'
                 ? 'bg-rose-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-white hover:bg-slate-850'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900'
             }`}
           >
             <UserCheck className="w-3.5 h-3.5" />
@@ -430,7 +430,7 @@ export const DoctorTimeMedicalModule: React.FC<DoctorTimeMedicalModuleProps> = (
             className={`px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'incident_log'
                 ? 'bg-rose-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-white hover:bg-slate-850'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900'
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
@@ -545,25 +545,25 @@ export const DoctorTimeMedicalModule: React.FC<DoctorTimeMedicalModuleProps> = (
                     <div className="flex items-center gap-1.5 mt-3">
                       <button
                         onClick={() => handleSetTimerPreset(matNum, 80)}
-                        className="px-2.5 py-1 rounded bg-slate-850 hover:bg-slate-800 text-teal-300 text-[10px] font-mono font-bold cursor-pointer"
+                        className="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-teal-300 text-[10px] font-mono font-bold cursor-pointer"
                       >
                         80s (Стандарт)
                       </button>
                       <button
                         onClick={() => handleSetTimerPreset(matNum, 60)}
-                        className="px-2 py-1 rounded bg-slate-850 hover:bg-slate-800 text-slate-300 text-[10px] font-mono cursor-pointer"
+                        className="px-2 py-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 text-[10px] font-mono cursor-pointer"
                       >
                         60s
                       </button>
                       <button
                         onClick={() => handleSetTimerPreset(matNum, 120)}
-                        className="px-2 py-1 rounded bg-slate-850 hover:bg-slate-800 text-slate-300 text-[10px] font-mono cursor-pointer"
+                        className="px-2 py-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 text-[10px] font-mono cursor-pointer"
                       >
                         120s
                       </button>
                       <button
                         onClick={() => handleSetTimerPreset(matNum, 30)}
-                        className="px-2 py-1 rounded bg-slate-850 hover:bg-slate-800 text-slate-300 text-[10px] font-mono cursor-pointer"
+                        className="px-2 py-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 text-[10px] font-mono cursor-pointer"
                       >
                         30s
                       </button>
@@ -583,7 +583,7 @@ export const DoctorTimeMedicalModule: React.FC<DoctorTimeMedicalModuleProps> = (
 
                       <button
                         onClick={() => handleResetTimer(matNum)}
-                        className="p-1.5 rounded-lg bg-slate-850 hover:bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
+                        className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
                         title="Сброс таймера"
                       >
                         <RotateCcw className="w-3.5 h-3.5" />
@@ -678,7 +678,7 @@ export const DoctorTimeMedicalModule: React.FC<DoctorTimeMedicalModuleProps> = (
                     className={`w-full p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
                       isSelected
                         ? 'bg-rose-950/80 border-rose-500 shadow-md text-white'
-                        : 'bg-slate-950 border-slate-850 hover:border-slate-700 text-slate-300'
+                        : 'bg-slate-950 border-slate-900 hover:border-slate-700 text-slate-300'
                     }`}
                   >
                     <div>
@@ -897,7 +897,7 @@ export const DoctorTimeMedicalModule: React.FC<DoctorTimeMedicalModuleProps> = (
                 </thead>
                 <tbody className="divide-y divide-slate-800">
                   {incidentLogs.map((log) => (
-                    <tr key={log.id} className="hover:bg-slate-850/50 transition-colors">
+                    <tr key={log.id} className="hover:bg-slate-900/50 transition-colors">
                       <td className="p-3 text-slate-400">{log.timestamp}</td>
                       <td className="p-3 text-white font-bold">
                         Татами №{log.tatamiNumber} · Бой #{log.boutNumber}

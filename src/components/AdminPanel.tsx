@@ -541,7 +541,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Banner with RBAC Role Switcher */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-slate-850 border border-slate-800">
+      <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-slate-900 border border-slate-800">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <div className="flex flex-wrap items-center gap-2 text-xs font-mono uppercase tracking-wider">
@@ -911,7 +911,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
               {/* Division Section: Age + Weight Categories */}
               <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-4">
-                <div className="flex items-center justify-between text-xs font-mono text-slate-300 border-b border-slate-850 pb-2">
+                <div className="flex items-center justify-between text-xs font-mono text-slate-300 border-b border-slate-900 pb-2">
                   <span className="flex items-center gap-1.5 text-rose-400 font-bold">
                     <Layers className="w-3.5 h-3.5" />
                     <span>Выбор соревновательной категории турнира</span>
@@ -1091,15 +1091,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 и подбирает соответствующую категорию.
               </p>
               <div className="space-y-2 text-xs font-mono text-slate-400 pt-1">
-                <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-850">
+                <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-900">
                   <span className="text-slate-200 block font-bold">1. Дети (U10, U12):</span>
                   <span>Время боя 90 секунд, облегченный весовой ряд.</span>
                 </div>
-                <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-850">
+                <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-900">
                   <span className="text-slate-200 block font-bold">2. Кадеты (14-15 лет):</span>
                   <span>Время боя 2 минуты, веса -52, -57, -63, -70, +70 кг.</span>
                 </div>
-                <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-850">
+                <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-900">
                   <span className="text-slate-200 block font-bold">3. Взрослые (18+):</span>
                   <span>Чистое время 3 минуты, олимпийские категории WKF.</span>
                 </div>
@@ -1114,7 +1114,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
               <div className="space-y-2 max-h-[280px] overflow-y-auto">
                 {participants.slice(-5).reverse().map((p) => (
-                  <div key={p.id} className="p-2.5 rounded-xl bg-slate-950 border border-slate-850 text-xs">
+                  <div key={p.id} className="p-2.5 rounded-xl bg-slate-950 border border-slate-900 text-xs">
                     <div className="flex items-center justify-between font-bold text-white">
                       <span>{p.lastName} {p.firstName}</span>
                       <span className="text-slate-400 font-mono text-[11px]">{p.declaredWeightKg} кг</span>
@@ -1228,7 +1228,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </div>
                   <div className="space-y-1.5 max-h-[180px] overflow-y-auto text-xs">
                     {categoryAthletes.map((a, i) => (
-                      <div key={a.id} className="p-1.5 bg-slate-900 rounded border border-slate-850 flex items-center justify-between">
+                      <div key={a.id} className="p-1.5 bg-slate-900 rounded border border-slate-900 flex items-center justify-between">
                         <span className="text-white font-medium truncate">
                           {i + 1}. {a.lastName} {a.firstName}
                         </span>

@@ -558,7 +558,7 @@ export const TournamentEngineModule: React.FC<TournamentEngineModuleProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Banner & Engine Header */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-slate-850 border border-slate-800 shadow-md">
+      <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-slate-900 border border-slate-800 shadow-md">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-rose-400">
@@ -793,7 +793,7 @@ export const TournamentEngineModule: React.FC<TournamentEngineModuleProps> = ({
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-950 border border-slate-850 space-y-1.5 text-[11px] text-slate-400">
+                <div className="p-3 rounded-xl bg-slate-950 border border-slate-900 space-y-1.5 text-[11px] text-slate-400">
                   <div className="flex justify-between">
                     <span>Татами в расписании:</span>
                     <strong className="text-white">{tatamis.length} ковра</strong>
@@ -849,7 +849,7 @@ export const TournamentEngineModule: React.FC<TournamentEngineModuleProps> = ({
                         className={`p-2 rounded-lg border cursor-pointer flex items-center justify-between transition-colors ${
                           isSelected
                             ? 'bg-slate-950 border-rose-900/60 text-white font-bold'
-                            : 'bg-slate-950/60 border-slate-850 text-slate-500'
+                            : 'bg-slate-950/60 border-slate-900 text-slate-500'
                         }`}
                       >
                         <div className="flex items-center gap-2 truncate">
@@ -934,11 +934,11 @@ export const TournamentEngineModule: React.FC<TournamentEngineModuleProps> = ({
                     <th className="px-5 py-3.5 text-right">Статус допуска к сетке</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-850">
+                <tbody className="divide-y divide-slate-800">
                   {participants.map((p) => {
                     const elig = athleteEligibilityMap[p.id];
                     return (
-                      <tr key={p.id} className="hover:bg-slate-850/50 transition-colors">
+                      <tr key={p.id} className="hover:bg-slate-900/50 transition-colors">
                         <td className="px-5 py-3.5 font-bold text-white">
                           <div>{p.lastName} {p.firstName}</div>
                           <div className="text-[10px] text-slate-500 font-normal">
@@ -1081,7 +1081,7 @@ export const TournamentEngineModule: React.FC<TournamentEngineModuleProps> = ({
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-850 flex items-center justify-between text-[10px] text-slate-500">
+                <div className="pt-2 border-t border-slate-900 flex items-center justify-between text-[10px] text-slate-500">
                   <span>Статус: <strong className="text-white">{match.status}</strong></span>
                   <button
                     onClick={() => onNavigateToScoreboard(match.id)}

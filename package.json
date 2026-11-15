@@ -4,8 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "theme:css": "node scripts/generate-theme-css.mjs",
+    "predev": "npm run theme:css",
     "dev": "tsx server.ts",
     "start": "NODE_ENV=production tsx server.ts",
+    "prebuild": "npm run theme:css",
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",

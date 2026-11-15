@@ -81,7 +81,7 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
   return (
     <div className="space-y-6">
       {/* Banner */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-slate-850 border border-slate-800">
+      <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-slate-900 border border-slate-800">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-rose-400">
@@ -175,11 +175,11 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
                 <th className="px-5 py-3.5 text-right">Действие</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-850">
+            <tbody className="divide-y divide-slate-800">
               {filtered.map((p) => {
                 const club = SAMPLE_CLUBS.find(c => c.id === p.clubId);
                 return (
-                  <tr key={p.id} className="hover:bg-slate-850/50 transition-colors">
+                  <tr key={p.id} className="hover:bg-slate-900/50 transition-colors">
                     {/* Athlete name */}
                     <td className="px-5 py-4">
                       <div className="font-bold text-white text-sm">

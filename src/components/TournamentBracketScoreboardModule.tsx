@@ -631,7 +631,7 @@ export const TournamentBracketScoreboardModule: React.FC<TournamentBracketScoreb
       )}
 
       {/* Modern Top Header & Master Mode Switcher */}
-      <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-850 border border-slate-800/90 shadow-xl">
+      <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-900 border border-slate-800/90 shadow-xl">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2.5">
@@ -659,7 +659,7 @@ export const TournamentBracketScoreboardModule: React.FC<TournamentBracketScoreb
               className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
                 activeSubTab === 'multi_tatami'
                   ? 'bg-rose-600 text-white shadow-md shadow-rose-900/40'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-850'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
               }`}
             >
               <Tv className="w-4 h-4" />
@@ -672,7 +672,7 @@ export const TournamentBracketScoreboardModule: React.FC<TournamentBracketScoreb
               className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
                 activeSubTab === 'bracket'
                   ? 'bg-rose-600 text-white shadow-md shadow-rose-900/40'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-850'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
               }`}
             >
               <GitBranch className="w-4 h-4" />
@@ -684,7 +684,7 @@ export const TournamentBracketScoreboardModule: React.FC<TournamentBracketScoreb
               className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
                 activeSubTab === 'referee'
                   ? 'bg-rose-600 text-white shadow-md shadow-rose-900/40'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-850'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
               }`}
             >
               <Shield className="w-4 h-4" />
@@ -696,7 +696,7 @@ export const TournamentBracketScoreboardModule: React.FC<TournamentBracketScoreb
               className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
                 activeSubTab === 'auto_draw'
                   ? 'bg-rose-600 text-white shadow-md shadow-rose-900/40'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-850'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
               }`}
             >
               <Sparkles className="w-4 h-4 text-amber-400" />
@@ -708,7 +708,7 @@ export const TournamentBracketScoreboardModule: React.FC<TournamentBracketScoreb
               className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
                 activeSubTab === 'vr'
                   ? 'bg-rose-600 text-white shadow-md shadow-rose-900/40'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-850'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
               }`}
             >
               <Eye className="w-4 h-4 text-amber-400" />
@@ -762,7 +762,7 @@ export const TournamentBracketScoreboardModule: React.FC<TournamentBracketScoreb
                 className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-colors flex items-center gap-1.5 border cursor-pointer ${
                   soundEnabled 
                     ? 'bg-rose-950/60 border-rose-800 text-rose-300' 
-                    : 'bg-slate-850 border-slate-700 text-slate-400'
+                    : 'bg-slate-900 border-slate-700 text-slate-400'
                 }`}
                 title="Звуковой гонг и сирена по окончании раунда"
               >
@@ -1101,7 +1101,7 @@ export const TournamentBracketScoreboardModule: React.FC<TournamentBracketScoreb
                               setSelectedCategoryId(activeBout.categoryId);
                               setActiveSubTab('bracket');
                             }}
-                            className="px-2.5 py-1.5 rounded-lg bg-slate-850 hover:bg-slate-800 text-slate-300 text-xs font-mono transition-colors flex items-center gap-1"
+                            className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-mono transition-colors flex items-center gap-1"
                           >
                             <GitBranch className="w-3.5 h-3.5 text-slate-400" />
                             <span>В сетке</span>
@@ -1507,7 +1507,7 @@ export const TournamentBracketScoreboardModule: React.FC<TournamentBracketScoreb
                   </button>
                   <button
                     onClick={() => handleResetSingleTimer(activeRefereeBout.id)}
-                    className="w-10 h-10 rounded-2xl bg-slate-850 hover:bg-slate-800 text-slate-300 flex items-center justify-center transition-colors cursor-pointer border border-slate-700"
+                    className="w-10 h-10 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-300 flex items-center justify-center transition-colors cursor-pointer border border-slate-700"
                   >
                     <RotateCcw className="w-4 h-4" />
                   </button>
@@ -1524,7 +1524,7 @@ export const TournamentBracketScoreboardModule: React.FC<TournamentBracketScoreb
                   ) : (
                     <button
                       onClick={() => setDoctorSeconds(60)}
-                      className="w-full px-2 py-1.5 rounded-lg bg-slate-850 hover:bg-slate-800 text-slate-300 text-xs font-mono font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700"
+                      className="w-full px-2 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-mono font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700"
                     >
                       <Activity className="w-3.5 h-3.5 text-rose-400" />
                       <span>Запустить 60с</span>
@@ -1727,7 +1727,7 @@ export const TournamentBracketScoreboardModule: React.FC<TournamentBracketScoreb
       {/* ============================================================= */}
       {activeSubTab === 'auto_draw' && (
         <div className="space-y-6">
-          <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-slate-850 border border-slate-800 shadow-xl space-y-4">
+          <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-slate-900 border border-slate-800 shadow-xl space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <span className="px-2.5 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/30 text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wider">

@@ -59,7 +59,7 @@ export const TatamiScheduleView: React.FC<TatamiScheduleViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Banner & Control Area */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-slate-850 border border-slate-800">
+      <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-slate-900 border border-slate-800">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-rose-400">
@@ -174,7 +174,7 @@ export const TatamiScheduleView: React.FC<TatamiScheduleViewProps> = ({
                 }`}
               >
                 {/* Bout Meta Header */}
-                <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-850">
+                <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-900">
                   <div className="flex items-center gap-3">
                     <span className="px-2.5 py-1 rounded bg-slate-950 border border-slate-800 text-xs font-mono font-bold text-white">
                       Бой #{bout.boutNumber}

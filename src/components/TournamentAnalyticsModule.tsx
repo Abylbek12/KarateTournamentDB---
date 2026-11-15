@@ -344,7 +344,7 @@ export const TournamentAnalyticsModule: React.FC<TournamentAnalyticsModuleProps>
   return (
     <div className="space-y-6">
       {/* Title & Banner */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-slate-850 border border-slate-800">
+      <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-slate-900 border border-slate-800">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-rose-400">
@@ -653,9 +653,9 @@ export const TournamentAnalyticsModule: React.FC<TournamentAnalyticsModuleProps>
                     <th className="px-5 py-3.5 text-right text-rose-400 font-bold">Всего очков</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-850">
+                <tbody className="divide-y divide-slate-800">
                   {filteredClubStats.map((item, idx) => (
-                    <tr key={item.club.id} className="hover:bg-slate-850/50 transition-colors">
+                    <tr key={item.club.id} className="hover:bg-slate-900/50 transition-colors">
                       <td className="px-5 py-3.5 font-bold text-white">
                         <span className="w-6 h-6 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center font-bold">
                           {idx + 1}
@@ -796,19 +796,19 @@ export const TournamentAnalyticsModule: React.FC<TournamentAnalyticsModuleProps>
 
               {/* Tactical Facts Grid */}
               <div className="pt-4 border-t border-slate-800 grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs font-mono">
-                <div className="p-3 bg-slate-950 rounded-xl border border-slate-850">
+                <div className="p-3 bg-slate-950 rounded-xl border border-slate-900">
                   <span className="text-slate-400 block text-[11px]">Средняя результативность:</span>
                   <span className="text-lg font-bold text-white mt-1 block">
                     {combatAnalytics.avgPointsPerBout} очк / бой
                   </span>
                 </div>
-                <div className="p-3 bg-slate-950 rounded-xl border border-slate-850">
+                <div className="p-3 bg-slate-950 rounded-xl border border-slate-900">
                   <span className="text-slate-400 block text-[11px]">Побед с отрывом 8 очков:</span>
                   <span className="text-lg font-bold text-emerald-400 mt-1 block">
                     {combatAnalytics.mercyRuleWins} боев
                   </span>
                 </div>
-                <div className="p-3 bg-slate-950 rounded-xl border border-slate-850">
+                <div className="p-3 bg-slate-950 rounded-xl border border-slate-900">
                   <span className="text-slate-400 block text-[11px]">Дисквалификаций Хансоку:</span>
                   <span className="text-lg font-bold text-rose-400 mt-1 block">
                     {combatAnalytics.hansokuWins} случаев
@@ -843,11 +843,11 @@ export const TournamentAnalyticsModule: React.FC<TournamentAnalyticsModuleProps>
                 <span className="text-slate-400 uppercase tracking-wider text-[11px] font-bold block">
                   Штрафы и дисциплина:
                 </span>
-                <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-950 border border-slate-850">
+                <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-950 border border-slate-900">
                   <span className="text-slate-300">Категория 1 (Контакт):</span>
                   <span className="font-bold text-amber-400">{combatAnalytics.totalC1} предупреждений</span>
                 </div>
-                <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-950 border border-slate-850">
+                <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-950 border border-slate-900">
                   <span className="text-slate-300">Категория 2 (Дзёгай):</span>
                   <span className="font-bold text-sky-400">{combatAnalytics.totalC2} выходов</span>
                 </div>
@@ -905,7 +905,7 @@ export const TournamentAnalyticsModule: React.FC<TournamentAnalyticsModuleProps>
                       </div>
                     </div>
 
-                    <div className="pt-2 border-t border-slate-850 grid grid-cols-2 gap-2 text-xs font-mono">
+                    <div className="pt-2 border-t border-slate-900 grid grid-cols-2 gap-2 text-xs font-mono">
                       <div>
                         <span className="text-[10px] text-slate-500 block">Очки:</span>
                         <span className="font-black text-rose-400 text-base">{item.pointsScored}</span>
@@ -1125,7 +1125,7 @@ COMMIT;`;
               className={`p-3.5 rounded-2xl border text-left transition-all ${
                 selectedFederationReport === 'chief_referee_report'
                   ? 'bg-amber-950/40 border-amber-500 text-white shadow-md ring-1 ring-amber-500/40'
-                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-850'
+                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-900'
               }`}
             >
               <div className="flex items-center gap-2 font-bold mb-1 text-amber-400">
@@ -1142,7 +1142,7 @@ COMMIT;`;
               className={`p-3.5 rounded-2xl border text-left transition-all ${
                 selectedFederationReport === 'podium_protocol'
                   ? 'bg-amber-950/40 border-amber-500 text-white shadow-md ring-1 ring-amber-500/40'
-                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-850'
+                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-900'
               }`}
             >
               <div className="flex items-center gap-2 font-bold mb-1 text-amber-400">
@@ -1159,7 +1159,7 @@ COMMIT;`;
               className={`p-3.5 rounded-2xl border text-left transition-all ${
                 selectedFederationReport === 'team_standing_protocol'
                   ? 'bg-amber-950/40 border-amber-500 text-white shadow-md ring-1 ring-amber-500/40'
-                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-850'
+                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-900'
               }`}
             >
               <div className="flex items-center gap-2 font-bold mb-1 text-amber-400">
@@ -1176,7 +1176,7 @@ COMMIT;`;
               className={`p-3.5 rounded-2xl border text-left transition-all ${
                 selectedFederationReport === 'judges_commission'
                   ? 'bg-amber-950/40 border-amber-500 text-white shadow-md ring-1 ring-amber-500/40'
-                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-850'
+                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-900'
               }`}
             >
               <div className="flex items-center gap-2 font-bold mb-1 text-amber-400">

@@ -1189,7 +1189,7 @@ function AppContent() {
                 href="https://instagram.com"
                 target="_blank"
                 rel="noreferrer"
-                className="w-6 h-6 rounded-md bg-[#00a8e8] text-white flex items-center justify-center hover:opacity-90 transition-opacity"
+                className="w-6 h-6 rounded-md bg-pink-600 text-white flex items-center justify-center hover:opacity-90 transition-opacity"
                 title="Instagram"
               >
                 <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
@@ -1202,7 +1202,7 @@ function AppContent() {
                 href="https://youtube.com"
                 target="_blank"
                 rel="noreferrer"
-                className="h-6 px-1.5 rounded-md bg-[#00a8e8] text-white flex items-center justify-center font-bold text-[10px] hover:opacity-90 transition-opacity tracking-tight"
+                className="h-6 px-1.5 rounded-md bg-red-600 text-white flex items-center justify-center font-bold text-[10px] hover:opacity-90 transition-opacity tracking-tight"
                 title="YouTube"
               >
                 You Tube

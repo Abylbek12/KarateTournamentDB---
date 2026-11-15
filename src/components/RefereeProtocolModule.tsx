@@ -433,7 +433,7 @@ ${proto.notes || 'Нарушений судейского регламента �
                     className={`w-full text-left p-3.5 rounded-xl border transition-all ${
                       isSelected
                         ? 'bg-slate-800/90 border-rose-500 shadow-md ring-1 ring-rose-500/30'
-                        : 'bg-slate-900 hover:bg-slate-850 border-slate-800/90 text-slate-300'
+                        : 'bg-slate-900 hover:bg-slate-900 border-slate-800/90 text-slate-300'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2 mb-1.5">

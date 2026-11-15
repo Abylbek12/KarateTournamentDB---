@@ -288,7 +288,7 @@ export const VideoAnalyticsModule: React.FC<VideoAnalyticsModuleProps> = ({
             className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === 'video_breakdown'
                 ? 'bg-blue-600 text-white shadow-md shadow-blue-900/40'
-                : 'text-slate-400 hover:text-white hover:bg-slate-850'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900'
             }`}
           >
             <Video className="w-4 h-4" />
@@ -300,7 +300,7 @@ export const VideoAnalyticsModule: React.FC<VideoAnalyticsModuleProps> = ({
             className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === 'federation_report'
                 ? 'bg-blue-600 text-white shadow-md shadow-blue-900/40'
-                : 'text-slate-400 hover:text-white hover:bg-slate-850'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900'
             }`}
           >
             <BarChart3 className="w-4 h-4" />
@@ -706,7 +706,7 @@ export const VideoAnalyticsModule: React.FC<VideoAnalyticsModuleProps> = ({
                         className={`px-2 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                           playbackSpeed === spd
                             ? 'bg-blue-600 text-white'
-                            : 'text-slate-400 hover:text-white hover:bg-slate-850'
+                            : 'text-slate-400 hover:text-white hover:bg-slate-900'
                         }`}
                       >
                         {spd}x
@@ -767,7 +767,7 @@ export const VideoAnalyticsModule: React.FC<VideoAnalyticsModuleProps> = ({
                       className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-start justify-between gap-3 ${
                         isSelected
                           ? 'bg-blue-600/10 border-blue-500 shadow-md ring-1 ring-blue-500/40'
-                          : 'bg-slate-900 hover:bg-slate-850 border-slate-800'
+                          : 'bg-slate-900 hover:bg-slate-900 border-slate-800'
                       }`}
                     >
                       <div className="space-y-1 min-w-0">
@@ -1140,7 +1140,7 @@ export const VideoAnalyticsModule: React.FC<VideoAnalyticsModuleProps> = ({
                 </thead>
                 <tbody className="divide-y divide-slate-800/80 font-mono">
                   {report.clubRankings.map((c) => (
-                    <tr key={c.rank} className="hover:bg-slate-850/60 transition-colors">
+                    <tr key={c.rank} className="hover:bg-slate-900/60 transition-colors">
                       <td className="py-3 px-3 font-bold text-slate-300">
                         {c.rank === 1 ? '🥇 1' : c.rank === 2 ? '🥈 2' : c.rank === 3 ? '🥉 3' : c.rank}
                       </td>

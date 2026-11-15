@@ -60,7 +60,7 @@ export const SchemaVisualizer: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Title & Architecture Overview */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-slate-850 border border-slate-800">
+      <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-slate-900 border border-slate-800">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-rose-400">
@@ -182,7 +182,7 @@ export const SchemaVisualizer: React.FC = () => {
                   </div>
 
                   {/* Badges strip: Primary Key & Foreign Keys */}
-                  <div className="mt-3 pt-3 border-t border-slate-850 flex flex-wrap items-center gap-2 text-[11px] font-mono text-slate-400">
+                  <div className="mt-3 pt-3 border-t border-slate-900 flex flex-wrap items-center gap-2 text-[11px] font-mono text-slate-400">
                     <span className="px-2 py-0.5 rounded bg-slate-950 border border-slate-800 flex items-center gap-1 text-amber-400">
                       <Key className="w-3 h-3" /> PK: {pkCount}
                     </span>
@@ -260,9 +260,9 @@ export const SchemaVisualizer: React.FC = () => {
                   <span className="text-[11px] text-slate-500 font-mono">Nullability / Type</span>
                 </div>
 
-                <div className="border border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-850 text-xs font-mono max-h-[360px] overflow-y-auto">
+                <div className="border border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-800 text-xs font-mono max-h-[360px] overflow-y-auto">
                   {activeTable.columns.map((col) => (
-                    <div key={col.name} className="p-2.5 bg-slate-950/60 hover:bg-slate-850/60 transition-colors">
+                    <div key={col.name} className="p-2.5 bg-slate-950/60 hover:bg-slate-900/60 transition-colors">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 truncate">
                           {col.isPk && (

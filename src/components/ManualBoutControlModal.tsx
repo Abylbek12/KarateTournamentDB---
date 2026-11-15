@@ -720,7 +720,7 @@ export const ManualBoutControlModal: React.FC<ManualBoutControlModalProps> = ({
             </div>
 
             {/* Time Adjustments */}
-            <div className="pt-2 border-t border-slate-850 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+            <div className="pt-2 border-t border-slate-900 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
               <div className="flex items-center gap-3">
                 <span className="text-slate-400 flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5 text-slate-400" />
@@ -821,7 +821,7 @@ export const ManualBoutControlModal: React.FC<ManualBoutControlModalProps> = ({
 
             {/* Existing override notes history */}
             {bout.overrideNotes && bout.overrideNotes.length > 0 && (
-              <div className="mt-2 pt-2 border-t border-slate-850 space-y-1">
+              <div className="mt-2 pt-2 border-t border-slate-900 space-y-1">
                 <span className="text-[10px] font-mono text-slate-500 uppercase block">История правок:</span>
                 {bout.overrideNotes.slice(0, 3).map((item, idx) => (
                   <div key={idx} className="text-[11px] font-mono text-slate-400 flex items-center gap-2">

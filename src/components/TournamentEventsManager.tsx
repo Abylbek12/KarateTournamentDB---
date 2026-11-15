@@ -654,7 +654,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
       )}
 
       {/* Top Banner & Action */}
-      <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-850 border border-slate-800 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-900 border border-slate-800 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <span
@@ -1288,7 +1288,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                   key={t.id}
                   className={`p-5 rounded-2xl border transition-all flex flex-col justify-between space-y-4 ${
                     isSelected
-                      ? 'bg-gradient-to-b from-slate-900 to-slate-850 border-rose-500/80 shadow-xl shadow-rose-950/20'
+                      ? 'bg-gradient-to-b from-slate-900 to-slate-900 border-rose-500/80 shadow-xl shadow-rose-950/20'
                       : 'bg-slate-900/90 border-slate-800 hover:border-slate-700 shadow-md'
                   }`}
                 >

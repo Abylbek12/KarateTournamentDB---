@@ -1025,7 +1025,7 @@ COMMIT;`;
   return (
     <div className="space-y-4">
       {/* Top Banner: Rules Switcher & Tatami Navigation (Compact Unified Standard) */}
-      <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-slate-850 border border-slate-800 shadow-md">
+      <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-slate-900 border border-slate-800 shadow-md">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3">
             {/* Rule Switcher Toggle */}
@@ -1378,7 +1378,7 @@ COMMIT;`;
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => addWkfPenalty('aka', 'c1')}
-                        className="p-2 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-lg text-left transition-colors"
+                        className="p-2 bg-slate-900 hover:bg-slate-900 border border-slate-800 rounded-lg text-left transition-colors"
                       >
                         <div className="flex items-center justify-between text-[11px] font-mono">
                           <span className="text-slate-300">C1: Контакт</span>
@@ -1398,7 +1398,7 @@ COMMIT;`;
 
                       <button
                         onClick={() => addWkfPenalty('aka', 'c2')}
-                        className="p-2 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-lg text-left transition-colors"
+                        className="p-2 bg-slate-900 hover:bg-slate-900 border border-slate-800 rounded-lg text-left transition-colors"
                       >
                         <div className="flex items-center justify-between text-[11px] font-mono">
                           <span className="text-slate-300">C2: Дзёгай</span>
@@ -1421,7 +1421,7 @@ COMMIT;`;
                     <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
                       <button
                         onClick={() => addSkifPenalty('aka', 'penalty')}
-                        className="p-2 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-lg text-left"
+                        className="p-2 bg-slate-900 hover:bg-slate-900 border border-slate-800 rounded-lg text-left"
                       >
                         <div className="flex justify-between">
                           <span className="text-slate-300">SKIF Чуй:</span>
@@ -1434,7 +1434,7 @@ COMMIT;`;
 
                       <button
                         onClick={() => addSkifPenalty('aka', 'jogai')}
-                        className="p-2 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-lg text-left"
+                        className="p-2 bg-slate-900 hover:bg-slate-900 border border-slate-800 rounded-lg text-left"
                       >
                         <div className="flex justify-between">
                           <span className="text-slate-300">Дзёгай:</span>
@@ -1461,7 +1461,7 @@ COMMIT;`;
               {!isSkif ? (
                 <button
                   onClick={() => handleDeclareWinner('aka', 'senshu_advantage')}
-                  className="py-2 px-2.5 bg-slate-900 hover:bg-slate-850 text-rose-300 border border-slate-800 rounded-lg text-xs font-mono"
+                  className="py-2 px-2.5 bg-slate-900 hover:bg-slate-900 text-rose-300 border border-slate-800 rounded-lg text-xs font-mono"
                   title="Победа по правилу первого балла Senshu"
                 >
                   Senshu
@@ -1469,7 +1469,7 @@ COMMIT;`;
               ) : (
                 <button
                   onClick={() => handleDeclareWinner('aka', 'awasete_ippon')}
-                  className="py-2 px-2 bg-slate-900 hover:bg-slate-850 text-amber-300 border border-slate-800 rounded-lg text-[11px] font-mono"
+                  className="py-2 px-2 bg-slate-900 hover:bg-slate-900 text-amber-300 border border-slate-800 rounded-lg text-[11px] font-mono"
                   title="Победа Awaseté Ippon (2 Waza-ari)"
                 >
                   Awaseté
@@ -1477,7 +1477,7 @@ COMMIT;`;
               )}
               <button
                 onClick={() => handleDeclareWinner('aka', 'hantei_decision')}
-                className="py-2 px-2 bg-slate-900 hover:bg-slate-850 text-slate-300 border border-slate-800 rounded-lg text-xs font-mono"
+                className="py-2 px-2 bg-slate-900 hover:bg-slate-900 text-slate-300 border border-slate-800 rounded-lg text-xs font-mono"
                 title="Решение судей Хантей"
               >
                 Хантей
@@ -1712,7 +1712,7 @@ COMMIT;`;
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => addWkfPenalty('ao', 'c1')}
-                        className="p-2 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-lg text-left transition-colors"
+                        className="p-2 bg-slate-900 hover:bg-slate-900 border border-slate-800 rounded-lg text-left transition-colors"
                       >
                         <div className="flex items-center justify-between text-[11px] font-mono">
                           <span className="text-slate-300">C1: Контакт</span>
@@ -1732,7 +1732,7 @@ COMMIT;`;
 
                       <button
                         onClick={() => addWkfPenalty('ao', 'c2')}
-                        className="p-2 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-lg text-left transition-colors"
+                        className="p-2 bg-slate-900 hover:bg-slate-900 border border-slate-800 rounded-lg text-left transition-colors"
                       >
                         <div className="flex items-center justify-between text-[11px] font-mono">
                           <span className="text-slate-300">C2: Дзёгай</span>
@@ -1755,7 +1755,7 @@ COMMIT;`;
                     <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
                       <button
                         onClick={() => addSkifPenalty('ao', 'penalty')}
-                        className="p-2 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-lg text-left"
+                        className="p-2 bg-slate-900 hover:bg-slate-900 border border-slate-800 rounded-lg text-left"
                       >
                         <div className="flex justify-between">
                           <span className="text-slate-300">SKIF Чуй:</span>
@@ -1768,7 +1768,7 @@ COMMIT;`;
 
                       <button
                         onClick={() => addSkifPenalty('ao', 'jogai')}
-                        className="p-2 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-lg text-left"
+                        className="p-2 bg-slate-900 hover:bg-slate-900 border border-slate-800 rounded-lg text-left"
                       >
                         <div className="flex justify-between">
                           <span className="text-slate-300">Дзёгай:</span>
@@ -1795,7 +1795,7 @@ COMMIT;`;
               {!isSkif ? (
                 <button
                   onClick={() => handleDeclareWinner('ao', 'senshu_advantage')}
-                  className="py-2 px-2.5 bg-slate-900 hover:bg-slate-850 text-sky-300 border border-slate-800 rounded-lg text-xs font-mono"
+                  className="py-2 px-2.5 bg-slate-900 hover:bg-slate-900 text-sky-300 border border-slate-800 rounded-lg text-xs font-mono"
                   title="Победа по правилу первого балла Senshu"
                 >
                   Senshu
@@ -1803,7 +1803,7 @@ COMMIT;`;
               ) : (
                 <button
                   onClick={() => handleDeclareWinner('ao', 'awasete_ippon')}
-                  className="py-2 px-2 bg-slate-900 hover:bg-slate-850 text-amber-300 border border-slate-800 rounded-lg text-[11px] font-mono"
+                  className="py-2 px-2 bg-slate-900 hover:bg-slate-900 text-amber-300 border border-slate-800 rounded-lg text-[11px] font-mono"
                   title="Победа Awaseté Ippon (2 Waza-ari)"
                 >
                   Awaseté
@@ -1811,7 +1811,7 @@ COMMIT;`;
               )}
               <button
                 onClick={() => handleDeclareWinner('ao', 'hantei_decision')}
-                className="py-2 px-2 bg-slate-900 hover:bg-slate-850 text-slate-300 border border-slate-800 rounded-lg text-xs font-mono"
+                className="py-2 px-2 bg-slate-900 hover:bg-slate-900 text-slate-300 border border-slate-800 rounded-lg text-xs font-mono"
                 title="Решение судей Хантей"
               >
                 Хантей
@@ -2025,7 +2025,7 @@ COMMIT;`;
 
                       <button
                         onClick={() => handleJudgeVote(judgeIdx, 'none', 'yuko')}
-                        className="w-full mt-2 py-1 bg-slate-900/60 hover:bg-slate-850 text-slate-400 hover:text-white rounded text-[10px] font-mono transition-colors"
+                        className="w-full mt-2 py-1 bg-slate-900/60 hover:bg-slate-900 text-slate-400 hover:text-white rounded text-[10px] font-mono transition-colors"
                       >
                         Сбросить флаг
                       </button>
@@ -2057,7 +2057,7 @@ COMMIT;`;
                         { judgeIndex: 3, color: 'none', technique: 'yuko' },
                       ]);
                     }}
-                    className="px-3 py-1 bg-slate-900 hover:bg-slate-850 text-slate-300 rounded-lg border border-slate-800 transition-colors"
+                    className="px-3 py-1 bg-slate-900 hover:bg-slate-900 text-slate-300 rounded-lg border border-slate-800 transition-colors"
                   >
                     Сбросить все флаги
                   </button>
@@ -2318,7 +2318,7 @@ COMMIT;`;
                 <div className="pt-3 border-t border-slate-800 flex flex-wrap items-center justify-end gap-3">
                   <button
                     onClick={() => setShowSqlDialog(true)}
-                    className="px-3.5 py-2 bg-slate-900 hover:bg-slate-850 text-slate-300 rounded-xl border border-slate-700 transition-colors flex items-center gap-1.5"
+                    className="px-3.5 py-2 bg-slate-900 hover:bg-slate-900 text-slate-300 rounded-xl border border-slate-700 transition-colors flex items-center gap-1.5"
                   >
                     <Database className="w-3.5 h-3.5 text-rose-400" />
                     <span>Показать SQL</span>
@@ -2327,7 +2327,7 @@ COMMIT;`;
                   {onNavigateToProtocols && (
                     <button
                       onClick={() => onNavigateToProtocols(activeBout.id)}
-                      className="px-3.5 py-2 bg-slate-900 hover:bg-slate-850 text-sky-400 rounded-xl border border-slate-700 transition-colors flex items-center gap-1.5"
+                      className="px-3.5 py-2 bg-slate-900 hover:bg-slate-900 text-sky-400 rounded-xl border border-slate-700 transition-colors flex items-center gap-1.5"
                     >
                       <FileText className="w-3.5 h-3.5" />
                       <span>Открыть бланк протокола</span>
