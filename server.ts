@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { GoogleGenAI } from '@google/genai';
 import crypto from 'crypto';
 import os from 'os';
+import path from 'path';
 
 import {
   db,
@@ -22,6 +23,8 @@ import {
   saveImage,
   readImage,
   rateLimiter,
+  writeBackup,
+  saveDbNow,
   type StoredUserAccount
 } from './server/store';
 
@@ -36,7 +39,7 @@ app.disable('x-powered-by');
 app.set('trust proxy', 1);
 app.use(express.json({ limit: '10mb' }));
 
-import { UVENTEX_SCREENSHOT_EVENTS } from './src/data/uventexEventsData';
+import { DEMO_EVENTS } from './src/data/eventsData';
 import { SAMPLE_BOUTS, SAMPLE_PARTICIPANTS } from './src/data/sampleTournamentData';
 
 const hasGeminiKey = () => {
@@ -57,9 +60,9 @@ app.get('/api/health', (_req: Request, res: Response) => {
 
 
 // ========================================================
-// UVENTEX EVENTS & ACTIONS BACKEND API (SYNCHRONIZED REGISTRY + RBAC)
+// EVENTS BACKEND API (SYNCHRONIZED REGISTRY + RBAC)
 // ========================================================
-let STORED_EVENTS: any[] = db.events ?? JSON.parse(JSON.stringify(UVENTEX_SCREENSHOT_EVENTS));
+let STORED_EVENTS: any[] = db.events ?? JSON.parse(JSON.stringify(DEMO_EVENTS));
 const persistEvents = () => {
   db.events = STORED_EVENTS;
   saveDb();
@@ -433,7 +436,7 @@ const SELF_SERVICE_ROLES = new Set(['athlete', 'club_coach']);
 
 // Development-only demo accounts (never created in production).
 function seedDevDemoAccounts() {
-  if (IS_PRODUCTION) return;
+  if (IS_PRODUCTION || db.launchedAt) return;
   const demo = [
     { email: 'coach.smr@samurai.club', password: 'Coach2026!', fullName: 'Асанов Бакыт Таалайбекович', role: 'club_coach', clubName: 'СК "Тигр"' },
     { email: 'chief.referee@karate-fed.ru', password: 'Pass2026!', fullName: 'Эсенбаев Адилет Геннадьевич', role: 'chief_referee', licenseCode: 'INT-REF-0104' }
@@ -806,6 +809,91 @@ app.delete('/api/admin/invites/:token', (req: Request, res: Response) => {
 // 10. Admin: list users and assign roles (referees, medical officers, etc.)
 const ALL_ROLES = new Set(['admin', 'chief_referee', 'tatami_referee', 'scorekeeper', 'club_coach', 'athlete', 'medical_officer']);
 
+// ========================================================
+// BACKUP AND LAUNCH PREPARATION (admin only)
+// ========================================================
+app.get('/api/admin/backup', (req: Request, res: Response) => {
+  if (!isRequestAuthorizedAdmin(req)) {
+    res.status(403).json({ error: 'Доступно только Администратору.' });
+    return;
+  }
+  const { sessions, ...data } = db; // active sign-ins are not part of a backup
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="tatami-backup-${new Date().toISOString().slice(0, 10)}.json"`);
+  res.send(JSON.stringify(data, null, 2));
+});
+
+const stateCount = (key: string) => (Array.isArray(db.state[key]?.value) ? (db.state[key]!.value as unknown[]).length : 0);
+
+app.get('/api/admin/launch-status', (req: Request, res: Response) => {
+  if (!isRequestAuthorizedAdmin(req)) {
+    res.status(403).json({ error: 'Доступно только Администратору.' });
+    return;
+  }
+  res.json({
+    launchedAt: db.launchedAt || null,
+    counts: {
+      events: STORED_EVENTS.length,
+      participants: stateCount('participants'),
+      bouts: stateCount('bouts'),
+      categories: stateCount('categories'),
+      protocols: stateCount('protocols'),
+      accounts: db.accounts.filter((a) => a.role !== 'admin').length,
+      invites: Object.keys(db.invites).length,
+      deviceKeys: Object.keys(db.deviceKeys).length
+    }
+  });
+});
+
+const LAUNCH_PHRASE = 'ЗАПУСК';
+
+/**
+ * «Подготовка к запуску»: saves a full backup, then removes all tournaments, entries, bouts,
+ * categories, protocols, invitations, tatami device keys and every account except administrators.
+ * Demo data is never created again after this.
+ */
+app.post('/api/admin/launch-reset', (req: Request, res: Response) => {
+  if (!isRequestAuthorizedAdmin(req)) {
+    res.status(403).json({ error: 'Доступно только Администратору.' });
+    return;
+  }
+  if (String(req.body?.confirm || '').trim().toUpperCase() !== LAUNCH_PHRASE) {
+    res.status(400).json({ error: `Для подтверждения введите слово ${LAUNCH_PHRASE}.` });
+    return;
+  }
+  let backupFile: string;
+  try {
+    saveDbNow();
+    backupFile = writeBackup('before-launch');
+  } catch (err) {
+    console.error('[launch] backup failed:', err);
+    res.status(500).json({ error: 'Не удалось сохранить резервную копию. Ничего не удалено.' });
+    return;
+  }
+
+  const now = new Date().toISOString();
+  const admin = getSessionUser(req);
+  STORED_EVENTS = [];
+  db.events = [];
+  for (const key of Object.keys(SHARED_STATE_WRITERS)) {
+    const version = (db.state[key]?.version ?? 0) + 1;
+    db.state[key] = { version, value: [], updatedAt: now, updatedBy: admin?.id || 'launch' };
+  }
+  db.invites = {};
+  db.deviceKeys = {};
+  const adminIds = new Set(db.accounts.filter((a) => a.role === 'admin').map((a) => a.id));
+  db.accounts = db.accounts.filter((a) => adminIds.has(a.id));
+  for (const [sid, sess] of Object.entries(db.sessions)) {
+    if (!adminIds.has((sess as any).userId)) delete db.sessions[sid];
+  }
+  db.launchedAt = now;
+  saveDbNow();
+  for (const key of Object.keys(SHARED_STATE_WRITERS)) broadcast({ type: 'state', key, version: db.state[key].version });
+  broadcast({ type: 'events' });
+  console.log(`[launch] Site prepared for launch. Backup: ${backupFile}`);
+  res.json({ ok: true, launchedAt: now, backupFile: path.basename(backupFile) });
+});
+
 app.get('/api/admin/users', (req: Request, res: Response) => {
   if (!isRequestAuthorizedAdmin(req)) {
     res.status(403).json({ error: 'Доступно только Администратору.' });
@@ -845,7 +933,8 @@ app.put('/api/admin/users/:id/role', (req: Request, res: Response) => {
 // so two devices cannot silently overwrite each other (409 = reload and retry).
 // ========================================================
 const SHARED_STATE_WRITERS: Record<string, Set<string>> = {
-  participants: new Set(['admin', 'chief_referee', 'scorekeeper', 'medical_officer', 'club_coach', 'athlete']),
+  // Athletes and coaches add entries through POST /api/entries, never by rewriting the list.
+  participants: new Set(['admin', 'chief_referee', 'scorekeeper', 'medical_officer']),
   bouts: new Set(['admin', 'chief_referee', 'tatami_referee', 'scorekeeper']),
   protocols: new Set(['admin', 'chief_referee', 'tatami_referee', 'scorekeeper']),
   categories: new Set(['admin', 'chief_referee'])
@@ -877,8 +966,24 @@ app.get('/api/state/:key', (req: Request, res: Response) => {
     res.json({ key, version: current, changed: false });
     return;
   }
-  res.json({ ...stateEnvelope(key), changed: true });
+  const envelope = stateEnvelope(key);
+  if (key === 'participants' && Array.isArray(envelope.value)) {
+    envelope.value = visibleParticipants(envelope.value as any[], getSessionUser(req));
+  }
+  res.json({ ...envelope, changed: true });
 });
+
+// Personal data of athletes (many are children) is shown only to officials who need it.
+// Everyone else sees what results need (name, club, country, category) plus their own entries in full.
+const PERSONAL_DATA_ROLES = new Set(['admin', 'chief_referee', 'scorekeeper', 'medical_officer', 'tatami_referee']);
+function visibleParticipants(list: any[], user: StoredUserAccount | null): any[] {
+  if (user && PERSONAL_DATA_ROLES.has(user.role)) return list;
+  return list.map((p) => {
+    if (user && p?.createdBy === user.id) return p;
+    const { birthDate, declaredWeightKg, actualWeightKg, licenseNumber, feePaymentStatus, feeAmountRub, eligibilityNote, isMedicalCleared, createdBy, ...rest } = p || {};
+    return { ...rest, birthDate: '', declaredWeightKg: 0, actualWeightKg: null, licenseNumber: '', isMedicalCleared: false };
+  });
+}
 
 app.put('/api/state/:key', (req: Request, res: Response) => {
   const { key } = req.params;
@@ -1485,24 +1590,17 @@ async function startServer() {
   const isProduction = IS_PRODUCTION;
   ensureAdminAccount(isProduction);
   // Bouts are saved one by one, so the server must hold the full list from the start.
-  if (!db.state.bouts) {
+  // Demo data is used only until the site is prepared for launch.
+  if (!db.state.bouts && !db.launchedAt) {
     db.state.bouts = { version: 1, value: JSON.parse(JSON.stringify(SAMPLE_BOUTS)), updatedAt: new Date().toISOString(), updatedBy: 'seed' };
     saveDb();
   }
-  if (!db.state.participants) {
+  if (!db.state.participants && !db.launchedAt) {
     db.state.participants = { version: 1, value: JSON.parse(JSON.stringify(SAMPLE_PARTICIPANTS)), updatedAt: new Date().toISOString(), updatedBy: 'seed' };
     saveDb();
   }
   seedDevDemoAccounts();
 
-  // Support official Uventex /GWTClient.html?&locale=ru#home entry point URLs
-  app.use((req: Request, _res: Response, next) => {
-    if (req.path === '/GWTClient.html') {
-      const queryIdx = req.url.indexOf('?');
-      req.url = queryIdx !== -1 ? '/' + req.url.slice(queryIdx) : '/';
-    }
-    next();
-  });
 
   if (!isProduction) {
     const vite = await createViteServer({

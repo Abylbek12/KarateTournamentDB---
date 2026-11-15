@@ -2,9 +2,9 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Search, X, Plus, CalendarDays, MapPin, Users, ChevronDown, ArrowRight, Trophy, Trash2, Clock } from 'lucide-react';
 import { Tournament, UserRole } from '../types/schema';
 import { useApp } from '../context/AppContext';
-import { UventexEventItem, EventActionType } from '../data/uventexEventsData';
-import { UventexEventEmblem } from './UventexEventEmblems';
-import { trLang, localizeUventexEventItem } from '../utils/globalDomTranslator';
+import { EventItem, EventActionType } from '../data/eventsData';
+import { EventEmblem } from './EventEmblems';
+import { trLang, localizeEventItem } from '../utils/globalDomTranslator';
 import { isTournamentArchived } from './TournamentEventsManager';
 
 interface TournamentShowcaseProps {
@@ -12,7 +12,7 @@ interface TournamentShowcaseProps {
   currentUserRole?: UserRole;
   onRoleChange?: (role: UserRole) => void;
   onSelectTournament: (tournament: Tournament) => void;
-  onSelectAction: (tournament: UventexEventItem, action: EventActionType) => void;
+  onSelectAction: (tournament: EventItem, action: EventActionType) => void;
   onStartRegistration?: (tournament: Tournament) => void;
   onOpenScoreboard: () => void;
   onOpenBracket: () => void;
@@ -88,15 +88,15 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
       setShowPast(true);
       setTimeout(() => pastRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
     };
-    window.addEventListener('uventex-open-archive-tab', open);
-    return () => window.removeEventListener('uventex-open-archive-tab', open);
+    window.addEventListener('tatami-open-archive-tab', open);
+    return () => window.removeEventListener('tatami-open-archive-tab', open);
   }, []);
 
-  const events: UventexEventItem[] = useMemo(
+  const events: EventItem[] = useMemo(
     () =>
       tournaments.map((t) => {
-        const ev = t as UventexEventItem;
-        const base: UventexEventItem = {
+        const ev = t as EventItem;
+        const base: EventItem = {
           ...t,
           imageUrl: ev.imageUrl || t.imageUrl,
           emblemType: ev.emblemType || (t.imageUrl && !t.imageUrl.startsWith('/src/assets/images/') ? 'custom_upload' : 'kg'),
@@ -104,12 +104,12 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
           dateLabel: ev.dateLabel || `${t.startDate} - ${t.endDate}`,
           availableActions: ev.availableActions || ['info', 'categories_prices', 'brackets', 'results', 'medals', 'live_scoring']
         };
-        return localizeUventexEventItem(base, language);
+        return localizeEventItem(base, language);
       }),
     [tournaments, language]
   );
 
-  const matches = (item: UventexEventItem) => {
+  const matches = (item: EventItem) => {
     const q = query.toLowerCase().trim();
     if (q && !`${item.title} ${item.locationLabel} ${item.city} ${item.organization || ''}`.toLowerCase().includes(q)) return false;
     if (region !== 'all') {
@@ -130,7 +130,7 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
   const featured = !query && region === 'all' ? upcoming[0] : undefined;
   const rest = featured ? upcoming.slice(1) : upcoming;
 
-  const statusOf = (item: UventexEventItem) => {
+  const statusOf = (item: EventItem) => {
     const d = daysUntil(item.startDate);
     const dEnd = daysUntil(item.endDate);
     if (d !== null && d <= 0 && dEnd !== null && dEnd >= 0) return { label: tr('Идёт сейчас', 'Азыр жүрүп жатат', 'Live now'), tone: 'live' as const };
@@ -144,7 +144,7 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
     closed: 'bg-[var(--app-surface-subtle)] text-[var(--app-text-muted)] border border-[var(--app-border)]'
   };
 
-  const countdown = (item: UventexEventItem) => {
+  const countdown = (item: EventItem) => {
     const d = daysUntil(item.startDate);
     if (d === null || d < 0) return null;
     if (d === 0) return tr('Сегодня', 'Бүгүн', 'Today');
@@ -152,9 +152,9 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
     return tr(`Через ${d} дн.`, `${d} күндөн кийин`, `In ${d} days`);
   };
 
-  const enter = (item: UventexEventItem) => (onStartRegistration ? onStartRegistration(item) : onSelectAction(item, 'categories_prices'));
+  const enter = (item: EventItem) => (onStartRegistration ? onStartRegistration(item) : onSelectAction(item, 'categories_prices'));
 
-  const renderMeta = (item: UventexEventItem, big = false) => (
+  const renderMeta = (item: EventItem, big = false) => (
     <div className={`flex flex-wrap gap-x-4 gap-y-1 text-[var(--app-text-secondary)] ${big ? 'text-[15px]' : 'text-sm'}`}>
       <span className="inline-flex items-center gap-1.5">
         <CalendarDays className="w-4 h-4 text-[var(--app-text-muted)]" />
@@ -173,7 +173,7 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
     </div>
   );
 
-  const renderDelete = (item: UventexEventItem) =>
+  const renderDelete = (item: EventItem) =>
     isAdmin && onRequestDeleteTournament ? (
       <button
         onClick={(e) => {
@@ -255,7 +255,7 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
         >
           <div className="absolute inset-y-0 left-0 w-1.5" style={{ background: featured.accentColor || 'var(--accent)' }} />
           <div className="p-5 sm:p-7 flex flex-col md:flex-row gap-5 md:items-center">
-            <UventexEventEmblem
+            <EventEmblem
               type={featured.emblemType}
               imageUrl={featured.imageUrl}
               title={featured.title}
@@ -312,7 +312,7 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
                   className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] hover:border-[var(--accent)] hover:shadow-md transition-all cursor-pointer flex flex-col"
                 >
                   <div className="p-4 sm:p-5 flex gap-4 flex-1">
-                    <UventexEventEmblem
+                    <EventEmblem
                       type={item.emblemType}
                       imageUrl={item.imageUrl}
                       title={item.title}
@@ -353,9 +353,13 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
 
       {upcoming.length === 0 && (
         <div className="rounded-2xl border border-dashed border-[var(--app-border)] p-10 text-center">
-          <div className="text-[var(--app-text-primary)] font-semibold">{tr('Турниров не найдено', 'Мелдеш табылган жок', 'No tournaments found')}</div>
+          <div className="text-[var(--app-text-primary)] font-semibold">
+            {query || region !== 'all' ? tr('Турниров не найдено', 'Мелдеш табылган жок', 'No tournaments found') : tr('Скоро здесь появятся турниры', 'Жакында бул жерде мелдештер пайда болот', 'Tournaments will appear here soon')}
+          </div>
           <div className="text-sm text-[var(--app-text-muted)] mt-1">
-            {tr('Попробуйте другой регион или запрос.', 'Башка аймакты же сөздү тандаңыз.', 'Try another region or search.')}
+            {query || region !== 'all'
+              ? tr('Попробуйте другой регион или запрос.', 'Башка аймакты же сөздү тандаңыз.', 'Try another region or search.')
+              : tr('Организаторы публикуют турниры через раздел «Турниры и пользователи».', 'Уюштуруучулар мелдештерди «Мелдештер жана колдонуучулар» бөлүмү аркылуу жарыялашат.', 'Organizers publish tournaments from “Events & users”.')}
           </div>
           {(query || region !== 'all') && (
             <button
@@ -389,7 +393,7 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
             <ul className="mt-2 divide-y divide-[var(--app-border)] rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]">
               {past.map((item) => (
                 <li key={item.id} className="flex items-center gap-3 px-4 py-3">
-                  <UventexEventEmblem
+                  <EventEmblem
                     type={item.emblemType}
                     imageUrl={item.imageUrl}
                     title={item.title}

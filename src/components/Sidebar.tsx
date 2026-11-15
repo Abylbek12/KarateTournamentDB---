@@ -45,7 +45,6 @@ export type NavTabId =
   | 'scoreboard'
   | 'referee_vr'
   | 'doctor'
-  | 'video_analytics'
   | 'protocols'
   | 'exports'
   | 'bracket'
@@ -53,8 +52,6 @@ export type NavTabId =
   | 'lan'
   | 'participants'
   | 'admin'
-  | 'schema'
-  | 'sql'
   | 'registration'
   | 'screens'
   | 'event_setup';
@@ -122,7 +119,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       key: 'public',
       items: [
         { id: 'tournaments' as NavTabId, label: tr('Турниры', 'Мелдештер', 'Tournaments'), icon: LayoutGrid },
-        { id: 'virtual_studios' as NavTabId, label: tr('Трансляции', 'Түз эфир', 'Live'), icon: Video, badge: 'LIVE' },
+        { id: 'virtual_studios' as NavTabId, label: tr('Идут бои', 'Беттештер жүрүүдө', 'Live now'), icon: Video, badge: 'LIVE' },
         { id: 'rankings' as NavTabId, label: tr('Рейтинги', 'Рейтингдер', 'Rankings'), icon: Trophy },
         { id: 'studios' as NavTabId, label: tr('Клубы', 'Клубдар', 'Clubs'), icon: Target }
       ]
@@ -135,8 +132,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           ? [
               { id: 'admin' as NavTabId, label: tr('Личный кабинет', 'Жеке кабинет', 'My account'), icon: UserCircle2 },
               { id: 'registration' as NavTabId, label: tr('Подать заявку', 'Табыштама берүү', 'Enter a tournament'), icon: ClipboardList },
-              { id: 'coach' as NavTabId, label: tr('Мой клуб и ученики', 'Клубум жана окуучулар', 'My club & athletes'), icon: Users },
-              { id: 'acquiring' as NavTabId, label: tr('Мои оплаты', 'Төлөмдөрүм', 'My payments'), icon: CreditCard }
+              { id: 'acquiring' as NavTabId, label: tr('Мои заявки и оплата', 'Өтүнмөлөрүм жана төлөм', 'My entries & fees'), icon: CreditCard }
             ]
           : []
     },
@@ -163,7 +159,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             { id: 'event_setup' as NavTabId, label: tr('Категории и жеребьёвка', 'Категориялар жана чүчүкулак', 'Categories & draw'), icon: Layers },
             { id: 'screens' as NavTabId, label: tr('Экраны и QR-коды', 'Экрандар жана QR', 'Screens & QR'), icon: QrCode },
             { id: 'bracket' as NavTabId, label: tr('Сетки и жеребьёвка', 'Торчолор жана чүчүкулак', 'Brackets & draw'), icon: GitBranch },
-            { id: 'acquiring' as NavTabId, label: tr('Оплаты и взносы', 'Төлөмдөр', 'Payments'), icon: CreditCard },
+            { id: 'acquiring' as NavTabId, label: tr('Взносы', 'Төгүмдөр', 'Entry fees'), icon: CreditCard },
             { id: 'exports' as NavTabId, label: tr('Документы и печать', 'Документтер жана басып чыгаруу', 'Documents & printing'), icon: Stamp },
             { id: 'lan' as NavTabId, label: tr('Работа без интернета', 'Интернетсиз режим', 'Offline (LAN)'), icon: Wifi }
           ]

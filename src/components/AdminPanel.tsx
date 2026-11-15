@@ -660,7 +660,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-sky-600/20 hover:bg-sky-600/30 border border-sky-500/40 text-sky-300 transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
               >
                 <Tv className="w-3.5 h-3.5 text-sky-400" />
-                <span>Смотреть трансляции (LIVE)</span>
+                <span>Сейчас на татами (LIVE)</span>
               </button>
               <button
                 type="button"

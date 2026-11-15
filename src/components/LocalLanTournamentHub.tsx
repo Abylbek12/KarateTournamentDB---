@@ -352,7 +352,7 @@ export const LocalLanTournamentHub: React.FC<LocalLanTournamentHubProps> = ({
               className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors flex items-center gap-1.5"
             >
               <FileCode className="w-3.5 h-3.5 text-rose-400" />
-              <span>Экспорт schema.sql</span>
+              <span>Резервная копия (JSON)</span>
             </button>
           </div>
         </div>

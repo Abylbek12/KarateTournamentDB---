@@ -11,12 +11,12 @@ import {
   Layers,
   Award
 } from 'lucide-react';
-import { UventexEventItem, DivisionItem } from '../data/uventexEventsData';
+import { EventItem, DivisionItem } from '../data/eventsData';
 import { useApp } from '../context/AppContext';
-import { localizeUventexEventItem } from '../utils/globalDomTranslator';
+import { localizeEventItem } from '../utils/globalDomTranslator';
 
 interface TournamentDivisionsPricingViewProps {
-  tournament: UventexEventItem;
+  tournament: EventItem;
   onBack: () => void;
   onNavigateAction: (action: string) => void;
 }
@@ -27,7 +27,7 @@ export const TournamentDivisionsPricingView: React.FC<TournamentDivisionsPricing
   onNavigateAction
 }) => {
   const { language } = useApp();
-  const tournament = localizeUventexEventItem(rawTournament, language);
+  const tournament = localizeEventItem(rawTournament, language);
   const [selectedTierIndex, setSelectedTierIndex] = useState(0);
   const [selectedCategoryType, setSelectedCategoryType] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -215,7 +215,7 @@ export const TournamentDivisionsPricingView: React.FC<TournamentDivisionsPricing
         </div>
       </div>
 
-      {/* Categories Table (As seen in Uventex) */}
+      {/* Categories Table */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs font-sans">

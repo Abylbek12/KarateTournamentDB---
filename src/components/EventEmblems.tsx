@@ -26,7 +26,7 @@ const yearOf = (title?: string) => title?.match(/20\d{2}/)?.[0];
  * Event emblem: the organizer's uploaded logo if there is one,
  * otherwise a neutral generated badge (initials + year) in the event colour.
  */
-export const UventexEventEmblem: React.FC<EventEmblemProps> = ({ type, imageUrl, className = 'w-16 h-16', title, color }) => {
+export const EventEmblem: React.FC<EventEmblemProps> = ({ type, imageUrl, className = 'w-16 h-16', title, color }) => {
   const isUploadedLogo = Boolean(imageUrl) && (type === 'custom_upload' || !imageUrl!.startsWith('/src/assets/images/'));
 
   if (isUploadedLogo && imageUrl) {

@@ -28,9 +28,8 @@ export const TAB_ACCESS: Record<string, 'public' | AccessRole[]> = {
 
   // Personal / club area (sign-in required)
   registration: ['admin', 'club_coach', 'athlete'],
-  coach: ['admin', 'club_coach'],
+  coach: ['admin', 'club_coach', 'athlete'],
   acquiring: ['admin', 'club_coach', 'athlete'],
-  video_analytics: ['admin', 'chief_referee', 'club_coach'],
 
   // Competition operations (officials)
   scoreboard: STAFF,
@@ -40,19 +39,13 @@ export const TAB_ACCESS: Record<string, 'public' | AccessRole[]> = {
   referee_vr: ['admin', 'chief_referee', 'tatami_referee'],
   protocols: STAFF,
   doctor: ['admin', 'chief_referee', 'medical_officer'],
-  engine: ['admin', 'chief_referee'],
-  analytics: ['admin', 'chief_referee'],
 
   // Organizer / site owner
   admin: SIGNED_IN, // admins manage events here; other roles see their personal cabinet
-  accounting: ['admin'],
   exports: ['admin', 'chief_referee'],
   lan: ['admin'],
   screens: ['admin'],
   event_setup: ['admin', 'chief_referee'],
-  categories: ['admin'],
-  schema: ['admin'],
-  sql: ['admin']
 };
 
 export function canAccess(tab: string, role: AccessRole): boolean {

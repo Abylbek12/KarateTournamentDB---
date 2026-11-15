@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Language } from './translations';
-import { UventexEventItem } from '../data/uventexEventsData';
+import { EventItem } from '../data/eventsData';
 
 /**
  * Helper for 3-language inline translation in React components
@@ -111,7 +111,7 @@ export function localizeDateLabel(dateLabel: string, language: Language): string
   return out;
 }
 
-export function localizeUventexEventItem(item: UventexEventItem, language: Language): UventexEventItem {
+export function localizeEventItem(item: EventItem, language: Language): EventItem {
   const loc = EVENT_LOCALIZATIONS[item.id];
   const localizedDate = localizeDateLabel(item.dateLabel || `${item.startDate} - ${item.endDate}`, language);
 

@@ -51,7 +51,7 @@ const FacebookIcon: React.FC = () => (
 );
 
 // ----------------------------------------------------------------------
-// 1. UVENTEX AUTH & LOGIN MODAL WITH REAL OAUTH & PROFILE CONFIRMATION
+// 1. AUTH & LOGIN MODAL WITH REAL OAUTH & PROFILE CONFIRMATION
 // ----------------------------------------------------------------------
 interface AuthModalProps {
   isOpen: boolean;
@@ -225,7 +225,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       // Open OAuth provider URL directly in popup (Mandatory OAuth Skill Rule)
       const popupWindow = window.open(
         url,
-        `uventex_${provider.toLowerCase()}_oauth`,
+        `tatami_${provider.toLowerCase()}_oauth`,
         'width=600,height=720,status=no,resizable=yes,scrollbars=yes'
       );
 
@@ -261,7 +261,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
     if (!regAgreeTerms) {
-      setErrorMessage(language !== 'en' ? 'Необходимо согласиться с политикой конфиденциальности (152-ФЗ)' : 'Please accept terms');
+      setErrorMessage(language !== 'en' ? 'Необходимо согласиться с политикой конфиденциальности' : 'Please accept terms');
       return;
     }
 
@@ -351,7 +351,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <X className="w-5 h-5" />
         </button>
 
-        {/* 2-Column Split: Left = Big Uventex Logo | Right = Form Card */}
+        {/* 2-Column Split: Left = Big logo | Right = Form Card */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12 min-h-[420px]">
           
           {/* ========================================================
@@ -691,7 +691,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       />
                       <span>
                         {language !== 'en'
-                          ? 'Согласен с Условиями и обработкой персональных данных (152-ФЗ)'
+                          ? 'Согласен с Условиями и обработкой персональных данных'
                           : 'I agree to the Terms & Privacy Policy'}
                       </span>
                     </label>
@@ -796,7 +796,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 };
 
 // ----------------------------------------------------------------------
-// 2. OFFICIAL PRIVACY POLICY MODAL (152-ФЗ / GDPR COMPLIANCE)
+// 2. PRIVACY POLICY MODAL (text must be reviewed by a lawyer for Kyrgyz law)
 // ----------------------------------------------------------------------
 interface PrivacyPolicyModalProps {
   isOpen: boolean;
@@ -825,7 +825,7 @@ export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({
                 {language !== 'en' ? 'Политика конфиденциальности и защиты данных' : 'Privacy & Data Protection Policy'}
               </h3>
               <p className="text-[11px] text-slate-500">
-                {language !== 'en' ? 'Соответствие 152-ФЗ и регламентам спортивных федераций' : '152-FZ & Sports Federation Regulations'}
+                {language !== 'en' ? 'Как Tatami.kg обращается с персональными данными' : 'How Tatami.kg handles personal data'}
               </p>
             </div>
           </div>
@@ -870,7 +870,7 @@ export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({
         {/* Footer */}
         <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between shrink-0">
           <span className="text-[11px] text-slate-500 font-sans">
-            Контакт отдела защиты данных: privacy@tatami.kg
+            Вопросы о ваших данных — администратору сайта или организатору турнира
           </span>
           <button
             onClick={onClose}

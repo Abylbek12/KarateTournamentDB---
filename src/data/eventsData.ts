@@ -40,7 +40,7 @@ export interface MedalReportRow {
   points: number;
 }
 
-export interface UventexEventItem extends Tournament {
+export interface EventItem extends Tournament {
   emblemType: string;
   locationLabel: string;
   dateLabel: string;
@@ -149,7 +149,7 @@ interface DemoEventInput {
 
 const ALL_ACTIONS: EventActionType[] = ['info', 'categories_prices', 'brackets', 'results', 'medals', 'live_scoring'];
 
-const makeDemoEvent = (e: DemoEventInput): UventexEventItem => ({
+const makeDemoEvent = (e: DemoEventInput): EventItem => ({
   id: e.id,
   title: e.title,
   slug: e.id,
@@ -188,7 +188,7 @@ const makeDemoEvent = (e: DemoEventInput): UventexEventItem => ({
   medalsReport: DEMO_MEDALS
 });
 
-export const UVENTEX_SCREENSHOT_EVENTS: UventexEventItem[] = [
+export const DEMO_EVENTS: EventItem[] = [
   makeDemoEvent({
     id: 'kg-bishkek-cup-2026', title: 'Кубок города Бишкек по каратэ WKF 2026', city: 'Бишкек', region: 'г. Бишкек',
     venueName: 'Спорткомплекс (пример)', organization: 'Федерация каратэ г. Бишкек (пример)', league: 'Городской турнир',

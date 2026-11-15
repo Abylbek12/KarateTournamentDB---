@@ -23,7 +23,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Theme state with localStorage persistence
   const [theme, setThemeState] = useState<'dark' | 'light'>(() => {
     try {
-      const saved = localStorage.getItem('uventex_theme');
+      const saved = (localStorage.getItem('tatami_theme') ?? localStorage.getItem('uventex_theme'));
       return saved === 'light' || saved === 'dark' ? saved : 'light';
     } catch {
       return 'light';
@@ -33,7 +33,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Language state with localStorage persistence
   const [language, setLanguageState] = useState<Language>(() => {
     try {
-      const saved = localStorage.getItem('uventex_lang');
+      const saved = (localStorage.getItem('tatami_lang') ?? localStorage.getItem('uventex_lang'));
       return saved === 'en' || saved === 'ru' || saved === 'ky' ? saved : 'ru';
     } catch {
       return 'ru';
@@ -43,7 +43,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Font readability state with localStorage persistence
   const [isBoldReadability, setIsBoldReadabilityState] = useState<boolean>(() => {
     try {
-      const saved = localStorage.getItem('uventex_bold');
+      const saved = (localStorage.getItem('tatami_bold') ?? localStorage.getItem('uventex_bold'));
       return saved !== null ? saved === 'true' : false;
     } catch {
       return false;
@@ -61,7 +61,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         root.classList.remove('dark');
         root.classList.add('theme-light');
       }
-      localStorage.setItem('uventex_theme', theme);
+      localStorage.setItem('tatami_theme', theme);
     } catch {
       // Ignore storage errors in restricted contexts
     }
@@ -76,7 +76,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } else {
         root.classList.remove('font-bold-readable');
       }
-      localStorage.setItem('uventex_bold', String(isBoldReadability));
+      localStorage.setItem('tatami_bold', String(isBoldReadability));
     } catch {
       // Ignore storage errors
     }
@@ -86,7 +86,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     try {
       document.documentElement.setAttribute('lang', language);
-      localStorage.setItem('uventex_lang', language);
+      localStorage.setItem('tatami_lang', language);
     } catch {
       // Ignore storage errors
     }

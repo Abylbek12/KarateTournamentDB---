@@ -45,16 +45,12 @@ import { Sidebar } from './components/Sidebar';
 
 import { ResetTournamentDataModal, ResetOptions } from './components/ResetTournamentDataModal';
 import { TournamentShowcase } from './components/TournamentShowcase';
-import { UVENTEX_SCREENSHOT_EVENTS, UventexEventItem, EventActionType } from './data/uventexEventsData';
+import { DEMO_EVENTS, EventItem, EventActionType } from './data/eventsData';
 import { SenseiAiChatbot } from './components/SenseiAiChatbot';
 import { NotificationCenterModal } from './components/NotificationCenterModal';
-import { 
-  VirtualStudiosView, 
-  AboutUsView, 
-  HelpFaqView, 
-  StudiosView,
-  RankingsView
-} from './components/UventexPortalViews';
+import { AboutUsView, HelpFaqView } from './components/InfoPages';
+import { RankingsPanel, ClubsPanel, LiveNowPanel } from './components/CommunityViews';
+import { MyEntriesPanel, FeesPanel } from './components/EntriesPanels';
 import { AuthModal, PrivacyPolicyModal } from './components/AuthAndPrivacyModals';
 import { SAMPLE_NOTIFICATIONS, playNotificationSound } from './data/sampleAcquiringAndExports';
 import { generateProtectedWkfCategoryBouts } from './utils/wkfBracketSeeding';
@@ -72,7 +68,6 @@ import {
   SAMPLE_TOURNAMENTS,
   durationForCategory
 } from './data/sampleTournamentData';
-import { POSTGRESQL_DDL_SCRIPT } from './data/dbSchemaDefinition';
 import { Bout, Participant, TournamentRules, RefereeProtocol, UserRole, EventCategory, TournamentCategory, TournamentRegistrationConfig, Tournament, AppNotification, AuthenticatedUserProfile } from './types/schema';
 
 import { AppProvider, useApp } from './context/AppContext';
@@ -95,19 +90,13 @@ import { MyAccountPanel } from './components/MyAccountPanel';
 import { RoleGuide } from './components/RoleGuide';
 import { PrintDocuments, parsePrintRequest } from './components/PrintDocuments';
 import { DocumentsPanel } from './components/DocumentsPanel';
+import { LaunchPanel } from './components/LaunchPanel';
 
 // Heavy screens are loaded on demand so the first page opens faster.
-const SchemaVisualizer = React.lazy(() => import('./components/SchemaVisualizer').then((m) => ({ default: m.SchemaVisualizer })));
 const TatamiScheduleView = React.lazy(() => import('./components/TatamiScheduleView').then((m) => ({ default: m.TatamiScheduleView })));
-const CategoriesManager = React.lazy(() => import('./components/CategoriesManager').then((m) => ({ default: m.CategoriesManager })));
 const ParticipantsManager = React.lazy(() => import('./components/ParticipantsManager').then((m) => ({ default: m.ParticipantsManager })));
 const AdminPanel = React.lazy(() => import('./components/AdminPanel').then((m) => ({ default: m.AdminPanel })));
-const SqlViewer = React.lazy(() => import('./components/SqlViewer').then((m) => ({ default: m.SqlViewer })));
 const TournamentBracketScoreboardModule = React.lazy(() => import('./components/TournamentBracketScoreboardModule').then((m) => ({ default: m.TournamentBracketScoreboardModule })));
-const TournamentEngineModule = React.lazy(() => import('./components/TournamentEngineModule').then((m) => ({ default: m.TournamentEngineModule })));
-const TournamentAnalyticsModule = React.lazy(() => import('./components/TournamentAnalyticsModule').then((m) => ({ default: m.TournamentAnalyticsModule })));
-const TournamentClubAccountingModule = React.lazy(() => import('./components/TournamentClubAccountingModule').then((m) => ({ default: m.TournamentClubAccountingModule })));
-const CoachPortalModule = React.lazy(() => import('./components/CoachPortalModule').then((m) => ({ default: m.CoachPortalModule })));
 const RefereeProtocolModule = React.lazy(() => import('./components/RefereeProtocolModule').then((m) => ({ default: m.RefereeProtocolModule })));
 const LocalLanTournamentHub = React.lazy(() => import('./components/LocalLanTournamentHub').then((m) => ({ default: m.LocalLanTournamentHub })));
 const TournamentDetailsView = React.lazy(() => import('./components/TournamentDetailsView').then((m) => ({ default: m.TournamentDetailsView })));
@@ -115,8 +104,6 @@ const TournamentInfoDetailView = React.lazy(() => import('./components/Tournamen
 const TournamentDivisionsPricingView = React.lazy(() => import('./components/TournamentDivisionsPricingView').then((m) => ({ default: m.TournamentDivisionsPricingView })));
 const RefereeElectronicVotingAndVrModule = React.lazy(() => import('./components/RefereeElectronicVotingAndVrModule').then((m) => ({ default: m.RefereeElectronicVotingAndVrModule })));
 const DoctorTimeMedicalModule = React.lazy(() => import('./components/DoctorTimeMedicalModule').then((m) => ({ default: m.DoctorTimeMedicalModule })));
-const VideoAnalyticsModule = React.lazy(() => import('./components/VideoAnalyticsModule').then((m) => ({ default: m.VideoAnalyticsModule })));
-const AcquiringPaymentsModule = React.lazy(() => import('./components/AcquiringPaymentsModule').then((m) => ({ default: m.AcquiringPaymentsModule })));
 
 const ScreensQrPanel = React.lazy(() => import('./components/ScreensQrPanel').then((m) => ({ default: m.ScreensQrPanel })));
 
@@ -142,9 +129,9 @@ function AppContent() {
 
   const [activeTab, setActiveTab] = useState<string>('tournaments');
   useGlobalDomTranslator(language, activeTab);
-  const [tournaments, setTournaments] = useState<UventexEventItem[]>(UVENTEX_SCREENSHOT_EVENTS);
-  const [selectedTournament, setSelectedTournament] = useState<Tournament>(UVENTEX_SCREENSHOT_EVENTS[0]);
-  const [selectedUventexEvent, setSelectedUventexEvent] = useState<UventexEventItem>(UVENTEX_SCREENSHOT_EVENTS[0]);
+  const [tournaments, setTournaments] = useState<EventItem[]>([]);
+  const [selectedTournament, setSelectedTournament] = useState<Tournament>(DEMO_EVENTS[0]);
+  const [selectedEvent, setSelectedEvent] = useState<EventItem>(DEMO_EVENTS[0]);
   const [tournamentRules, setTournamentRules] = useState<TournamentRules>('wkf');
   const [currentUser, setCurrentUser] = useState<AuthenticatedUserProfile | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>('club_coach');
@@ -176,8 +163,12 @@ function AppContent() {
     fetch('/api/events')
       .then((r) => r.json())
       .then((data) => {
-        if (data.events && Array.isArray(data.events) && data.events.length > 0) {
+        // The server list is the truth: after «Подготовка к запуску» it can be empty.
+        if (data.events && Array.isArray(data.events)) {
           setTournaments(data.events);
+          if (data.events.length > 0) {
+            setSelectedEvent((cur) => data.events.find((e: EventItem) => e.id === cur.id) || data.events[0]);
+          }
         }
       })
       .catch(() => {});
@@ -222,7 +213,7 @@ function AppContent() {
     const isCustomUpload = Boolean(
       newTournament.imageUrl && !newTournament.imageUrl.startsWith('/src/assets/images/')
     );
-    const asUventex: UventexEventItem = {
+    const asEvent: EventItem = {
       ...newTournament,
       imageUrl: newTournament.imageUrl,
       emblemType: isCustomUpload ? 'custom_upload' : ((newTournament as any).emblemType || 'pcl'),
@@ -231,16 +222,16 @@ function AppContent() {
       availableActions: (newTournament as any).availableActions || ['info', 'categories_prices', 'brackets', 'results', 'medals', 'live_scoring']
     };
 
-    setTournaments((prev) => [asUventex, ...prev]);
-    setSelectedTournament(asUventex);
-    setSelectedUventexEvent(asUventex);
+    setTournaments((prev) => [asEvent, ...prev]);
+    setSelectedTournament(asEvent);
+    setSelectedEvent(asEvent);
     if (newTournament.rulesType) setTournamentRules(newTournament.rulesType);
 
     try {
       const saveResponse = await fetch('/api/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(asUventex)
+        body: JSON.stringify(asEvent)
       });
       if (!saveResponse.ok) {
         const err = await saveResponse.json().catch(() => ({}));
@@ -256,9 +247,9 @@ function AppContent() {
 
     setGlobalSystemToast(
       tr(
-        `✓ Турнир «${asUventex.title}» опубликован и синхронизирован с витриной!`,
-        `✓ «${asUventex.title}» мелдеши жарыяланды жана витрина менен синхрондоштурулду!`,
-        `✓ Tournament "${asUventex.title}" published and synced with showcase!`
+        `✓ Турнир «${asEvent.title}» опубликован и синхронизирован с витриной!`,
+        `✓ «${asEvent.title}» мелдеши жарыяланды жана витрина менен синхрондоштурулду!`,
+        `✓ Tournament "${asEvent.title}" published and synced with showcase!`
       )
     );
     setTimeout(() => setGlobalSystemToast(null), 5000);
@@ -280,7 +271,7 @@ function AppContent() {
     const isCustomUpload = Boolean(
       updatedTournament.imageUrl && !updatedTournament.imageUrl.startsWith('/src/assets/images/')
     );
-    const asUventex: UventexEventItem = {
+    const asEvent: EventItem = {
       ...updatedTournament,
       imageUrl: updatedTournament.imageUrl,
       emblemType: isCustomUpload ? 'custom_upload' : ((updatedTournament as any).emblemType || 'pcl'),
@@ -289,16 +280,16 @@ function AppContent() {
       availableActions: (updatedTournament as any).availableActions || ['info', 'categories_prices', 'brackets', 'results', 'medals', 'live_scoring']
     };
 
-    setTournaments((prev) => prev.map((t) => (t.id === asUventex.id ? asUventex : t)));
-    if (selectedTournament.id === asUventex.id) setSelectedTournament(asUventex);
-    if (selectedUventexEvent.id === asUventex.id) setSelectedUventexEvent(asUventex);
+    setTournaments((prev) => prev.map((t) => (t.id === asEvent.id ? asEvent : t)));
+    if (selectedTournament.id === asEvent.id) setSelectedTournament(asEvent);
+    if (selectedEvent.id === asEvent.id) setSelectedEvent(asEvent);
     if (updatedTournament.rulesType) setTournamentRules(updatedTournament.rulesType);
 
     try {
-      const saveResponse = await fetch(`/api/events/${asUventex.id}`, {
+      const saveResponse = await fetch(`/api/events/${asEvent.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(asUventex)
+        body: JSON.stringify(asEvent)
       });
       if (!saveResponse.ok) {
         const err = await saveResponse.json().catch(() => ({}));
@@ -314,9 +305,9 @@ function AppContent() {
 
     setGlobalSystemToast(
       tr(
-        `✓ Изменения турнира «${asUventex.title}» синхронизированы с витриной!`,
-        `✓ «${asUventex.title}» мелдешинин өзгөртүүлөрү витрина менен синхрондоштурулду!`,
-        `✓ Changes to tournament "${asUventex.title}" synced with showcase!`
+        `✓ Изменения турнира «${asEvent.title}» синхронизированы с витриной!`,
+        `✓ «${asEvent.title}» мелдешинин өзгөртүүлөрү витрина менен синхрондоштурулду!`,
+        `✓ Changes to tournament "${asEvent.title}" synced with showcase!`
       )
     );
     setTimeout(() => setGlobalSystemToast(null), 5000);
@@ -362,8 +353,8 @@ function AppContent() {
       if (selectedTournament.id === tournamentId && filtered.length > 0) {
         setSelectedTournament(filtered[0]);
       }
-      if (selectedUventexEvent.id === tournamentId && filtered.length > 0) {
-        setSelectedUventexEvent(filtered[0]);
+      if (selectedEvent.id === tournamentId && filtered.length > 0) {
+        setSelectedEvent(filtered[0]);
       }
       return filtered;
     });
@@ -387,7 +378,7 @@ function AppContent() {
     }
   };
   // Bouts are saved one by one (PUT /api/bouts) so several tatami can work at the same time.
-  const [bouts, setBoutsState, boutSync] = useServerSyncedState<Bout[]>('bouts', SAMPLE_BOUTS, { ...sharedStateOptions, autoSave: false });
+  const [bouts, setBoutsState, boutSync] = useServerSyncedState<Bout[]>('bouts', [], { ...sharedStateOptions, autoSave: false });
   const boutsRef = React.useRef(bouts);
   boutsRef.current = bouts;
   const saveBouts = React.useCallback(async (changed: Bout[], replaceAll: boolean) => {
@@ -424,8 +415,12 @@ function AppContent() {
     },
     [setBoutsState, boutSync, saveBouts]
   );
-  const [participants, setParticipants] = useServerSyncedState<Participant[]>('participants', SAMPLE_PARTICIPANTS, sharedStateOptions);
-  const [protocols, setProtocols] = useServerSyncedState<RefereeProtocol[]>('protocols', SAMPLE_REFEREE_PROTOCOLS, sharedStateOptions);
+  const [participants, setParticipants] = useServerSyncedState<Participant[]>('participants', [], {
+    ...sharedStateOptions,
+    // Athletes and coaches submit entries through /api/entries; only officials edit the list.
+    canWrite: !!currentUser && ['admin', 'chief_referee', 'scorekeeper', 'medical_officer'].includes(currentUser.role)
+  });
+  const [protocols, setProtocols] = useServerSyncedState<RefereeProtocol[]>('protocols', [], sharedStateOptions);
   // Tournament categories created by the organizer (server-stored).
   const [eventCategories, setEventCategories] = useServerSyncedState<EventCategory[]>('categories', [], {
     ...sharedStateOptions,
@@ -520,10 +515,10 @@ function AppContent() {
       evaluateAllEventsExpiration();
       setDismissedExpiredBanner(false);
     };
-    window.addEventListener('uventex-check-expired-events', handleCustomCheck);
+    window.addEventListener('tatami-check-expired-events', handleCustomCheck);
     const intervalId = window.setInterval(evaluateAllEventsExpiration, 30000);
     return () => {
-      window.removeEventListener('uventex-check-expired-events', handleCustomCheck);
+      window.removeEventListener('tatami-check-expired-events', handleCustomCheck);
       window.clearInterval(intervalId);
     };
   }, [evaluateAllEventsExpiration]);
@@ -563,26 +558,23 @@ function AppContent() {
   const getPageTitle = (tab: string) => {
     switch (tab) {
       case 'tournaments': return language === 'ru' ? 'События' : 'Events';
-      case 'event_info': return `${selectedUventexEvent.title} — Информация`;
-      case 'event_categories_prices': return `${selectedUventexEvent.title} — Категории и цены`;
-      case 'event_brackets': return `${selectedUventexEvent.title} — Сетки`;
-      case 'event_medals': return `${selectedUventexEvent.title} — Медали`;
-      case 'event_live_scoring': return `${selectedUventexEvent.title} — Live Scoring`;
-      case 'event_results': return `${selectedUventexEvent.title} — Результаты`;
+      case 'event_info': return `${selectedEvent.title} — Информация`;
+      case 'event_categories_prices': return `${selectedEvent.title} — Категории и цены`;
+      case 'event_brackets': return `${selectedEvent.title} — Сетки`;
+      case 'event_medals': return `${selectedEvent.title} — Медали`;
+      case 'event_live_scoring': return `${selectedEvent.title} — Live Scoring`;
+      case 'event_results': return `${selectedEvent.title} — Результаты`;
       case 'tournament_details': return language === 'ru' ? 'Детали соревнования' : 'Tournament Details';
-      case 'studios':
-      case 'accounting': return language === 'ru' ? 'Студии и Клубы' : 'Studios & Clubs';
-      case 'virtual_studios': return language === 'ru' ? 'Virtual Studios — Прямой эфир' : 'Virtual Studios — Live Stream';
+      case 'studios': return language === 'ru' ? 'Клубы' : 'Clubs';
+      case 'virtual_studios': return language === 'ru' ? 'Сейчас на татами' : 'Live now';
       case 'about': return language === 'ru' ? 'О платформе Tatami.kg' : language === 'ky' ? 'Tatami.kg жөнүндө' : 'About Tatami.kg';
       case 'help': return language === 'ru' ? 'Помощь и FAQ' : language === 'ky' ? 'Жардам жана FAQ' : 'Help & FAQ';
-      case 'coach': return language === 'ru' ? 'Личный кабинет тренера' : 'Coach Team Portal';
-      case 'rankings':
-      case 'analytics': return language === 'ru' ? 'Рейтинги и медальный зачёт' : 'Rankings & Medal Count';
-      case 'acquiring': return language === 'ru' ? 'Эквайринг и Оплата взносов' : 'Acquiring & Entry Fees';
+      case 'coach': return language === 'ru' ? 'Мои заявки и оплата' : 'My entries & fees';
+      case 'rankings': return language === 'ru' ? 'Рейтинги' : 'Rankings';
+      case 'acquiring': return language === 'ru' ? 'Взносы' : 'Entry fees';
       case 'scoreboard': return language === 'ru' ? 'Онлайн-табло татами' : 'Live Tatami Scoreboard';
       case 'referee_vr': return language === 'ru' ? 'Судейство: Электронные флаги и видеоповтор (VR)' : 'Referee Console: Flags & Video Review (VR)';
       case 'doctor': return language === 'ru' ? 'Медицинский контроль (Doctor 80s Time)' : 'Medical Commission (Doctor 80s Time)';
-      case 'video_analytics': return language === 'ru' ? 'Модуль видеоаналитики и отчетов Федерации' : 'Video Analytics & Federation Reports';
       case 'protocols': return language === 'ru' ? 'Судейские протоколы ГСК' : 'Certified Scorecards';
       case 'exports': return language === 'ru' ? 'Документы и печать' : 'Documents & Printing';
       case 'bracket': return language === 'ru' ? 'Турнирные сетки плей-офф' : 'Playoff Brackets';
@@ -590,10 +582,6 @@ function AppContent() {
       case 'lan': return language === 'ru' ? 'Локальная сеть (LAN Hub)' : 'Local Venue LAN Hub';
       case 'participants': return language === 'ru' ? 'База участников' : 'Athlete Database';
       case 'admin': return language === 'ru' ? 'Панель администратора' : 'Admin Panel';
-      case 'schema': return language === 'ru' ? 'Схема базы данных PostgreSQL' : 'PostgreSQL Database Schema';
-      case 'sql': return language === 'ru' ? 'DDL скрипт PostgreSQL' : 'PostgreSQL DDL Script';
-      case 'categories': return language === 'ru' ? 'Категории турнира' : 'Tournament Categories';
-      case 'engine': return language === 'ru' ? 'Генератор дивизионов' : 'Division Generator';
       case 'registration': return language === 'ru' ? 'Электронная регистрация' : 'Online Registration';
       default: return 'Tatami.kg';
     }
@@ -612,12 +600,12 @@ function AppContent() {
         rankings: '#rankings',
         about: '#about',
         help: '#help',
-        event_info: `#info;id=${eventId || selectedUventexEvent.id}`,
-        event_categories_prices: `#categories;id=${eventId || selectedUventexEvent.id}`,
-        event_brackets: `#brackets;id=${eventId || selectedUventexEvent.id}`,
-        event_results: `#results;id=${eventId || selectedUventexEvent.id}`,
-        event_medals: `#medals;id=${eventId || selectedUventexEvent.id}`,
-        event_live_scoring: `#live_scoring;id=${eventId || selectedUventexEvent.id}`,
+        event_info: `#info;id=${eventId || selectedEvent.id}`,
+        event_categories_prices: `#categories;id=${eventId || selectedEvent.id}`,
+        event_brackets: `#brackets;id=${eventId || selectedEvent.id}`,
+        event_results: `#results;id=${eventId || selectedEvent.id}`,
+        event_medals: `#medals;id=${eventId || selectedEvent.id}`,
+        event_live_scoring: `#live_scoring;id=${eventId || selectedEvent.id}`,
       };
       const targetHash = hashMap[tab] || `#${tab}`;
       if (window.location.hash !== targetHash) {
@@ -628,8 +616,8 @@ function AppContent() {
     }
   };
 
-  const handleSelectTournamentAction = (item: UventexEventItem, action: EventActionType) => {
-    setSelectedUventexEvent(item);
+  const handleSelectTournamentAction = (item: EventItem, action: EventActionType) => {
+    setSelectedEvent(item);
     setSelectedTournament(item);
     if (item.rulesType) setTournamentRules(item.rulesType);
 
@@ -652,7 +640,7 @@ function AppContent() {
   const [registrationConfig, setRegistrationConfig] = useState<TournamentRegistrationConfig>({
     isRegistrationOpen: true,
     registrationDeadline: '2026-11-04T18:00',
-    shareableToken: 'uventex-cup-2026-open',
+    shareableToken: 'bishkek-cup-2026-open',
     allowPublicSelfRegistration: true,
     venueWifiSsid: 'Karate-Arena-5G',
     venueLocalServerIp: '192.168.1.100',
@@ -722,7 +710,7 @@ function AppContent() {
     }
   }, []);
 
-  // Deep-link & Uventex GWTClient hash support (#home, #studios, #info;id=..., ?locale=ru)
+  // Deep-link hash support (#home, #studios, #info;id=..., ?locale=ru)
   React.useEffect(() => {
     const syncFromLocation = () => {
       try {
@@ -747,7 +735,7 @@ function AppContent() {
           if (idParam) {
             const matchedEvent = tournaments.find((e) => e.id === idParam);
             if (matchedEvent) {
-              setSelectedUventexEvent(matchedEvent);
+              setSelectedEvent(matchedEvent);
               setSelectedTournament(matchedEvent);
             }
           }
@@ -824,11 +812,8 @@ function AppContent() {
   // 1-Click Database Reset Handler (Preserving Database Schema)
   const handleResetTournamentData = (options: ResetOptions) => {
     if (options.restoreDefaultDemo) {
-      setBouts(JSON.parse(JSON.stringify(SAMPLE_BOUTS)));
-      setProtocols(JSON.parse(JSON.stringify(SAMPLE_REFEREE_PROTOCOLS)));
-      setParticipants(JSON.parse(JSON.stringify(SAMPLE_PARTICIPANTS)));
-      setSelectedConsoleBoutId(SAMPLE_BOUTS[0].id);
-      setGlobalSystemToast('Успешно: Эталонные демонстрационные данные турнира полностью восстановлены!');
+      // Demo data must never overwrite real entries and results.
+      setGlobalSystemToast('Восстановление демо-данных отключено. Для полной очистки используйте «Подготовку к запуску».');
       setTimeout(() => setGlobalSystemToast(null), 5000);
       return;
     }
@@ -957,17 +942,11 @@ function AppContent() {
     });
   };
 
+  // Full backup of the server data (admin only): tournaments, entries, bouts, categories, accounts without passwords.
   const handleExportSql = () => {
-    const blob = new Blob([POSTGRESQL_DDL_SCRIPT], { type: 'text/sql' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'karate_tournament_schema.sql';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    window.location.href = '/api/admin/backup';
   };
+
 
   // Smart WKF Draw Execution across categories with club/city/country separation
   const handleExecuteSmartWkfDraw = () => {
@@ -1058,7 +1037,7 @@ function AppContent() {
     reader.readAsText(file);
   };
 
-  // Standalone Fullscreen Online Registration Page (Zero distraction, Uventex Style)
+  // Standalone Fullscreen Online Registration Page
   // ---------------------------------------------------------------------------
   // Standalone screens opened from links / QR codes (no menu, no sign-in):
   //   ?screen=tatami&t=1           spectator scoreboard for tatami 1 (TV / projector)
@@ -1086,7 +1065,7 @@ function AppContent() {
 
   return (
     <div className="flex h-[100dvh] w-full overflow-hidden bg-[#f0f2f5] text-slate-800 font-sans selection:bg-blue-600 selection:text-white">
-      {/* Fixed Left Sidebar (like Uventex) */}
+      {/* Fixed Left Sidebar */}
       <Sidebar
         activeTab={activeTab}
         onTabChange={(tab) => navigateWithHash(tab)}
@@ -1106,7 +1085,7 @@ function AppContent() {
 
       {/* Main Stretched Content Canvas */}
       <div className="flex-1 flex flex-col h-full min-w-0 overflow-y-auto bg-[#f0f2f5]">
-        {/* Top Context Bar: Uventex Top Navigation Header (Responsive for Mobile, Tablet & Desktop) */}
+        {/* Top Context Bar: top navigation header (Responsive for Mobile, Tablet & Desktop) */}
         <header className="sticky top-0 z-30 bg-[#f0f2f5] px-3 sm:px-6 h-14 sm:h-15 flex items-center justify-between gap-2 shrink-0 border-b border-slate-200/50">
           {/* Left: Brand Logo & Social Icons */}
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -1120,7 +1099,7 @@ function AppContent() {
               <Menu className="w-5 h-5" />
             </button>
 
-            {/* Uventex Brand Logo on Top Bar */}
+            {/* brand logo on Top Bar */}
             <button
               onClick={() => setActiveTab('tournaments')}
               className="lg:hidden flex items-center gap-1.5 sm:gap-2 text-left group cursor-pointer focus:outline-none min-w-0"
@@ -1552,7 +1531,7 @@ function AppContent() {
                   onClick={() => {
                     navigateWithHash('admin');
                     setTimeout(() => {
-                      window.dispatchEvent(new CustomEvent('uventex-open-archive-tab'));
+                      window.dispatchEvent(new CustomEvent('tatami-open-archive-tab'));
                     }, 50);
                   }}
                   className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-700 dark:text-amber-200 font-medium flex items-center gap-1 transition-colors cursor-pointer"
@@ -1618,9 +1597,9 @@ function AppContent() {
               onRoleChange={requestRoleChange}
               onSelectTournament={(t) => {
                 setSelectedTournament(t);
-                const matched = UVENTEX_SCREENSHOT_EVENTS.find((e) => e.id === t.id);
-                if (matched) setSelectedUventexEvent(matched);
-                else setSelectedUventexEvent(t as UventexEventItem);
+                const matched = DEMO_EVENTS.find((e) => e.id === t.id);
+                if (matched) setSelectedEvent(matched);
+                else setSelectedEvent(t as EventItem);
                 if (t.rulesType) setTournamentRules(t.rulesType);
                 setActiveTab('event_info');
               }}
@@ -1641,90 +1620,90 @@ function AppContent() {
           {/* 1.1 Информация о событии (Matching video at 00:27-00:30) */}
           {activeTab === 'event_info' && (
             <TournamentInfoDetailView
-              tournament={selectedUventexEvent}
+              tournament={selectedEvent}
               onBack={() => setActiveTab('tournaments')}
-              onNavigateAction={(action) => handleSelectTournamentAction(selectedUventexEvent, action as EventActionType)}
+              onNavigateAction={(action) => handleSelectTournamentAction(selectedEvent, action as EventActionType)}
               onStartRegistration={() => {
-                setSelectedTournament(selectedUventexEvent);
+                setSelectedTournament(selectedEvent);
                 setActiveTab('registration');
               }}
             />
           )}
 
           {/* 1.2 Категории и цены (Matching video at 00:32-00:36) */}
-          {activeTab === 'event_categories_prices' && eventCategories.some((c) => c.tournamentId === selectedUventexEvent.id) && (
+          {activeTab === 'event_categories_prices' && eventCategories.some((c) => c.tournamentId === selectedEvent.id) && (
             <PublicCategoriesView
-              event={selectedUventexEvent}
+              event={selectedEvent}
               bouts={bouts}
               participants={participants}
               categories={SAMPLE_TOURNAMENT_CATEGORIES}
               eventCategories={eventCategories}
               language={language}
               onBack={() => navigateWithHash('tournaments')}
-              onNavigateAction={(action) => handleSelectTournamentAction(selectedUventexEvent, action)}
+              onNavigateAction={(action) => handleSelectTournamentAction(selectedEvent, action)}
               onEnter={() => {
-                setSelectedTournament(selectedUventexEvent);
+                setSelectedTournament(selectedEvent);
                 navigateWithHash('registration');
               }}
             />
           )}
-          {activeTab === 'event_categories_prices' && !eventCategories.some((c) => c.tournamentId === selectedUventexEvent.id) && (
+          {activeTab === 'event_categories_prices' && !eventCategories.some((c) => c.tournamentId === selectedEvent.id) && (
             <TournamentDivisionsPricingView
-              tournament={selectedUventexEvent}
+              tournament={selectedEvent}
               onBack={() => setActiveTab('tournaments')}
-              onNavigateAction={(action) => handleSelectTournamentAction(selectedUventexEvent, action as EventActionType)}
+              onNavigateAction={(action) => handleSelectTournamentAction(selectedEvent, action as EventActionType)}
             />
           )}
 
           {/* 1.3 Сетки по площадкам и времени (Matching video at 01:40-01:54) */}
           {activeTab === 'event_brackets' && (
             <PublicBracketsView
-              event={selectedUventexEvent}
+              event={selectedEvent}
               bouts={bouts}
               participants={participants}
               categories={SAMPLE_TOURNAMENT_CATEGORIES}
               language={language}
               onBack={() => navigateWithHash('tournaments')}
-              onNavigateAction={(action) => handleSelectTournamentAction(selectedUventexEvent, action)}
+              onNavigateAction={(action) => handleSelectTournamentAction(selectedEvent, action)}
             />
           )}
 
           {/* 1.4 Медали (Matching video at 01:27) */}
           {activeTab === 'event_medals' && (
             <PublicResultsView mode="medals"
-              event={selectedUventexEvent}
+              event={selectedEvent}
               bouts={bouts}
               participants={participants}
               categories={SAMPLE_TOURNAMENT_CATEGORIES}
               language={language}
               onBack={() => navigateWithHash('tournaments')}
-              onNavigateAction={(action) => handleSelectTournamentAction(selectedUventexEvent, action)}
+              onNavigateAction={(action) => handleSelectTournamentAction(selectedEvent, action)}
             />
           )}
 
           {/* 1.5 Результаты поединков и пьедестал */}
           {activeTab === 'event_results' && (
             <PublicResultsView mode="results"
-              event={selectedUventexEvent}
+              event={selectedEvent}
               bouts={bouts}
               participants={participants}
               categories={SAMPLE_TOURNAMENT_CATEGORIES}
               language={language}
               onBack={() => navigateWithHash('tournaments')}
-              onNavigateAction={(action) => handleSelectTournamentAction(selectedUventexEvent, action)}
+              onNavigateAction={(action) => handleSelectTournamentAction(selectedEvent, action)}
             />
           )}
 
           {/* 1.6 Live Scoring Настройки & 4-Татами Монитор (Matching video at 00:48 & 01:13) */}
           {activeTab === 'event_live_scoring' && (
             <PublicLiveView
-              event={selectedUventexEvent}
+              event={selectedEvent}
               bouts={bouts}
               participants={participants}
               categories={SAMPLE_TOURNAMENT_CATEGORIES}
               language={language}
               onBack={() => navigateWithHash('tournaments')}
-              onNavigateAction={(action) => handleSelectTournamentAction(selectedUventexEvent, action)}
+              onNavigateAction={(action) => handleSelectTournamentAction(selectedEvent, action)}
             />
           )}
 
@@ -1746,108 +1725,27 @@ function AppContent() {
           )}
 
           {/* 3. Студии и Клубы (#studios) */}
-          {activeTab === 'studios' && (
-            <StudiosView
-              language={language}
-              currentUserRole={currentUserRole}
-              onNavigateTab={(tab) => navigateWithHash(tab)}
-              clubs={SAMPLE_CLUBS}
-              participants={participants}
-              bouts={bouts}
-              categories={SAMPLE_TOURNAMENT_CATEGORIES}
-              tournamentRules={tournamentRules}
-              onSelectConsoleBout={(bId) => setSelectedConsoleBoutId(bId)}
-            />
-          )}
+          {activeTab === 'studios' && <ClubsPanel tournaments={tournaments} bouts={bouts} participants={participants} />}
 
-          {activeTab === 'accounting' && (
-            <TournamentClubAccountingModule
-              clubs={SAMPLE_CLUBS}
-              participants={participants}
-              bouts={bouts}
-              categories={SAMPLE_TOURNAMENT_CATEGORIES}
-              tournamentRules={tournamentRules}
-              onNavigateToScoreboard={(bId) => {
-                setSelectedConsoleBoutId(bId);
-                navigateWithHash('scoreboard');
-              }}
-              onNavigateToBracket={() => navigateWithHash('bracket')}
-            />
-          )}
 
           {/* 3.1 Личный кабинет тренера (Командная заявка) */}
-          {activeTab === 'coach' && (
-            <CoachPortalModule
-              clubs={SAMPLE_CLUBS}
+          {(activeTab === 'coach' || (activeTab === 'acquiring' && effectiveRole !== 'admin')) && currentUser && (
+            <MyEntriesPanel
+              user={currentUser}
               tournaments={tournaments}
-              selectedTournament={selectedTournament}
-              onSelectTournament={(t) => {
-                setSelectedTournament(t);
-                if (t.rulesType) setTournamentRules(t.rulesType);
-              }}
-              tournamentCategories={SAMPLE_TOURNAMENT_CATEGORIES}
-              ageCategories={SAMPLE_AGE_CATEGORIES}
-              weightCategories={SAMPLE_WEIGHT_CATEGORIES}
-              existingParticipants={participants}
-              onBatchRegisterAthletes={handleBatchRegisterAthletes}
-              onNavigateToBracket={() => navigateWithHash('bracket')}
-              onNavigateToScoreboard={() => navigateWithHash('scoreboard')}
+              categories={eventCategories}
+              participants={participants}
+              bouts={bouts}
+              currency="сом"
+              onWithdraw={handleWithdrawEntry}
+              onNewEntry={() => navigateWithHash('registration')}
             />
           )}
 
           {/* 4. Рейтинги и Аналитика (#rankings) */}
-          {activeTab === 'rankings' && (
-            <div className="space-y-8">
-              <RankingsView language={language} />
-              <TournamentAnalyticsModule
-                clubs={SAMPLE_CLUBS}
-                participants={participants}
-                bouts={bouts}
-                tatamis={SAMPLE_TATAMIS}
-                tournamentCategories={SAMPLE_TOURNAMENT_CATEGORIES}
-                onNavigateToTatami={() => navigateWithHash('schedule')}
-                onNavigateToScoreboard={(boutId) => {
-                  setSelectedConsoleBoutId(boutId);
-                  navigateWithHash('scoreboard');
-                }}
-              />
-            </div>
-          )}
+          {activeTab === 'rankings' && <RankingsPanel tournaments={tournaments} bouts={bouts} participants={participants} />}
 
-          {activeTab === 'analytics' && (
-            <TournamentAnalyticsModule
-              clubs={SAMPLE_CLUBS}
-              participants={participants}
-              bouts={bouts}
-              tatamis={SAMPLE_TATAMIS}
-              tournamentCategories={SAMPLE_TOURNAMENT_CATEGORIES}
-              onNavigateToTatami={() => navigateWithHash('schedule')}
-              onNavigateToScoreboard={(boutId) => {
-                setSelectedConsoleBoutId(boutId);
-                navigateWithHash('scoreboard');
-              }}
-            />
-          )}
 
-          {activeTab === 'engine' && (
-            <TournamentEngineModule
-              clubs={SAMPLE_CLUBS}
-              ageCategories={SAMPLE_AGE_CATEGORIES}
-              weightCategories={SAMPLE_WEIGHT_CATEGORIES}
-              tournamentCategories={SAMPLE_TOURNAMENT_CATEGORIES}
-              tatamis={SAMPLE_TATAMIS}
-              participants={participants}
-              bouts={bouts}
-              onUpdateParticipant={handleUpdateParticipant}
-              onBatchUpdateParticipants={handleBatchUpdateParticipants}
-              onGenerateBracketsForCategories={handleGenerateBracketsForCategories}
-              onNavigateToScoreboard={(bId) => {
-                setSelectedConsoleBoutId(bId);
-                setActiveTab('scoreboard');
-              }}
-              onNavigateToBracketView={() => setActiveTab('bracket')}
-            />
-          )}
 
           {activeTab === 'scoreboard' && (
             <TournamentBracketScoreboardModule
@@ -1905,16 +1803,6 @@ function AppContent() {
             />
           )}
 
-          {/* 5.2 Модуль видеоаналитики и отчетов Федерации */}
-          {activeTab === 'video_analytics' && (
-            <VideoAnalyticsModule
-              bouts={bouts}
-              participants={participants}
-              selectedTournament={selectedTournament}
-              onNavigateToScoreboard={() => setActiveTab('scoreboard')}
-              onNavigateToProtocols={() => setActiveTab('protocols')}
-            />
-          )}
 
           {activeTab === 'protocols' && (
             <RefereeProtocolModule
@@ -1932,32 +1820,25 @@ function AppContent() {
             />
           )}
 
-          {/* 5.3 Эквайринг и Оплата взносов */}
-          {activeTab === 'acquiring' && (
-            <AcquiringPaymentsModule
-              tournament={selectedTournament}
+          {activeTab === 'acquiring' && effectiveRole === 'admin' && (
+            <FeesPanel
+              tournaments={tournaments}
+              initialTournamentId={selectedTournament?.id}
+              categories={eventCategories}
               participants={participants}
-              clubs={SAMPLE_CLUBS}
-              currentUserRole={currentUserRole}
-              onUpdateParticipantFee={handleUpdateParticipantFee}
-              onNotifySystem={(title, message, cat) => {
-                handleDispatchNotification({
-                  title,
-                  message,
-                  category: cat,
-                  severity: 'info'
-                });
-              }}
+              currency="сом"
+              onSetFee={handleUpdateParticipantFee}
             />
           )}
 
           {/* 5.4 Официальный экспорт протоколов и результатов */}
           {activeTab === 'exports' && (
-            <DocumentsPanel tournaments={tournaments} initialTournamentId={selectedUventexEvent.id} categories={eventCategories} bouts={bouts} />
+            <DocumentsPanel tournaments={tournaments} initialTournamentId={selectedEvent.id} categories={eventCategories} bouts={bouts} />
           )}
 
           {activeTab === 'admin' && effectiveRole === 'admin' && <UsersRolesPanel currentUserId={currentUser?.id} />}
           {activeTab === 'admin' && effectiveRole === 'admin' && <InviteLinksPanel />}
+          {activeTab === 'admin' && effectiveRole === 'admin' && <LaunchPanel />}
           {activeTab === 'admin' && effectiveRole !== 'admin' && currentUser && (
             <MyAccountPanel
               user={currentUser}
@@ -2084,9 +1965,9 @@ function AppContent() {
             />
           )}
 
-          {/* Uventex Portal Views */}
+
           {activeTab === 'virtual_studios' && (
-            <VirtualStudiosView language={language} onNavigateTab={(tab) => setActiveTab(tab)} />
+            <LiveNowPanel tournaments={tournaments} bouts={bouts} participants={participants} onOpen={(ev) => handleSelectTournamentAction(ev as EventItem, 'live_scoring')} />
           )}
 
           {activeTab === 'about' && (
@@ -2098,9 +1979,6 @@ function AppContent() {
             <HelpFaqView language={language} />
           )}
 
-          {activeTab === 'categories' && <CategoriesManager />}
-          {activeTab === 'schema' && <SchemaVisualizer />}
-          {activeTab === 'sql' && <SqlViewer />}
           </>)}
           </React.Suspense>
         </main>
@@ -2125,15 +2003,6 @@ function AppContent() {
                   'Professional tournament management platform for Martial Arts & Combat Sports.'
                 )}
               </p>
-              <div className="flex items-center gap-2 pt-1">
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-[10px] font-mono text-emerald-400">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                  SSL 256-bit Secure
-                </span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-[10px] font-mono text-blue-400">
-                  {tr('Стандарт 2026', 'Стандарт 2026', 'Standard 2026')}
-                </span>
-              </div>
             </div>
 
             {/* Col 2: Navigation */}
@@ -2149,12 +2018,12 @@ function AppContent() {
                 </li>
                 <li>
                   <button onClick={() => setActiveTab('studios')} className="hover:text-blue-400 transition-colors cursor-pointer">
-                    {tr('• Клубы (Studios)', '• Клубдар (Studios)', '• Clubs & Studios')}
+                    {tr('• Клубы', '• Клубдар', '• Clubs')}
                   </button>
                 </li>
                 <li>
                   <button onClick={() => setActiveTab('virtual_studios')} className="hover:text-blue-400 transition-colors cursor-pointer">
-                    {tr('• Virtual Studios (LIVE)', '• Virtual Studios (Түз эфир)', '• Virtual Studios (LIVE)')}
+                    {tr('• Сейчас на татами (LIVE)', '• Азыр татамиде (LIVE)', '• Live now')}
                   </button>
                 </li>
                 <li>
@@ -2205,15 +2074,6 @@ function AppContent() {
                     {tr('• Международный регламент соревнований', '• Мелдештин эл аралык регламенти', '• Competition Rulebook')}
                   </button>
                 </li>
-                <li>
-                  <button 
-                    onClick={handleExportSql}
-                    className="hover:text-rose-400 text-slate-400 transition-colors cursor-pointer flex items-center gap-1"
-                  >
-                    <span>• DDL PostgreSQL:</span>
-                    <span className="text-rose-400 font-bold">schema.sql</span>
-                  </button>
-                </li>
               </ul>
             </div>
 
@@ -2242,13 +2102,10 @@ function AppContent() {
                   <span className="font-bold text-white">{tr('Чат-бот Sensei AI', 'Sensei AI чат-боту', 'Sensei AI Assistant')}</span>
                 </span>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-600 text-white">
-                  Gemini 3.8
+                  AI
                 </span>
               </button>
 
-              <div className="text-[11px] text-slate-500">
-                Email: <a href="mailto:support@tatami.kg" className="text-slate-400 hover:text-white underline">support@tatami.kg</a>
-              </div>
             </div>
           </div>
 
@@ -2256,15 +2113,13 @@ function AppContent() {
           <div className="max-w-7xl mx-auto pt-6 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between gap-3 text-slate-500 font-mono text-[11px]">
             <span>
               {tr(
-                '© 2026 Tatami.kg. Все права защищены. Международные стандарты протоколов.',
-                '© 2026 Tatami.kg. Бардык укуктар корголгон. Протоколдордун эл аралык стандарттары.',
-                '© 2026 Tatami.kg. All rights reserved. International protocol standards.'
+                '© 2026 Tatami.kg. Все права защищены.',
+                '© 2026 Tatami.kg. Бардык укуктар корголгон.',
+                '© 2026 Tatami.kg. All rights reserved.'
               )}
             </span>
             <div className="flex items-center gap-4">
-              <span>152-ФЗ / GDPR Compliant</span>
-              <span>•</span>
-              <span>{tr('Татами 1–4 LAN Hub', 'Татами 1–4 LAN Hub', 'Tatami 1–4 LAN Hub')}</span>
+              <span>{tr('Сделано для каратэ Кыргызстана', 'Кыргызстандын каратэси үчүн жасалган', 'Made for karate in Kyrgyzstan')}</span>
             </div>
           </div>
         </footer>
@@ -2324,7 +2179,7 @@ function AppContent() {
         onToggleSound={() => setIsSoundAlertsEnabled(!isSoundAlertsEnabled)}
       />
 
-      {/* Uventex Athlete & Officials Auth Modal */}
+      {/* Sign-in modal */}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}

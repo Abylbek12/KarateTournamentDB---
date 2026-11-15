@@ -11,13 +11,13 @@ import {
   Ticket,
   ChevronRight
 } from 'lucide-react';
-import { UventexEventItem } from '../data/uventexEventsData';
-import { UventexEventEmblem } from './UventexEventEmblems';
+import { EventItem } from '../data/eventsData';
+import { EventEmblem } from './EventEmblems';
 import { useApp } from '../context/AppContext';
-import { localizeUventexEventItem, trLang } from '../utils/globalDomTranslator';
+import { localizeEventItem, trLang } from '../utils/globalDomTranslator';
 
 interface TournamentInfoDetailViewProps {
-  tournament: UventexEventItem;
+  tournament: EventItem;
   onBack: () => void;
   onNavigateAction: (action: string) => void;
   onStartRegistration: () => void;
@@ -31,7 +31,7 @@ export const TournamentInfoDetailView: React.FC<TournamentInfoDetailViewProps> =
 }) => {
   const { language } = useApp();
   const tr = (ru: string, ky: string, en: string) => trLang(language, ru, ky, en);
-  const tournament = localizeUventexEventItem(rawTournament, language);
+  const tournament = localizeEventItem(rawTournament, language);
 
   // Live countdown timer calculation
   const [timeLeft, setTimeLeft] = useState({
@@ -56,7 +56,7 @@ export const TournamentInfoDetailView: React.FC<TournamentInfoDetailViewProps> =
 
   return (
     <div className="space-y-4 animate-fadeIn font-sans pb-16 max-w-7xl mx-auto">
-      {/* Top Breadcrumbs with back button matching Uventex */}
+      {/* Top Breadcrumbs with back button */}
       <div className="flex items-center justify-between bg-white px-4 py-2.5 rounded-xl border border-slate-200/90 shadow-2xs">
         <div className="flex items-center gap-2 text-xs text-slate-500">
           <button
@@ -98,7 +98,7 @@ export const TournamentInfoDetailView: React.FC<TournamentInfoDetailViewProps> =
         <div className="p-6 md:p-8 flex flex-col md:flex-row gap-6 md:gap-8 items-start">
           {/* Left Emblem */}
           <div className="shrink-0 flex items-center justify-center p-4 bg-slate-50 rounded-2xl border border-slate-100 shadow-2xs w-32 h-32 md:w-40 md:h-40 mx-auto md:mx-0">
-            <UventexEventEmblem type={tournament.emblemType} imageUrl={tournament.imageUrl} title={tournament.title} color={tournament.accentColor} className="w-24 h-24 md:w-32 md:h-32 text-[18px] md:text-[22px]" />
+            <EventEmblem type={tournament.emblemType} imageUrl={tournament.imageUrl} title={tournament.title} color={tournament.accentColor} className="w-24 h-24 md:w-32 md:h-32 text-[18px] md:text-[22px]" />
           </div>
 
           {/* Middle Information */}
@@ -161,7 +161,7 @@ export const TournamentInfoDetailView: React.FC<TournamentInfoDetailViewProps> =
             </div>
           </div>
 
-          {/* Right: Countdown Timer Block matching Uventex video */}
+          {/* Right: Countdown Timer Block */}
           <div className="w-full md:w-64 bg-gradient-to-b from-slate-50 to-slate-100 rounded-2xl border border-slate-200/90 p-4 shrink-0 text-center space-y-3">
             <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
               {tr('До старта турнира', 'Мелдештин башталышына чейин', 'Countdown to Event')}

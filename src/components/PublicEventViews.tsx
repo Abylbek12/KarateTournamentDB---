@@ -3,7 +3,7 @@ import { ArrowLeft, Trophy, Radio, Medal, Printer } from 'lucide-react';
 import { printUrl } from './PrintDocuments';
 import type { Bout, Participant, TournamentCategory, EventCategory } from '../types/schema';
 import { categoryName, activeEntries, DISCIPLINE_LABELS } from '../utils/eventCategories';
-import type { UventexEventItem, EventActionType } from '../data/uventexEventsData';
+import type { EventItem, EventActionType } from '../data/eventsData';
 import { belongsToEvent } from '../data/sampleTournamentData';
 import { ELIMINATION_ORDER, computeStandings, repechageHalf, repechageStep, stageLabel } from '../utils/bracketProgression';
 import * as E from '../utils/boutEngine';
@@ -14,7 +14,7 @@ import { currentBoutOf, upcomingOf } from './TatamiScreens';
 type Lang = 'ru' | 'ky' | 'en';
 
 interface BaseProps {
-  event: UventexEventItem;
+  event: EventItem;
   bouts: Bout[];
   participants: Participant[];
   categories: TournamentCategory[];
@@ -42,7 +42,7 @@ const Flag: React.FC<{ p?: Participant }> = ({ p }) =>
   ) : null;
 
 /** Categories of this event that have at least one bout, with a readable name. */
-function useEventCategories(event: UventexEventItem, bouts: Bout[], categories: TournamentCategory[]) {
+function useEventCategories(event: EventItem, bouts: Bout[], categories: TournamentCategory[]) {
   return React.useMemo(() => {
     const eventBouts = bouts.filter((b) => belongsToEvent(b.tournamentId, event.id));
     const ids = Array.from(new Set(eventBouts.map((b) => b.categoryId)));
@@ -61,7 +61,7 @@ function useEventCategories(event: UventexEventItem, bouts: Bout[], categories: 
 }
 
 const EventHeader: React.FC<{
-  event: UventexEventItem;
+  event: EventItem;
   language: Lang;
   active: EventActionType;
   onBack: () => void;

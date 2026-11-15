@@ -68,6 +68,8 @@ interface DbShape {
   accounts: StoredUserAccount[];
   sessions: Record<string, SessionRecord>;
   images: Record<string, ImageMeta>;
+  /** Set by «Подготовка к запуску»: demo data is never seeded again. */
+  launchedAt?: string;
 }
 
 export const DATA_DIR = path.resolve(process.env.DATA_DIR || 'data');
@@ -86,7 +88,8 @@ function loadDb(): DbShape {
       deviceKeys: raw.deviceKeys && typeof raw.deviceKeys === 'object' ? raw.deviceKeys : {},
       accounts: Array.isArray(raw.accounts) ? raw.accounts : [],
       sessions: raw.sessions && typeof raw.sessions === 'object' ? raw.sessions : {},
-      images: raw.images && typeof raw.images === 'object' ? raw.images : {}
+      images: raw.images && typeof raw.images === 'object' ? raw.images : {},
+      launchedAt: typeof raw.launchedAt === 'string' ? raw.launchedAt : undefined
     };
   } catch {
     return { events: null, state: {}, invites: {}, deviceKeys: {}, accounts: [], sessions: {}, images: {} };
@@ -113,6 +116,24 @@ export function saveDb() {
       console.error('[store] Failed to save database:', err);
     }
   }, 200);
+}
+
+/** Writes a full copy of the database to DATA_DIR/backups and returns its path. */
+export function writeBackup(label = 'backup'): string {
+  const dir = path.join(DATA_DIR, 'backups');
+  fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, `${label}-${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
+  fs.writeFileSync(file, JSON.stringify(db, null, 2));
+  return file;
+}
+
+/** Saves immediately (used before risky operations). */
+export function saveDbNow() {
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+  }
+  writeNow();
 }
 
 process.on('exit', () => {
