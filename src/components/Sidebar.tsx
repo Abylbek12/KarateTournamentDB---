@@ -232,7 +232,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   {tr('Навигация', 'Чабыттоо', 'Navigation')}
                 </div>
                 <div className="text-[11px] lg:text-[10px] text-slate-400 truncate max-w-[160px] lg:max-w-[135px]" title={selectedTournament?.title}>
-                  {selectedTournament?.title || 'Uventex Sport OS'}
+                  {selectedTournament?.title || 'Tatami.kg'}
                 </div>
               </div>
             </div>

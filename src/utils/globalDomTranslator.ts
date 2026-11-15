@@ -425,7 +425,7 @@ const EXACT_DICTIONARY: Record<string, [string, string]> = {
   'Рейтинги': ['Рейтингдер', 'Rankings'],
   'О нас': ['Биз жөнүндө', 'About Us'],
   'О платформе': ['Платформа жөнүндө', 'About Platform'],
-  'О платформе Uventex': ['Uventex платформасы жөнүндө', 'About Uventex Platform'],
+  'О платформе Tatami.kg': ['Tatami.kg платформасы жөнүндө', 'About Tatami.kg Platform'],
   'Помощь': ['Жардам', 'Help'],
   'Помощь и FAQ': ['Жардам жана FAQ', 'Help & FAQ'],
   'Справка и О нас': ['Маалымат жана Биз жөнүндө', 'Help & About Us'],
@@ -601,11 +601,11 @@ const EXACT_DICTIONARY: Record<string, [string, string]> = {
   'Расписание:': ['Ырааттама:', 'Schedule:'],
   'Стоимость абонемента:': ['Абонемент баасы:', 'Monthly Tuition:'],
   'Подать заявку на пробную тренировку': ['Сыноо машыгуусуна өтүнмө берүү', 'Apply for a Trial Class'],
-  'Официальный рейтинг Uventex': ['Uventex расмий рейтинги', 'Official Uventex Rankings'],
+  'Официальный рейтинг Tatami.kg': ['Tatami.kg расмий рейтинги', 'Official Tatami.kg Rankings'],
   'Рейтинги спортсменов и клубов': ['Спортчулардын жана клубдардын рейтинги', 'Athletes & Clubs Leaderboard'],
-  'Начисление рейтинговых очков по результатам официальных соревнований WKF и лиги Uventex': [
-    'WKF жана Uventex лигасынын расмий мелдештеринин жыйынтыгы боюнча рейтингдик упайларды эсептөө',
-    'Official ranking points accrued from certified WKF and Uventex League championships'
+  'Начисление рейтинговых очков по результатам официальных соревнований WKF и лиги Tatami.kg': [
+    'WKF жана Tatami.kg лигасынын расмий мелдештеринин жыйынтыгы боюнча рейтингдик упайларды эсептөө',
+    'Official ranking points accrued from certified WKF and Tatami.kg League championships'
   ],
   'Спортсмены': ['Спортчулар', 'Athletes'],
   'Клубы и Студии': ['Клубдар жана Студиялар', 'Clubs & Studios'],
@@ -652,7 +652,7 @@ const EXACT_DICTIONARY: Record<string, [string, string]> = {
   'Экспорт протоколов': ['Протоколдорду экспорттоо', 'Official Exports'],
   'Локальный LAN-сервер': ['Локалдык LAN-сервер', 'Venue LAN Hub'],
   'База данных SQL': ['SQL маалымат базасы', 'PostgreSQL Schema'],
-  'Учебные материалы Uventex': ['Uventex окуу материалдары', 'Uventex Training Guides'],
+  'Учебные материалы Tatami.kg': ['Tatami.kg окуу материалдары', 'Tatami.kg Training Guides'],
   '📘 База знаний и FAQ': ['📘 Билим базасы жана FAQ', '📘 Knowledge Base & FAQ'],
   '🥋 Кабинет тренера и заявка команды': ['🥋 Машыктыруучу кабинети жана командалык өтүнмө', '🥋 Coach Portal & Team Entry'],
   '🚩 Судейский пульт и VR-повторы': ['🚩 Калыстар пульту жана VR-кайталоо', '🚩 Referee Console & VR Replay'],
@@ -668,9 +668,9 @@ const EXACT_DICTIONARY: Record<string, [string, string]> = {
   'Поддержка и Помощник': ['Колдоо жана Жардамчы', 'Support & AI Assistant'],
   'Чат-бот Sensei AI': ['Sensei AI чат-боту', 'Sensei AI Assistant'],
   'Стандарт 2026': ['Стандарт 2026', 'Standard 2026'],
-  '© 2026 Uventex Sports Event System. Все права защищены. Международные стандарты протоколов.': [
-    '© 2026 Uventex Sports Event System. Бардык укуктар корголгон. Эл аралык протокол стандарттары.',
-    '© 2026 Uventex Sports Event System. All rights reserved. International protocol standards.'
+  '© 2026 Tatami.kg. Все права защищены. Международные стандарты протоколов.': [
+    '© 2026 Tatami.kg. Бардык укуктар корголгон. Эл аралык протокол стандарттары.',
+    '© 2026 Tatami.kg. All rights reserved. International protocol standards.'
   ]
 };
 

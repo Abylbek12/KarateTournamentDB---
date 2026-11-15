@@ -165,7 +165,7 @@ export const AcquiringPaymentsModule: React.FC<AcquiringPaymentsModuleProps> = (
         payerEmail: payerEmail || 'billing@karate-event.ru',
         payerPhone: payerPhone || '+7 (900) 000-00-00',
         categoryName: selectedFeeCategory === 'athlete_entry' ? 'Стартовый взнос участника WKF' : 'Командный сбор',
-        description: `Оплата взноса через ${selectedMethod.toUpperCase()} в системе эквайринга Uventex`
+        description: `Оплата взноса через ${selectedMethod.toUpperCase()} в системе эквайринга Tatami.kg`
       };
 
       setPayments(prev => [newTx, ...prev]);
@@ -593,7 +593,7 @@ export const AcquiringPaymentsModule: React.FC<AcquiringPaymentsModuleProps> = (
                     Касса соревнований · Оплата взноса
                   </h3>
                   <p className="text-xs text-slate-400 font-mono">
-                    Безопасный эквайринг Uventex WKF 2026
+                    Безопасный эквайринг Tatami.kg WKF 2026
                   </p>
                 </div>
               </div>
@@ -943,7 +943,7 @@ export const AcquiringPaymentsModule: React.FC<AcquiringPaymentsModuleProps> = (
             <div className="p-6 bg-slate-950/90 text-slate-300 font-mono text-xs space-y-3 border-y border-dashed border-slate-800">
               <div className="text-center space-y-0.5 border-b border-dashed border-slate-800 pb-3">
                 <div className="font-black text-white text-sm uppercase tracking-wider">
-                  ООО «СПОРТИВНЫЕ СИСТЕМЫ UVENTEX»
+                  Tatami.kg
                 </div>
                 <div className="text-[11px] text-slate-400">
                   ОФД: Первый ОФД · ККТ: 000491829104

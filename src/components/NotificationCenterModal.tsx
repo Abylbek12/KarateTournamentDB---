@@ -523,7 +523,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
             <span className="w-2 h-2 rounded-full bg-emerald-400" />
             <span>Канал прямой трансляции оповещений активен (LAN/Web)</span>
           </div>
-          <span className="text-slate-500">Uventex Push Engine</span>
+          <span className="text-slate-500">Tatami.kg Push Engine</span>
         </div>
       </div>
     </div>

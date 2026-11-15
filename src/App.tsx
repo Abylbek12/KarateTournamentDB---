@@ -81,6 +81,7 @@ import { useGlobalDomTranslator, trLang } from './utils/globalDomTranslator';
 import { useServerSyncedState } from './utils/useServerSyncedState';
 import { canAccess, ROLE_LABELS, type AccessRole } from './utils/access';
 import { AccessGate } from './components/AccessGate';
+import { TatamiMark, TatamiWordmark } from './components/BrandLogo';
 import { UsersRolesPanel } from './components/UsersRolesPanel';
 
 // Heavy screens are loaded on demand so the first page opens faster.
@@ -522,7 +523,7 @@ function AppContent() {
       case 'studios':
       case 'accounting': return language === 'ru' ? 'Студии и Клубы' : 'Studios & Clubs';
       case 'virtual_studios': return language === 'ru' ? 'Virtual Studios — Прямой эфир' : 'Virtual Studios — Live Stream';
-      case 'about': return language === 'ru' ? 'О платформе Uventex' : language === 'ky' ? 'Uventex жөнүндө' : 'About Uventex';
+      case 'about': return language === 'ru' ? 'О платформе Tatami.kg' : language === 'ky' ? 'Tatami.kg жөнүндө' : 'About Tatami.kg';
       case 'help': return language === 'ru' ? 'Помощь и FAQ' : language === 'ky' ? 'Жардам жана FAQ' : 'Help & FAQ';
       case 'coach': return language === 'ru' ? 'Личный кабинет тренера' : 'Coach Team Portal';
       case 'rankings':
@@ -544,7 +545,7 @@ function AppContent() {
       case 'categories': return language === 'ru' ? 'Категории турнира' : 'Tournament Categories';
       case 'engine': return language === 'ru' ? 'Генератор дивизионов' : 'Division Generator';
       case 'registration': return language === 'ru' ? 'Электронная регистрация' : 'Online Registration';
-      default: return 'Uventex Karate OS';
+      default: return 'Tatami.kg';
     }
   };
 
@@ -1058,11 +1059,9 @@ function AppContent() {
 
             {/* Central Brand */}
             <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white font-black text-xs shadow-md shadow-blue-900/40">
-                UX
-              </div>
+              <TatamiMark className="w-7 h-7" />
               <span className="text-xs font-mono font-bold tracking-wider text-slate-200 uppercase hidden sm:inline">
-                UVENTEX SPORT EVENT SYSTEM
+                TATAMI.KG
               </span>
             </div>
 
@@ -1127,7 +1126,7 @@ function AppContent() {
 
         {/* Minimalist Clean Footer */}
         <footer className="py-6 border-t border-slate-900 text-center text-xs text-slate-600 font-mono">
-          © 2026 Uventex Sport Event System · Международные протоколы соревнований · Реляционная БД PostgreSQL
+          © 2026 Tatami.kg · Международные протоколы соревнований · Реляционная БД PostgreSQL
         </footer>
       </div>
     );
@@ -1173,18 +1172,10 @@ function AppContent() {
             <button
               onClick={() => setActiveTab('tournaments')}
               className="flex items-center gap-1.5 sm:gap-2 text-left group cursor-pointer focus:outline-none min-w-0"
-              title="Uventex - Главная"
+              title="Tatami.kg — на главную"
             >
-              {/* Colorful stylized swirl logo */}
-              <svg className="w-7 h-7 shrink-0" viewBox="0 0 100 100" fill="none">
-                <path d="M48 8 C28 16 12 34 12 56 C12 78 30 96 54 96 C76 96 94 78 94 56 C94 40 86 26 76 16 C76 26 68 36 58 40 C66 44 70 52 70 60 C70 70 62 78 52 78 C40 78 32 68 32 56 C32 42 40 32 50 24 C48 19 47 14 48 8 Z" fill="#0284c7" />
-                <path d="M50 24 C60 32 66 42 64 54 C62 62 56 68 48 68 C40 68 36 62 36 54 C36 42 44 32 50 24 Z" fill="#ef4444" />
-                <path d="M48 68 C52 68 56 64 56 58 C56 52 52 48 48 48 C44 48 40 52 40 58 C40 64 44 68 48 68 Z" fill="#f59e0b" />
-              </svg>
-
-              <span className="text-lg sm:text-xl font-bold tracking-tight text-slate-800 group-hover:text-sky-600 transition-colors font-sans truncate">
-                Uventex
-              </span>
+              <TatamiMark className="w-7 h-7 shrink-0" />
+              <TatamiWordmark className="text-lg sm:text-xl text-slate-800 group-hover:text-sky-600 transition-colors truncate" />
             </button>
 
             {/* Social Media Icons (Hidden on mobile phones to preserve touch space, visible on tablet/desktop) */}
@@ -1262,7 +1253,7 @@ function AppContent() {
                   setIsProfileMenuOpen(false);
                 }}
                 className="hidden sm:flex items-center gap-1.5 text-xs text-slate-700 hover:text-slate-900 font-sans cursor-pointer transition-colors py-1.5 px-2.5 rounded-xl border border-slate-200/80 bg-white/80 hover:bg-slate-200/60"
-                title={tr('Инструкции и обучение Uventex', 'Uventex нускамалары жана окутуу', 'Uventex Training Guides')}
+                title={tr('Инструкции и обучение Tatami.kg', 'Tatami.kg нускамалары жана окутуу', 'Tatami.kg Training Guides')}
               >
                 <GraduationCap className="w-4 h-4 text-slate-600" />
                 <span className="font-medium">{tr('Обучение', 'Окутуу', 'Training')}</span>
@@ -1272,7 +1263,7 @@ function AppContent() {
               {isTrainingMenuOpen && (
                 <div className="absolute right-0 mt-1.5 w-64 rounded-xl bg-white border border-slate-200 shadow-xl py-1.5 z-50 text-xs">
                   <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100">
-                    {tr('Учебные материалы Uventex', 'Uventex окуу материалдары', 'Uventex Training Guides')}
+                    {tr('Учебные материалы Tatami.kg', 'Tatami.kg окуу материалдары', 'Tatami.kg Training Guides')}
                   </div>
                   <button
                     onClick={() => {
@@ -2211,18 +2202,16 @@ function AppContent() {
         </main>
 
         {/* ========================================================
-            UVENTEX OFFICIAL FOOTER WITH PRIVACY POLICY & COMPACT BOT DOCK
+            TATAMI.KG OFFICIAL FOOTER WITH PRIVACY POLICY & COMPACT BOT DOCK
            ======================================================== */}
         <footer className="mt-auto border-t border-slate-800/80 bg-slate-950 pt-8 pb-24 lg:pb-8 px-4 sm:px-6 text-xs text-slate-400 font-sans">
           <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 mb-8">
             {/* Col 1: Brand & Mission */}
             <div className="space-y-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-rose-600 flex items-center justify-center text-white font-black text-xs shadow-md">
-                  UX
-                </div>
+                <TatamiMark className="w-8 h-8" />
                 <span className="text-sm font-black tracking-wider text-white font-mono uppercase">
-                  UVENTEX SPORT
+                  TATAMI.KG
                 </span>
               </div>
               <p className="text-slate-400 text-xs font-mono leading-relaxed">
@@ -2354,7 +2343,7 @@ function AppContent() {
               </button>
 
               <div className="text-[11px] text-slate-500">
-                Email: <a href="mailto:support@uventex-karate.ru" className="text-slate-400 hover:text-white underline">support@uventex-karate.ru</a>
+                Email: <a href="mailto:support@tatami.kg" className="text-slate-400 hover:text-white underline">support@tatami.kg</a>
               </div>
             </div>
           </div>
@@ -2363,9 +2352,9 @@ function AppContent() {
           <div className="max-w-7xl mx-auto pt-6 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between gap-3 text-slate-500 font-mono text-[11px]">
             <span>
               {tr(
-                '© 2026 Uventex Sports Event System. Все права защищены. Международные стандарты протоколов.',
-                '© 2026 Uventex Sports Event System. Бардык укуктар корголгон. Протоколдордун эл аралык стандарттары.',
-                '© 2026 Uventex Sports Event System. All rights reserved. International protocol standards.'
+                '© 2026 Tatami.kg. Все права защищены. Международные стандарты протоколов.',
+                '© 2026 Tatami.kg. Бардык укуктар корголгон. Протоколдордун эл аралык стандарттары.',
+                '© 2026 Tatami.kg. All rights reserved. International protocol standards.'
               )}
             </span>
             <div className="flex items-center gap-4">

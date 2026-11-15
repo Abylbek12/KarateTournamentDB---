@@ -473,7 +473,7 @@ export const VideoAnalyticsModule: React.FC<VideoAnalyticsModuleProps> = ({
                     <span>·</span>
                     <span>1080p HD</span>
                     <span>·</span>
-                    <span className="font-bold text-slate-200">UVENTEX VR</span>
+                    <span className="font-bold text-slate-200">TATAMI.KG VR</span>
                   </div>
                 </div>
 

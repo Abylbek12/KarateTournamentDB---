@@ -46,7 +46,7 @@ const hasGeminiKey = () => {
 app.get('/api/health', (_req: Request, res: Response) => {
   res.json({
     status: 'ok',
-    service: 'Uventex Karate AI Server',
+    service: 'Tatami.kg Server',
     model: GEMINI_MODEL,
     aiEnabled: hasGeminiKey(),
     timestamp: new Date().toISOString()
@@ -528,7 +528,7 @@ app.get(['/auth/callback', '/auth/callback/'], (req: Request, res: Response) => 
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Uventex Authentication Callback</title>
+        <title>Tatami.kg Authentication Callback</title>
         <style>
           body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -571,7 +571,7 @@ app.get(['/auth/callback', '/auth/callback/'], (req: Request, res: Response) => 
         <div class="box">
           <div class="icon">✓</div>
           <h2 class="title">Авторизация подтверждена</h2>
-          <p class="subtitle">Передача профиля в систему Uventex. Окно закроется автоматически...</p>
+          <p class="subtitle">Передача профиля в систему Tatami.kg. Окно закроется автоматически...</p>
         </div>
         <script>
           try {
@@ -874,7 +874,7 @@ function generateExpertFallbackResponse(prompt: string, context: Record<string, 
   }
 
   if (q.includes('жеребьевк') || q.includes('сетк') || q.includes('разведен') || q.includes('клуб') || q.includes('draw')) {
-    return `### 🛡️ Алгоритм «Умной жеребьевки» Uventex Karate
+    return `### 🛡️ Алгоритм «Умной жеребьевки» Tatami.kg
 
 В систему встроен алгоритм сеяния участников по стандартам WKF:
 1. **Строгое разведение одноклубников**: Представители одного спортивного клуба (**club_id**) гарантированно не встречаются в 1-м и 2-м кругах.
@@ -893,7 +893,7 @@ function generateExpertFallbackResponse(prompt: string, context: Record<string, 
 - При выставлении баллов крайние верхний и нижний результаты отбрасываются для исключения судейской предвзятости.`;
   }
 
-  return `### 🥋 Ответ эксперта Sensei AI (Платформа Uventex Karate)
+  return `### 🥋 Ответ эксперта Sensei AI (Платформа Tatami.kg)
 
 По вашему запросу: **«${prompt}»**
 
@@ -903,7 +903,7 @@ function generateExpertFallbackResponse(prompt: string, context: Record<string, 
 - **Число татами:** ${context.tatamiCount || 4} ковра
 - **Заявлено спортсменов:** ${context.participantCount || 248} атлетов
 
-Платформа **Uventex Karate** обеспечивает:
+Платформа **Tatami.kg** обеспечивает:
 1. Полную автоматизацию соревнований по регламентам WKF и SKIF.
 2. Локальный режим работы (LAN Hub) без зависимости от интернета.
 3. Электронные протоколы с цифровыми подписями судейской коллегии (ГСК).
@@ -946,7 +946,7 @@ app.post('/api/chat', aiLimiter, async (req: Request, res: Response) => {
       },
     });
 
-    const systemInstruction = `Ты — лучший в мире интеллектуальный спортивный ассистент и супер-эксперт по спортивным единоборствам («Sensei AI Supreme» платформы Uventex Karate).
+    const systemInstruction = `Ты — лучший в мире интеллектуальный спортивный ассистент и супер-эксперт по спортивным единоборствам («Sensei AI Supreme» платформы Tatami.kg).
 Ты обладаешь энциклопедическими знаниями правил Всемирной федерации каратэ (WKF 2026) и традиционного каратэ SKIF (Shotokan Karate-Do International Federation).
 
 Контекст активного турнира:

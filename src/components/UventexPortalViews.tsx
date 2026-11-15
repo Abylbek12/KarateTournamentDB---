@@ -271,7 +271,7 @@ export const StudiosView: React.FC<StudiosPortalProps> = ({
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-md bg-sky-50 border border-sky-200 text-sky-700 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1">
               <Building2 className="w-3.5 h-3.5 text-sky-600" />
-              <span>{tr('КАТАЛОГ СТУДИЙ И ДОДЗЁ UVENTEX', 'UVENTEX СТУДИЯЛАР ЖАНА ДОДЗЁЛОР КАТАЛОГУ', 'UVENTEX STUDIOS & DOJOS DIRECTORY')}</span>
+              <span>{tr('КАТАЛОГ СТУДИЙ И ДОДЗЁ TATAMI.KG', 'TATAMI.KG СТУДИЯЛАР ЖАНА ДОДЗЁЛОР КАТАЛОГУ', 'TATAMI.KG STUDIOS & DOJOS DIRECTORY')}</span>
             </span>
             <span className="text-xs text-slate-500 font-mono">
               {tr('Аккредитованных студий:', 'Аккредитацияланган студиялар:', 'Accredited studios:')}{' '}
@@ -740,7 +740,7 @@ export const RankingsView: React.FC<{ language: 'ru' | 'en' | 'ky' }> = ({ langu
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1">
               <Trophy className="w-3.5 h-3.5 text-amber-600" />
-              <span>{tr('Официальный рейтинг Uventex', 'Uventex расмий рейтинги', 'Official Rankings')}</span>
+              <span>{tr('Официальный рейтинг Tatami.kg', 'Tatami.kg расмий рейтинги', 'Official Rankings')}</span>
             </span>
             <span className="text-xs text-slate-500 font-mono">
               {tr('Сезон:', 'Сезон:', 'Season:')} <strong>{selectedSeason}</strong>
@@ -751,8 +751,8 @@ export const RankingsView: React.FC<{ language: 'ru' | 'en' | 'ky' }> = ({ langu
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
             {tr(
-              'Начисление рейтинговых очков по результатам официальных соревнований WKF и лиги Uventex',
-              'WKF жана Uventex лигасынын расмий мелдештеринин жыйынтыгы боюнча рейтингдик упайларды эсептөө',
+              'Начисление рейтинговых очков по результатам официальных соревнований WKF и лиги Tatami.kg',
+              'WKF жана Tatami.kg лигасынын расмий мелдештеринин жыйынтыгы боюнча рейтингдик упайларды эсептөө',
               'Official national and league ranking points accrued from certified championships'
             )}
           </p>
@@ -975,7 +975,7 @@ export const VirtualStudiosView: React.FC<{ language: 'ru' | 'en' | 'ky'; onNavi
         <div>
           <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold mb-1">
             <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse" />
-            <span>{tr('ПРЯМОЙ ЭФИР · UVENTEX VIRTUAL STUDIOS', 'ТҮЗ ЭФИР · UVENTEX VIRTUAL STUDIOS', 'LIVE BROADCAST · UVENTEX VIRTUAL STUDIOS')}</span>
+            <span>{tr('ПРЯМОЙ ЭФИР · TATAMI.KG VIRTUAL STUDIOS', 'ТҮЗ ЭФИР · TATAMI.KG VIRTUAL STUDIOS', 'LIVE BROADCAST · TATAMI.KG VIRTUAL STUDIOS')}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1">
             {tr('Virtual Studios — Прямой эфир татами', 'Virtual Studios — Татамиден түз эфир', 'Virtual Studios — Live Tatami Streams')}
@@ -1094,16 +1094,16 @@ export const AboutUsView: React.FC<{ language: 'ru' | 'en' | 'ky' }> = ({ langua
       <div className="bg-white p-8 sm:p-12 rounded-2xl border border-slate-200/90 shadow-2xs">
         <div className="max-w-3xl space-y-4">
           <span className="px-3 py-1 rounded-md bg-sky-50 text-sky-700 border border-sky-200 text-xs font-bold uppercase">
-            UVENTEX SPORT EVENT SYSTEM
+            TATAMI.KG
           </span>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 leading-tight">
-            {tr('О платформе Uventex', 'Uventex платформасы жөнүндө', 'About Uventex Sport System')}
+            {tr('О платформе Tatami.kg', 'Tatami.kg платформасы жөнүндө', 'About Tatami.kg')}
           </h1>
           <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
             {tr(
-              'Uventex — профессиональная цифровая операционная система для управления соревнованиями по спортивным единоборствам и традиционным боевым искусствам. Платформа объединяет онлайн-регистрацию участников, электронное судейство, сетки олимпийской системы, эквайринг и протоколы Минспорта.',
-              'Uventex — спорттук жекпе-жек жана салттуу согуш өнөрлөрү боюнча мелдештерди башкаруу үчүн кесиптик санариптик операциялык система. Платформа катышуучуларды онлайн каттоону, электрондук калыстыкты, олимпиадалык системанын торчолорун, эквайрингди жана расмий протоколдорду бириктирет.',
-              'Uventex is a dedicated digital management ecosystem for martial arts championships: electronic scoring, elimination draw brackets, medical control, and acquiring.'
+              'Tatami.kg — профессиональная цифровая операционная система для управления соревнованиями по спортивным единоборствам и традиционным боевым искусствам. Платформа объединяет онлайн-регистрацию участников, электронное судейство, сетки олимпийской системы, эквайринг и протоколы Минспорта.',
+              'Tatami.kg — спорттук жекпе-жек жана салттуу согуш өнөрлөрү боюнча мелдештерди башкаруу үчүн кесиптик санариптик операциялык система. Платформа катышуучуларды онлайн каттоону, электрондук калыстыкты, олимпиадалык системанын торчолорун, эквайрингди жана расмий протоколдорду бириктирет.',
+              'Tatami.kg is a dedicated digital management ecosystem for martial arts championships: electronic scoring, elimination draw brackets, medical control, and acquiring.'
             )}
           </p>
         </div>

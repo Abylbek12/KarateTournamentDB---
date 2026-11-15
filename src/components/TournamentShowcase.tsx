@@ -241,7 +241,7 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
     <div className="space-y-4 animate-fadeIn font-sans pb-12">
 
       {/* ========================================================
-          UVENTEX PILL FILTER TOOLBAR + CREATE TOURNAMENT BUTTON
+          TATAMI.KG PILL FILTER TOOLBAR + CREATE TOURNAMENT BUTTON
          ======================================================== */}
       <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 pt-1">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:flex md:flex-wrap items-center gap-2 sm:gap-2.5 w-full xl:w-auto">

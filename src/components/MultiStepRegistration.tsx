@@ -382,7 +382,7 @@ export const MultiStepRegistration: React.FC<MultiStepRegistrationProps> = ({
                   UX
                 </div>
                 <span className="text-xs font-mono font-bold uppercase tracking-wider text-blue-400">
-                  UVENTEX SPORT EVENT SYSTEM · {tournament ? tournament.rulesType.toUpperCase() : 'WKF'} PROTOCOL
+                  TATAMI.KG · {tournament ? tournament.rulesType.toUpperCase() : 'WKF'} PROTOCOL
                 </span>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
                   PostgreSQL Sync
@@ -1202,7 +1202,7 @@ export const MultiStepRegistration: React.FC<MultiStepRegistrationProps> = ({
         )}
 
         {/* ========================================================
-            STEP 3: ЗАВЕРШЕНИЕ И АККРЕДИТАЦИОННАЯ КАРТОЧКА UVENTEX
+            STEP 3: ЗАВЕРШЕНИЕ И АККРЕДИТАЦИОННАЯ КАРТОЧКА TATAMI.KG
            ======================================================== */}
         {currentStep === 3 && registeredAthlete && (
           <div className="p-6 sm:p-8 space-y-6 text-center animate-fadeIn">

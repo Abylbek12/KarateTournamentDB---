@@ -1,3 +1,4 @@
+import { TatamiFullLogo } from './BrandLogo';
 import React, { useState, useEffect } from 'react';
 import { 
   X, 
@@ -19,54 +20,6 @@ import {
 import { UserRole, AuthenticatedUserProfile } from '../types/schema';
 
 // ----------------------------------------------------------------------
-// UVENTEX OFFICIAL BRAND LOGO (Large Swirl + uventex wordmark)
-// ----------------------------------------------------------------------
-export const UventexFullBrandLogo: React.FC = () => (
-  <div className="flex flex-col items-center justify-center select-none text-center">
-    <svg viewBox="0 0 160 160" className="w-36 h-36 sm:w-44 sm:h-44 drop-shadow-2xs">
-      <defs>
-        <linearGradient id="uvBlueGrad" x1="0%" y1="100%" x2="50%" y2="0%">
-          <stop offset="0%" stopColor="#0077c8" />
-          <stop offset="50%" stopColor="#00a8e8" />
-          <stop offset="100%" stopColor="#70d6ff" />
-        </linearGradient>
-
-        <radialGradient id="uvRedSphere" cx="35%" cy="35%" r="65%">
-          <stop offset="0%" stopColor="#ff4d4d" />
-          <stop offset="55%" stopColor="#d90429" />
-          <stop offset="100%" stopColor="#7a0014" />
-        </radialGradient>
-
-        <linearGradient id="uvSilverGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#0077c8" />
-          <stop offset="40%" stopColor="#64748b" />
-          <stop offset="100%" stopColor="#cbd5e1" />
-        </linearGradient>
-      </defs>
-
-      {/* Blue / Cyan left swoosh */}
-      <path
-        d="M 64 16 C 46 24 32 42 32 64 C 32 90 52 110 78 110 C 98 110 114 96 122 78 C 114 88 100 96 82 96 C 60 96 46 80 46 62 C 46 46 56 32 70 22 Z"
-        fill="url(#uvBlueGrad)"
-      />
-
-      {/* Red sphere in center with light halo */}
-      <circle cx="84" cy="66" r="11" fill="url(#uvRedSphere)" />
-      <circle cx="81" cy="63" r="3" fill="#ffffff" opacity="0.5" />
-
-      {/* Silver / Gray right hook swoosh */}
-      <path
-        d="M 78 110 C 100 110 116 96 124 76 C 128 66 130 54 128 42 C 124 56 114 72 98 82 C 88 88 76 88 68 86 C 70 102 74 110 78 110 Z"
-        fill="url(#uvSilverGrad)"
-      />
-    </svg>
-
-    <span className="text-4xl sm:text-5xl font-black tracking-tight text-[#444444] font-sans mt-0.5">
-      uventex
-    </span>
-  </div>
-);
-
 // ----------------------------------------------------------------------
 // SOCIAL ICONS (Google & Facebook)
 // ----------------------------------------------------------------------
@@ -382,10 +335,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12 min-h-[420px]">
           
           {/* ========================================================
-              LEFT COLUMN: Centered Uventex Swirl Logo & Wordmark
+              LEFT COLUMN: Centered Tatami.kg Swirl Logo & Wordmark
              ======================================================== */}
           <div className="flex-1 flex flex-col items-center justify-center py-6 md:py-0 w-full">
-            <UventexFullBrandLogo />
+            <TatamiFullLogo />
 
             {/* Security Badge */}
             <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-[11px] font-mono border border-slate-200">
@@ -565,7 +518,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <div className="rounded-2xl bg-[#f0f5f9] border border-[#c5d8e8] p-5 sm:p-6 shadow-2xs">
                   <div className="text-center pb-2">
                     <h3 className="text-sm font-bold text-[#2c5270] font-sans">
-                      {language !== 'en' ? 'Регистрация на сайте Uventex' : 'Create Uventex Account'}
+                      {language !== 'en' ? 'Регистрация на сайте Tatami.kg' : 'Create Tatami.kg Account'}
                     </h3>
                   </div>
 
@@ -714,7 +667,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     Подтверждение профиля
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Учетные данные проверены. Пожалуйста, подтвердите данные вашего профиля для входа в систему Uventex.
+                    Учетные данные проверены. Пожалуйста, подтвердите данные вашего профиля для входа в систему Tatami.kg.
                   </p>
                 </div>
 
@@ -825,7 +778,7 @@ export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({
         <div className="flex-1 overflow-y-auto p-6 space-y-4 text-xs text-slate-600 leading-relaxed font-sans">
           <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-[11px] text-slate-600 space-y-1">
             <div className="text-slate-800 font-bold">Оператор обработки персональных данных:</div>
-            <div>Информационная система Uventex Sport Event Platform (редакция от 1 января 2026 г.)</div>
+            <div>Информационная система Tatami.kg (редакция от 1 января 2026 г.)</div>
           </div>
 
           <div className="space-y-1.5">
@@ -853,7 +806,7 @@ export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({
         {/* Footer */}
         <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between shrink-0">
           <span className="text-[11px] text-slate-500 font-sans">
-            Контакт отдела защиты данных: privacy@uventex-karate.ru
+            Контакт отдела защиты данных: privacy@tatami.kg
           </span>
           <button
             onClick={onClose}
