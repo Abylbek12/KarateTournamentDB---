@@ -1,5 +1,4 @@
 import express, { Request, Response } from 'express';
-import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
 import { GoogleGenAI } from '@google/genai';
 import crypto from 'crypto';
@@ -25,6 +24,12 @@ import {
   rateLimiter,
   writeBackup,
   saveDbNow,
+  USE_DATABASE,
+  REALTIME,
+  databaseMiddleware,
+  stateVersion,
+  restoreFromBackup,
+  sessionTokenOf,
   type StoredUserAccount
 } from './server/store';
 
@@ -32,7 +37,9 @@ dotenv.config();
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
-const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+// `npm start` passes --production (works on Windows too); NODE_ENV=production also works
+const IS_PRODUCTION = process.env.NODE_ENV === 'production' || process.argv.includes('--production');
+if (IS_PRODUCTION) process.env.NODE_ENV = 'production';
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 
 app.disable('x-powered-by');
@@ -47,6 +54,26 @@ app.use((req, res, next) => {
 });
 app.set('trust proxy', 1);
 app.use(express.json({ limit: '10mb' }));
+
+// Vercel + Postgres: screens poll often, so answer "nothing changed" without loading all data
+app.get('/api/state/:key', async (req: Request, res: Response, next) => {
+  const since = Number(req.query.since);
+  if (!USE_DATABASE || !Number.isFinite(since)) return next();
+  try {
+    const version = await stateVersion(req.params.key);
+    if (version === since) {
+      res.json({ key: req.params.key, version, changed: false });
+      return;
+    }
+  } catch {
+    /* fall through to the full handler */
+  }
+  next();
+});
+
+// Database mode: load data for each request, save changes before answering.
+// The first administrator is created from ADMIN_EMAIL / ADMIN_PASSWORD.
+app.use(databaseMiddleware(() => ensureAdminAccount(true)));
 
 import { DEMO_EVENTS } from './src/data/eventsData';
 import { SAMPLE_BOUTS, SAMPLE_PARTICIPANTS } from './src/data/sampleTournamentData';
@@ -63,7 +90,8 @@ app.get('/api/health', (_req: Request, res: Response) => {
     service: 'Tatami.kg Server',
     aiEnabled: hasGeminiKey(),
     timestamp: new Date().toISOString(),
-    serverTime: Date.now()
+    serverTime: Date.now(),
+    realtime: REALTIME
   });
 });
 
@@ -72,11 +100,11 @@ app.get('/api/health', (_req: Request, res: Response) => {
 // EVENTS BACKEND API (SYNCHRONIZED REGISTRY + RBAC)
 // ========================================================
 // Demo tournaments only in development; a production install starts empty.
-let STORED_EVENTS: any[] = db.events ?? (process.env.NODE_ENV === 'production' ? [] : JSON.parse(JSON.stringify(DEMO_EVENTS)));
-const persistEvents = () => {
-  db.events = STORED_EVENTS;
-  saveDb();
-};
+function eventsList(): any[] {
+  if (!db.events) db.events = IS_PRODUCTION || USE_DATABASE ? [] : JSON.parse(JSON.stringify(DEMO_EVENTS));
+  return db.events!;
+}
+const persistEvents = () => saveDb();
 
 const isEventDatePast = (endDateStr?: string): boolean => {
   if (!endDateStr) return false;
@@ -92,7 +120,7 @@ const isRequestAuthorizedAdmin = (req: Request): boolean => isAdminRequest(req);
 app.get('/api/events', (_req: Request, res: Response) => {
   // Automatically transition concluded events to 'completed' (Archive) instead of deleting them
   let changed = false;
-  STORED_EVENTS = STORED_EVENTS.map((ev) => {
+  db.events = eventsList().map((ev) => {
     if (isEventDatePast(ev.endDate) && ev.status !== 'completed') {
       changed = true;
       return { ...ev, status: 'completed', isArchived: true };
@@ -102,8 +130,8 @@ app.get('/api/events', (_req: Request, res: Response) => {
   if (changed) persistEvents();
 
   res.json({
-    total: STORED_EVENTS.length,
-    events: STORED_EVENTS
+    total: eventsList().length,
+    events: eventsList()
   });
 });
 
@@ -181,8 +209,8 @@ app.post('/api/upload/event-image', (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/uploads/:filename', (req: Request, res: Response) => {
-  const item = readImage(req.params.filename);
+app.get('/api/uploads/:filename', async (req: Request, res: Response) => {
+  const item = await readImage(req.params.filename);
   if (!item) {
     res.status(404).json({ error: 'Изображение не найдено' });
     return;
@@ -225,7 +253,7 @@ app.post('/api/events', (req: Request, res: Response) => {
     clubCount: newEvent.clubCount || 0
   };
 
-  STORED_EVENTS = [preparedEvent, ...STORED_EVENTS.filter((e) => e.id !== id)];
+  db.events = [preparedEvent, ...eventsList().filter((e) => e.id !== id)];
   persistEvents();
   res.status(201).json({ success: true, event: preparedEvent });
 });
@@ -240,14 +268,14 @@ app.put('/api/events/:id', (req: Request, res: Response) => {
 
   const { id } = req.params;
   const updateData = req.body;
-  const index = STORED_EVENTS.findIndex((e) => e.id === id);
+  const index = eventsList().findIndex((e) => e.id === id);
 
   if (index === -1) {
     res.status(404).json({ error: 'Турнир не найден' });
     return;
   }
 
-  const existing = STORED_EVENTS[index];
+  const existing = eventsList()[index];
   const resolvedImageUrl =
     updateData.imageUrl !== undefined
       ? updateData.imageUrl
@@ -268,7 +296,7 @@ app.put('/api/events/:id', (req: Request, res: Response) => {
     dateLabel: updateData.dateLabel || (updateData.startDate ? `${updateData.startDate} - ${updateData.endDate || updateData.startDate}` : existing.dateLabel)
   };
 
-  STORED_EVENTS[index] = updatedEvent;
+  eventsList()[index] = updatedEvent;
   persistEvents();
   res.json({ success: true, event: updatedEvent });
 });
@@ -282,10 +310,10 @@ app.delete('/api/events/:id', (req: Request, res: Response) => {
   }
 
   const { id } = req.params;
-  const initialLength = STORED_EVENTS.length;
-  STORED_EVENTS = STORED_EVENTS.filter((e) => e.id !== id);
+  const initialLength = eventsList().length;
+  db.events = eventsList().filter((e) => e.id !== id);
 
-  if (STORED_EVENTS.length === initialLength) {
+  if (eventsList().length === initialLength) {
     res.status(404).json({ error: 'Турнир не найден' });
     return;
   }
@@ -295,7 +323,7 @@ app.delete('/api/events/:id', (req: Request, res: Response) => {
 });
 
 app.get('/api/events/:id', (req: Request, res: Response) => {
-  const event = STORED_EVENTS.find((e) => e.id === req.params.id);
+  const event = eventsList().find((e) => e.id === req.params.id);
   if (!event) {
     res.status(404).json({ error: 'Event not found' });
     return;
@@ -711,7 +739,7 @@ app.get('/api/admin/launch-status', (req: Request, res: Response) => {
   res.json({
     launchedAt: db.launchedAt || null,
     counts: {
-      events: STORED_EVENTS.length,
+      events: eventsList().length,
       participants: stateCount('participants'),
       bouts: stateCount('bouts'),
       categories: stateCount('categories'),
@@ -751,7 +779,6 @@ app.post('/api/admin/launch-reset', (req: Request, res: Response) => {
 
   const now = new Date().toISOString();
   const admin = getSessionUser(req);
-  STORED_EVENTS = [];
   db.events = [];
   for (const key of Object.keys(SHARED_STATE_WRITERS)) {
     const version = (db.state[key]?.version ?? 0) + 1;
@@ -770,6 +797,38 @@ app.post('/api/admin/launch-reset', (req: Request, res: Response) => {
   broadcast({ type: 'events' });
   console.log(`[launch] Site prepared for launch. Backup: ${backupFile}`);
   res.json({ ok: true, launchedAt: now, backupFile: path.basename(backupFile) });
+});
+
+/** Restore all data from a backup file (e.g. move a tournament between the website and a laptop in the hall). */
+app.post('/api/admin/restore', (req: Request, res: Response) => {
+  if (!isRequestAuthorizedAdmin(req)) {
+    res.status(403).json({ error: 'Доступно только Администратору.' });
+    return;
+  }
+  const backup = req.body?.backup;
+  if (!backup || typeof backup !== 'object' || !Array.isArray(backup.accounts) || typeof backup.state !== 'object') {
+    res.status(400).json({ error: 'Это не резервная копия Tatami.kg.' });
+    return;
+  }
+  let saved: string;
+  try {
+    saveDbNow();
+    saved = writeBackup('before-restore');
+  } catch {
+    res.status(500).json({ error: 'Не удалось сохранить текущие данные перед восстановлением. Ничего не изменено.' });
+    return;
+  }
+  const admin = getSessionUser(req) || undefined;
+  restoreFromBackup(backup, admin, sessionTokenOf(req));
+  saveDbNow();
+  for (const key of Object.keys(SHARED_STATE_WRITERS)) {
+    if (db.state[key]) broadcast({ type: 'state', key, version: db.state[key].version });
+  }
+  res.json({
+    ok: true,
+    previousSavedAs: path.basename(saved),
+    counts: { events: eventsList().length, participants: stateCount('participants'), bouts: stateCount('bouts'), accounts: db.accounts.length }
+  });
 });
 
 app.get('/api/admin/users', (req: Request, res: Response) => {
@@ -1049,6 +1108,10 @@ function broadcast(event: Record<string, unknown>) {
 }
 
 app.get('/api/stream', (req: Request, res: Response) => {
+  if (!REALTIME) {
+    res.status(204).end(); // screens poll instead (Vercel)
+    return;
+  }
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
@@ -1378,21 +1441,21 @@ app.post('/api/chat', aiLimiter, async (req: Request, res: Response) => {
 // Start Express Server with Vite Dev Server in Middleware Mode
 async function startServer() {
   const isProduction = IS_PRODUCTION;
-  ensureAdminAccount(isProduction);
+  if (!USE_DATABASE) ensureAdminAccount(isProduction);
   // Bouts are saved one by one, so the server must hold the full list from the start.
   // Demo data is used only until the site is prepared for launch.
-  if (!db.state.bouts && !db.launchedAt && !isProduction) {
+  if (!USE_DATABASE && !db.state.bouts && !db.launchedAt && !isProduction) {
     db.state.bouts = { version: 1, value: JSON.parse(JSON.stringify(SAMPLE_BOUTS)), updatedAt: new Date().toISOString(), updatedBy: 'seed' };
     saveDb();
   }
-  if (!db.state.participants && !db.launchedAt && !isProduction) {
+  if (!USE_DATABASE && !db.state.participants && !db.launchedAt && !isProduction) {
     db.state.participants = { version: 1, value: JSON.parse(JSON.stringify(SAMPLE_PARTICIPANTS)), updatedAt: new Date().toISOString(), updatedBy: 'seed' };
     saveDb();
   }
-  seedDevDemoAccounts();
-
+  if (!USE_DATABASE) seedDevDemoAccounts();
 
   if (!isProduction) {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
@@ -1419,7 +1482,12 @@ async function startServer() {
   });
 }
 
-startServer().catch((err) => {
-  console.error('Failed to start server:', err);
-  process.exit(1);
-});
+// On Vercel the app runs as a function (api/index.ts); everywhere else it is a normal server.
+if (!process.env.VERCEL) {
+  startServer().catch((err) => {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  });
+}
+
+export default app;

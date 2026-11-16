@@ -383,6 +383,11 @@ function AppContent() {
   };
 
   // Participants, bouts and protocols are stored on the server and shared between devices.
+  // TVs, consoles and print pages need only the bouts list often (fewer requests on Vercel)
+  const standaloneScreen = React.useMemo(() => {
+    const q = new URLSearchParams(window.location.search);
+    return !!q.get('screen') || !!q.get('print');
+  }, []);
   const sharedStateOptions = {
     canWrite: !!currentUser,
     onError: (message: string) => {
@@ -391,7 +396,7 @@ function AppContent() {
     }
   };
   // Bouts are saved one by one (PUT /api/bouts) so several tatami can work at the same time.
-  const [bouts, setBoutsState, boutSync] = useServerSyncedState<Bout[]>('bouts', [], { ...sharedStateOptions, autoSave: false });
+  const [bouts, setBoutsState, boutSync] = useServerSyncedState<Bout[]>('bouts', [], { ...sharedStateOptions, autoSave: false, pollMs: 1000 });
   // Tatami of the selected tournament (at least the ones bouts are already assigned to)
   const tatamiNumbers = React.useMemo(() => {
     const ev = selectedEvent as EventItem & { tatamiCount?: number };
@@ -438,13 +443,15 @@ function AppContent() {
   );
   const [participants, setParticipants] = useServerSyncedState<Participant[]>('participants', [], {
     ...sharedStateOptions,
+    pollMs: standaloneScreen ? 60_000 : 3000,
     // Athletes and coaches submit entries through /api/entries; only officials edit the list.
     canWrite: !!currentUser && ['admin', 'chief_referee', 'scorekeeper', 'medical_officer'].includes(currentUser.role)
   });
-  const [protocols, setProtocols] = useServerSyncedState<RefereeProtocol[]>('protocols', [], sharedStateOptions);
+  const [protocols, setProtocols] = useServerSyncedState<RefereeProtocol[]>('protocols', [], { ...sharedStateOptions, pollMs: standaloneScreen ? 60_000 : 10_000 });
   // Tournament categories created by the organizer (server-stored).
   const [eventCategories, setEventCategories] = useServerSyncedState<EventCategory[]>('categories', [], {
     ...sharedStateOptions,
+    pollMs: standaloneScreen ? 60_000 : 5000,
     canWrite: !!currentUser && ['admin', 'chief_referee'].includes(currentUser.role)
   });
   const [activeScoreboardBout, setActiveScoreboardBout] = useState<Bout | null>(null);

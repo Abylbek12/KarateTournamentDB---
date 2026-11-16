@@ -64,12 +64,12 @@ export const OfflinePanel: React.FC<{ onOpenScreens: () => void }> = ({ onOpenSc
         <h2 className="font-semibold text-[var(--app-text-primary)]">Как провести турнир без интернета</h2>
         <div className={step}><span className={num}>1</span><p className="text-sm text-[var(--app-text-secondary)]">До турнира, пока есть интернет: соберите заявки и проведите жеребьёвку. Скачайте резервную копию (кнопка ниже).</p></div>
         <div className={step}><span className={num}>2</span><p className="text-sm text-[var(--app-text-secondary)]">В зале включите Wi-Fi роутер (интернет в нём не обязателен) и подключите к нему ноутбук-сервер, планшеты/телефоны секретарей и компьютеры у телевизоров.</p></div>
-        <div className={step}><span className={num}>3</span><p className="text-sm text-[var(--app-text-secondary)]">Сервером должен быть ноутбук, на котором работает Tatami.kg с данными этого турнира (проще всего — тот же ноутбук, где собирались заявки). Его адрес появится выше, например <code>http://192.168.1.5:3000</code>.</p></div>
+        <div className={step}><span className={num}>3</span><p className="text-sm text-[var(--app-text-secondary)]">На ноутбуке запустите Tatami.kg (инструкция — файл DEPLOY_VERCEL.md в коде сайта), войдите администратором и в «Турниры и пользователи» нажмите «Восстановить из копии…». Адрес ноутбука появится выше, например <code>http://192.168.1.5:3000</code>.</p></div>
         <div className={step}><span className={num}>4</span><p className="text-sm text-[var(--app-text-secondary)]">
           Откройте «Экраны и QR-коды»: секретари сканируют QR-код своего татами, а на телевизорах открывается табло. Все устройства должны быть в той же сети Wi-Fi.
         </p></div>
         <div className={step}><span className={num}>5</span><p className="text-sm text-[var(--app-text-secondary)]">Если на татами только один компьютер и один экран — в пульте нажмите «Один экран»: зрители видят табло, секретарь ведёт бой клавишами.</p></div>
-        <div className={step}><span className={num}>6</span><p className="text-sm text-[var(--app-text-secondary)]">После турнира скачайте резервную копию: в ней все результаты.</p></div>
+        <div className={step}><span className={num}>6</span><p className="text-sm text-[var(--app-text-secondary)]">После турнира скачайте резервную копию на ноутбуке и восстановите её на сайте в интернете — результаты появятся там.</p></div>
         <div className="flex flex-wrap gap-2 pt-1">
           <a href="/api/admin/backup" className="inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white text-sm font-semibold">
             <Download className="w-4 h-4" /> Скачать резервную копию

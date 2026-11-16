@@ -77,12 +77,15 @@ export function useServerSyncedState<T>(key: string, initial: T, options: Option
       if (event.type === 'state' && event.key === key && event.version !== versionRef.current) pull(false);
       if (event.type === 'hello') pull(false);
     });
+    // Ticks every second. With instant updates: a safety check every 15 s.
+    // Without them (Vercel): poll every pollMs (default 3 s; the bouts list uses 1 s).
     let ticks = 0;
+    const every = Math.max(1, Math.round((options.pollMs ?? 3000) / 1000));
     const timer = setInterval(() => {
       ticks++;
-      if (isLiveConnected() && ticks % 5 !== 0) return;
+      if (ticks % (isLiveConnected() ? 15 : every) !== 0) return;
       if (typeof document === 'undefined' || document.visibilityState === 'visible') pull(false);
-    }, options.pollMs ?? 3000);
+    }, 1000);
 
     return () => {
       cancelled = true;

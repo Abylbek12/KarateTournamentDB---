@@ -1,5 +1,5 @@
 import React from 'react';
-import { Rocket, Download, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { Rocket, Download, ShieldAlert, CheckCircle2, Upload } from 'lucide-react';
 
 interface LaunchStatus {
   launchedAt: string | null;
@@ -58,6 +58,44 @@ export const LaunchPanel: React.FC = () => {
     }
   };
 
+  // Restore from a backup file (e.g. after a tournament on a laptop without internet)
+  const fileRef = React.useRef<HTMLInputElement>(null);
+  const [restoreFile, setRestoreFile] = React.useState<{ name: string; data: unknown } | null>(null);
+  const pickFile = async (f?: File) => {
+    if (!f) return;
+    try {
+      const data = JSON.parse(await f.text());
+      if (!data || !Array.isArray(data.accounts) || typeof data.state !== 'object') throw new Error();
+      setRestoreFile({ name: f.name, data });
+      setMessage(null);
+    } catch {
+      setMessage({ ok: false, text: 'Это не резервная копия Tatami.kg.' });
+    }
+    if (fileRef.current) fileRef.current.value = '';
+  };
+  const restore = async () => {
+    if (!restoreFile) return;
+    setBusy(true);
+    try {
+      const res = await fetch('/api/admin/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ backup: restoreFile.data })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) setMessage({ ok: false, text: data.error || (res.status === 413 ? 'Файл слишком большой для сервера.' : 'Не удалось восстановить.') });
+      else {
+        setMessage({ ok: true, text: `Данные восстановлены: турниров ${data.counts?.events ?? 0}, заявок ${data.counts?.participants ?? 0}, боёв ${data.counts?.bouts ?? 0}. Страница обновится…` });
+        setRestoreFile(null);
+        setTimeout(() => window.location.assign('/'), 2500);
+      }
+    } catch {
+      setMessage({ ok: false, text: 'Нет связи с сервером.' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const total = status ? Object.values(status.counts).reduce((a, b) => a + b, 0) : 0;
 
   return (
@@ -72,10 +110,30 @@ export const LaunchPanel: React.FC = () => {
               : 'Сейчас на сайте демо- и тестовые данные. Перед открытием для людей удалите их одной кнопкой: сначала сохраняется полная резервная копия, остаются только аккаунты администраторов.'}
           </p>
         </div>
-        <a href="/api/admin/backup" className="inline-flex items-center gap-2 h-10 px-4 rounded-lg border border-[var(--app-border)] text-sm text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)]">
-          <Download className="w-4 h-4" /> Скачать резервную копию
-        </a>
+        <div className="flex flex-wrap gap-2">
+          <a href="/api/admin/backup" className="inline-flex items-center gap-2 h-10 px-4 rounded-lg border border-[var(--app-border)] text-sm text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)]">
+            <Download className="w-4 h-4" /> Скачать резервную копию
+          </a>
+          <button onClick={() => fileRef.current?.click()} className="inline-flex items-center gap-2 h-10 px-4 rounded-lg border border-[var(--app-border)] text-sm text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)] cursor-pointer">
+            <Upload className="w-4 h-4" /> Восстановить из копии…
+          </button>
+          <input ref={fileRef} type="file" accept=".json,application/json" className="hidden" onChange={(e) => pickFile(e.target.files?.[0])} />
+        </div>
       </div>
+
+      {restoreFile && (
+        <div className="rounded-xl border border-[var(--danger-border)] bg-[var(--danger-soft)] p-4 space-y-3">
+          <p className="text-sm text-[var(--app-text-primary)]">
+            Все текущие данные сайта будут заменены данными из файла <b>{restoreFile.name}</b>. Перед этим сервер сохранит копию текущих данных. Вы останетесь в системе.
+          </p>
+          <div className="flex gap-2">
+            <button onClick={restore} disabled={busy} className="h-10 px-4 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold disabled:opacity-40 cursor-pointer">
+              {busy ? 'Восстанавливаю…' : 'Заменить данные из копии'}
+            </button>
+            <button onClick={() => setRestoreFile(null)} className="h-10 px-4 rounded-lg border border-[var(--app-border)] text-sm text-[var(--app-text-primary)] cursor-pointer">Отмена</button>
+          </div>
+        </div>
+      )}
 
       {status && (
         <div className="grid gap-2 grid-cols-2 sm:grid-cols-4 text-sm">

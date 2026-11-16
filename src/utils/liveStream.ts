@@ -8,8 +8,22 @@ const listeners = new Set<Listener>();
 let source: EventSource | null = null;
 let connected = false;
 
+let checked = false;
+
 function ensure() {
-  if (source || typeof window === 'undefined' || typeof EventSource === 'undefined') return;
+  if (checked || source || typeof window === 'undefined' || typeof EventSource === 'undefined') return;
+  checked = true;
+  // On Vercel there is no permanent connection: screens poll every second instead.
+  fetch('/api/health', { cache: 'no-store' })
+    .then((r) => r.json())
+    .then((d) => {
+      if (d?.realtime !== false) open();
+    })
+    .catch(() => open());
+}
+
+function open() {
+  if (source) return;
   source = new EventSource('/api/stream');
   source.onopen = () => (connected = true);
   source.onerror = () => (connected = false); // EventSource reconnects by itself
