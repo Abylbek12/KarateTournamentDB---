@@ -45,7 +45,8 @@ export type ParticipantStatus =
   | 'disqualified'
   | 'withdrawn';
 
-export type Discipline = 'kumite' | 'kata' | 'team_kumite' | 'team_kata';
+/** 'other' = the organizer's own discipline, named in EventCategory.customDiscipline. */
+export type Discipline = 'kumite' | 'kata' | 'team_kumite' | 'team_kata' | 'other';
 
 export type BracketType = 
   | 'olympic_with_repechage'
@@ -292,6 +293,8 @@ export interface EventCategory {
   durationSeconds: number;
   /** Optional custom name; otherwise generated. */
   name?: string;
+  /** Name of the discipline when discipline is 'other' (e.g. «Кихон», «Тамешивари»). */
+  customDiscipline?: string;
   isClosed?: boolean;
 }
 

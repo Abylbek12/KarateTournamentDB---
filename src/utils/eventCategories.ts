@@ -19,8 +19,15 @@ export const BELT_LABELS: Record<BeltRank, string> = {
 };
 
 export const DISCIPLINE_LABELS: Record<EventCategory['discipline'], string> = {
-  kumite: 'Кумитэ', kata: 'Ката', team_kumite: 'Командное кумитэ', team_kata: 'Командное ката'
+  kumite: 'Кумитэ', kata: 'Ката', team_kumite: 'Командное кумитэ', team_kata: 'Командное ката', other: 'Другие дисциплины'
 };
+
+/** Kumite and the organizer's own disciplines can have weight classes. */
+export const hasWeightClasses = (c: Pick<EventCategory, 'discipline'>) => c.discipline === 'kumite' || c.discipline === 'other';
+
+/** Discipline name shown to people («Кумитэ», or the organizer's own, e.g. «Кихон»). */
+export const disciplineName = (c: Pick<EventCategory, 'discipline' | 'customDiscipline'>) =>
+  c.discipline === 'other' ? c.customDiscipline?.trim() || 'Другая дисциплина' : DISCIPLINE_LABELS[c.discipline];
 
 export const isTeamCategory = (c: Pick<EventCategory, 'discipline'>) => c.discipline === 'team_kata' || c.discipline === 'team_kumite';
 
@@ -52,8 +59,8 @@ export function weightLabel(c: Pick<EventCategory, 'weightMin' | 'weightMax'>): 
 
 export function categoryName(c: EventCategory): string {
   if (c.name) return c.name;
-  const parts = [DISCIPLINE_LABELS[c.discipline], `${genderWord(c.gender, c.ageMin, c.ageMax)} ${ageLabel(c.ageMin, c.ageMax)}`];
-  const w = c.discipline === 'kumite' ? weightLabel(c) : '';
+  const parts = [disciplineName(c), `${genderWord(c.gender, c.ageMin, c.ageMax)} ${ageLabel(c.ageMin, c.ageMax)}`];
+  const w = hasWeightClasses(c) ? weightLabel(c) : '';
   if (w) parts.push(w);
   if (c.minBelt) parts.push(`от ${BELT_LABELS[c.minBelt].toLowerCase()}`);
   return parts.join(' · ');
@@ -79,7 +86,7 @@ export function categoryFits(
   const age = a.birthDate ? ageOn(a.birthDate, eventStartDate) : null;
   if (age == null) reasons.push('нужна дата рождения');
   else if (age < c.ageMin || (c.ageMax != null && age > c.ageMax)) reasons.push(`возраст ${age} (нужно ${ageLabel(c.ageMin, c.ageMax)})`);
-  if (c.discipline === 'kumite' && (c.weightMin != null || c.weightMax != null)) {
+  if (hasWeightClasses(c) && (c.weightMin != null || c.weightMax != null)) {
     const w = a.weightKg;
     if (!w) reasons.push('нужен вес');
     else if ((c.weightMin != null && w <= c.weightMin) || (c.weightMax != null && w > c.weightMax)) reasons.push(`вес ${w} кг (нужно ${weightLabel(c)})`);
@@ -90,7 +97,7 @@ export function categoryFits(
 
 /** Weigh-in check: the actual weight must still fit the category. */
 export function weighInFits(c: EventCategory | undefined, actualKg: number | null): boolean {
-  if (!c || c.discipline !== 'kumite' || actualKg == null) return true;
+  if (!c || !hasWeightClasses(c) || actualKg == null) return true;
   if (c.weightMin != null && actualKg <= c.weightMin) return false;
   if (c.weightMax != null && actualKg > c.weightMax) return false;
   return true;
@@ -103,6 +110,7 @@ export function findCategoryForWeight(all: EventCategory[], current: EventCatego
       c.id !== current.id &&
       c.tournamentId === current.tournamentId &&
       c.discipline === current.discipline &&
+      (c.customDiscipline || "").trim().toLowerCase() === (current.customDiscipline || "").trim().toLowerCase() &&
       c.gender === current.gender &&
       c.ageMin === current.ageMin &&
       c.ageMax === current.ageMax &&

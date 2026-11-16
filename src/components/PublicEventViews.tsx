@@ -479,7 +479,7 @@ export const PublicCategoriesView: React.FC<
 > = (props) => {
   const { event, participants, language, eventCategories, onEnter, currency = 'сом' } = props;
   const cats = eventCategories.filter((c) => c.tournamentId === event.id);
-  const groups = (['kata', 'kumite', 'team_kata', 'team_kumite'] as const)
+  const groups = (['kata', 'kumite', 'team_kata', 'team_kumite', 'other'] as const)
     .map((d) => ({ d, list: cats.filter((c) => c.discipline === d) }))
     .filter((g) => g.list.length > 0);
   return (

@@ -821,7 +821,8 @@ function AppContent() {
     const generatorCategory = {
       id: def.id,
       tournamentId: def.tournamentId,
-      discipline: def.discipline === 'team_kata' ? 'kata' : def.discipline === 'team_kumite' ? 'kumite' : def.discipline,
+      // Team kata is judged like kata; team kumite and the organizer's own disciplines run as bouts
+      discipline: def.discipline === 'team_kata' ? 'kata' : def.discipline === 'team_kumite' || def.discipline === 'other' ? 'kumite' : def.discipline,
       gender: def.gender === 'mixed' ? 'male' : def.gender,
       bracketType: 'olympic_with_repechage',
       assignedTatamiId: tatami.id

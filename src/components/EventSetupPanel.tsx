@@ -43,25 +43,42 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
   const [open, setOpen] = React.useState<string | null>(null);
   const [tatamiFor, setTatamiFor] = React.useState<Record<string, number>>({});
   const [confirm, setConfirm] = React.useState<{ text: string; run: () => void } | null>(null);
-  const [custom, setCustom] = React.useState({ discipline: 'kumite' as EventCategory['discipline'], gender: 'male' as Gender, ageMin: 18, ageMax: '' as string, weightMin: '' as string, weightMax: '' as string, fee: 1500, duration: 180 });
+  const [custom, setCustom] = React.useState({ discipline: 'kumite' as EventCategory['discipline'], customName: '', gender: 'male' as Gender, ageMin: 18, ageMax: '' as string, weightMin: '' as string, weightMax: '' as string, fee: 1500, duration: 180 });
+  const [customError, setCustomError] = React.useState<string | null>(null);
+  const [customAdded, setCustomAdded] = React.useState<string | null>(null);
 
   const addWkf = () => onChangeCategories([...categories, ...buildWkfSet(tid, groups, fee, { kata: withKata, kumite: withKumite, teamKata: withTeamKata })]);
-  const addCustom = () =>
-    onChangeCategories([
-      ...categories,
-      {
-        id: newCategoryId(),
-        tournamentId: tid,
-        discipline: custom.discipline,
-        gender: custom.gender,
-        ageMin: Number(custom.ageMin) || 0,
-        ageMax: custom.ageMax === '' ? null : Number(custom.ageMax),
-        weightMin: custom.discipline === 'kumite' && custom.weightMin !== '' ? Number(custom.weightMin) : null,
-        weightMax: custom.discipline === 'kumite' && custom.weightMax !== '' ? Number(custom.weightMax) : null,
-        fee: Number(custom.fee) || 0,
-        durationSeconds: Number(custom.duration) || 180
-      }
-    ]);
+  const num = (v: string) => (v.trim() === '' ? null : Number(v.replace(',', '.')));
+  const addCustom = () => {
+    setCustomAdded(null);
+    const weighted = custom.discipline === 'kumite' || custom.discipline === 'other';
+    const ageMax = num(custom.ageMax);
+    const wMin = weighted ? num(custom.weightMin) : null;
+    const wMax = weighted ? num(custom.weightMax) : null;
+    const name = custom.customName.trim();
+    if (custom.discipline === 'other' && !name) return setCustomError('Напишите название дисциплины, например «Кихон».');
+    if ([ageMax, wMin, wMax].some((v) => v != null && !Number.isFinite(v))) return setCustomError('В полях возраста и веса должны быть только числа.');
+    if (ageMax != null && ageMax < custom.ageMin) return setCustomError('Возраст «до» не может быть меньше возраста «от».');
+    if (wMin != null && wMax != null && wMin >= wMax) return setCustomError('Вес «больше» должен быть меньше веса «до».');
+    const next: EventCategory = {
+      id: newCategoryId(),
+      tournamentId: tid,
+      discipline: custom.discipline,
+      ...(custom.discipline === 'other' ? { customDiscipline: name.slice(0, 60) } : {}),
+      gender: custom.gender,
+      ageMin: Number(custom.ageMin) || 0,
+      ageMax,
+      weightMin: wMin,
+      weightMax: wMax,
+      fee: Number(custom.fee) || 0,
+      durationSeconds: Number(custom.duration) || 180
+    };
+    const same = cats.find((c) => categoryName(c).toLowerCase() === categoryName(next).toLowerCase());
+    if (same) return setCustomError(`Такая категория уже есть: «${categoryName(same)}».`);
+    setCustomError(null);
+    onChangeCategories([...categories, next]);
+    setCustomAdded(categoryName(next));
+  };
   const patch = (id: string, p: Partial<EventCategory>) => onChangeCategories(categories.map((c) => (c.id === id ? { ...c, ...p } : c)));
   const remove = (id: string) => onChangeCategories(categories.filter((c) => c.id !== id));
 
@@ -76,13 +93,18 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
           </h1>
           <p className="text-[15px] text-[var(--app-text-secondary)] mt-1">Создайте категории турнира, следите за заявками и проводите жеребьёвку по каждой категории.</p>
         </div>
-        <select value={tid} onChange={(e) => setTid(e.target.value)} className={`${field} h-10 max-w-full`} aria-label="Турнир">
+        {tournaments.length === 0 && (
+          <p className="w-full rounded-xl border border-amber-300 bg-amber-50 text-amber-900 px-4 py-3 text-sm">
+            Турниров пока нет. Сначала создайте турнир (кнопка «Создать турнир» на главной или раздел «Турниры и пользователи»), потом добавляйте категории.
+          </p>
+        )}
+        {tournaments.length > 0 && <select value={tid} onChange={(e) => setTid(e.target.value)} className={`${field} h-10 max-w-full`} aria-label="Турнир">
           {tournaments.map((t) => (
             <option key={t.id} value={t.id}>
               {t.title}
             </option>
           ))}
-        </select>
+        </select>}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -110,26 +132,64 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
 
         <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 space-y-3">
           <h2 className="font-semibold text-[var(--app-text-primary)]">Своя категория</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
-            <select value={custom.discipline} onChange={(e) => setCustom({ ...custom, discipline: e.target.value as EventCategory['discipline'] })} className={field}>
-              {Object.entries(DISCIPLINE_LABELS).map(([k, v]) => (
-                <option key={k} value={k}>{v}</option>
-              ))}
-            </select>
-            <select value={custom.gender} onChange={(e) => setCustom({ ...custom, gender: e.target.value as Gender })} className={field}>
-              <option value="male">Мужской</option>
-              <option value="female">Женский</option>
-              <option value="mixed">Смешанный</option>
-            </select>
-            <NumberField value={custom.ageMin} onValueChange={(n) => setCustom({ ...custom, ageMin: n })} className={field} placeholder="Возраст от" title="Возраст от" />
-            <input value={custom.ageMax} onChange={(e) => setCustom({ ...custom, ageMax: e.target.value })} className={field} placeholder="до (пусто = без)" title="Возраст до" />
-            <input value={custom.weightMin} onChange={(e) => setCustom({ ...custom, weightMin: e.target.value })} disabled={custom.discipline !== 'kumite'} className={field} placeholder="вес больше, кг" />
-            <input value={custom.weightMax} onChange={(e) => setCustom({ ...custom, weightMax: e.target.value })} disabled={custom.discipline !== 'kumite'} className={field} placeholder="вес до, кг" />
-            <NumberField value={custom.fee} onValueChange={(n) => setCustom({ ...custom, fee: n })} className={field} title={`Взнос, ${currency}`} />
-            <NumberField value={custom.duration} emptyValue={120} onValueChange={(n) => setCustom({ ...custom, duration: n })} className={field} title="Длительность боя, сек" />
+          <div className="grid grid-cols-2 gap-x-2 gap-y-2.5 text-sm">
+            <label className="col-span-2 sm:col-span-1">
+              <span className="block text-xs font-medium text-[var(--app-text-muted)] mb-1">Дисциплина</span>
+              <select value={custom.discipline} onChange={(e) => { setCustom({ ...custom, discipline: e.target.value as EventCategory['discipline'] }); setCustomError(null); }} className={`${field} w-full`}>
+                <option value="kumite">Кумитэ</option>
+                <option value="kata">Ката</option>
+                <option value="team_kumite">Командное кумитэ</option>
+                <option value="team_kata">Командное ката</option>
+                <option value="other">Другое — своими словами…</option>
+              </select>
+            </label>
+            {custom.discipline === 'other' && (
+              <label className="col-span-2 sm:col-span-1">
+                <span className="block text-xs font-medium text-[var(--app-text-muted)] mb-1">Название дисциплины</span>
+                <input autoFocus value={custom.customName} onChange={(e) => { setCustom({ ...custom, customName: e.target.value }); setCustomError(null); }} maxLength={60} className={`${field} w-full`} placeholder="напр. Кихон, Фукуго, Тамешивари" />
+              </label>
+            )}
+            <label>
+              <span className="block text-xs font-medium text-[var(--app-text-muted)] mb-1">Пол</span>
+              <select value={custom.gender} onChange={(e) => setCustom({ ...custom, gender: e.target.value as Gender })} className={`${field} w-full`}>
+                <option value="male">Мужской</option>
+                <option value="female">Женский</option>
+                <option value="mixed">Смешанный</option>
+              </select>
+            </label>
+            <label>
+              <span className="block text-xs font-medium text-[var(--app-text-muted)] mb-1">Возраст от</span>
+              <NumberField value={custom.ageMin} onValueChange={(n) => setCustom({ ...custom, ageMin: n })} className={`${field} w-full`} />
+            </label>
+            <label>
+              <span className="block text-xs font-medium text-[var(--app-text-muted)] mb-1">Возраст до</span>
+              <input inputMode="numeric" value={custom.ageMax} onChange={(e) => setCustom({ ...custom, ageMax: e.target.value.replace(/[^0-9]/g, '') })} className={`${field} w-full`} placeholder="любой" />
+            </label>
+            {(custom.discipline === 'kumite' || custom.discipline === 'other') && (
+              <>
+                <label>
+                  <span className="block text-xs font-medium text-[var(--app-text-muted)] mb-1">Вес больше, кг</span>
+                  <input inputMode="decimal" value={custom.weightMin} onChange={(e) => setCustom({ ...custom, weightMin: e.target.value.replace(',', '.').replace(/[^0-9.]/g, '') })} className={`${field} w-full`} placeholder="необязательно" />
+                </label>
+                <label>
+                  <span className="block text-xs font-medium text-[var(--app-text-muted)] mb-1">Вес до, кг</span>
+                  <input inputMode="decimal" value={custom.weightMax} onChange={(e) => setCustom({ ...custom, weightMax: e.target.value.replace(',', '.').replace(/[^0-9.]/g, '') })} className={`${field} w-full`} placeholder="необязательно" />
+                </label>
+              </>
+            )}
+            <label>
+              <span className="block text-xs font-medium text-[var(--app-text-muted)] mb-1">Взнос, {currency}</span>
+              <NumberField value={custom.fee} onValueChange={(n) => setCustom({ ...custom, fee: n })} className={`${field} w-full`} />
+            </label>
+            <label>
+              <span className="block text-xs font-medium text-[var(--app-text-muted)] mb-1">Длительность, сек</span>
+              <NumberField value={custom.duration} emptyValue={120} onValueChange={(n) => setCustom({ ...custom, duration: n })} className={`${field} w-full`} />
+            </label>
           </div>
-          <button onClick={addCustom} disabled={!tid} className="inline-flex items-center gap-2 h-10 px-4 rounded-lg border border-[var(--app-border)] text-sm text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)] cursor-pointer">
-            <Plus className="w-4 h-4" /> Добавить
+          {customError && <p className="text-sm text-red-600">{customError}</p>}
+          {customAdded && !customError && <p className="text-sm text-emerald-700">Добавлено: «{customAdded}»</p>}
+          <button onClick={addCustom} disabled={!tid} className="inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white text-sm font-semibold disabled:opacity-40 cursor-pointer">
+            <Plus className="w-4 h-4" /> Добавить категорию
           </button>
         </section>
       </div>
