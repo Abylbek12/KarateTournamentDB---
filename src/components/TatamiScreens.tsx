@@ -97,10 +97,16 @@ const Penalties: React.FC<{ c1: number; c2: number; align: 'left' | 'right' }> =
 );
 
 /** Full-screen spectator scoreboard for one tatami (TV / projector). No sign-in. */
-export const TatamiDisplay: React.FC<{ tatamiNumber: number; bouts: Bout[]; rules: TournamentRules }> = ({ tatamiNumber, bouts, rules }) => {
+export const TatamiDisplay: React.FC<{
+  tatamiNumber: number;
+  bouts: Bout[];
+  rules: TournamentRules;
+  /** Single-screen mode: show this bout (the one in the secretary's console). */
+  boutOverride?: Bout;
+}> = ({ tatamiNumber, bouts, rules, boutOverride }) => {
   useWakeLock();
   const { lang, name, club, cat } = useScreenLocale(bouts);
-  const bout = currentBoutOf(bouts, tatamiNumber);
+  const bout = boutOverride || currentBoutOf(bouts, tatamiNumber);
   const now = useTicker(!!bout && E.isRunning(bout));
   const next = upcomingOf(bouts, tatamiNumber, bout?.id, 2);
 
@@ -300,5 +306,14 @@ export const TatamiControl: React.FC<{
     );
   }
 
-  return <BoutConsole bout={bout} rules={rules} onChange={onChange} onClose={() => setShowList(true)} />;
+  return (
+    <BoutConsole
+      bout={bout}
+      rules={rules}
+      onChange={onChange}
+      onClose={() => setShowList(true)}
+      tatamiBouts={list}
+      onNextBout={() => setSelected(upcomingOf(bouts, tatamiNumber, bout.id, 1)[0]?.id ?? null)}
+    />
+  );
 };

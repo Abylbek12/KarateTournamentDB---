@@ -85,7 +85,7 @@ import { EntryForm } from './components/EntryForm';
 import { EventSetupPanel } from './components/EventSetupPanel';
 import { activeEntries, categoryName } from './utils/eventCategories';
 import { getDeviceKey, setDeviceKey } from './utils/liveStream';
-import { TatamiDisplay, CallRoomDisplay, TatamiControl } from './components/TatamiScreens';
+import { TatamiDisplay, CallRoomDisplay, TatamiControl, upcomingOf } from './components/TatamiScreens';
 import { MyAccountPanel } from './components/MyAccountPanel';
 import { RoleGuide } from './components/RoleGuide';
 import { PrintDocuments, parsePrintRequest } from './components/PrintDocuments';
@@ -2142,6 +2142,11 @@ function AppContent() {
           rules={tournamentRules}
           onChange={handleUpdateBout}
           onClose={() => setActiveScoreboardBout(null)}
+          tatamiBouts={bouts.filter((b) => b.tatamiNumber === activeScoreboardBout.tatamiNumber)}
+          onNextBout={() => {
+            const next = upcomingOf(bouts, activeScoreboardBout.tatamiNumber ?? 1, activeScoreboardBout.id, 1)[0];
+            if (next) setActiveScoreboardBout(next);
+          }}
         />
       )}
 

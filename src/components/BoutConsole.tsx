@@ -1,5 +1,6 @@
 import React from 'react';
-import { X, Play, Pause, RotateCcw, Minus, Plus, Undo2, Volume2, VolumeX, Gavel, Printer } from 'lucide-react';
+import { X, Play, Pause, RotateCcw, Minus, Plus, Undo2, Volume2, VolumeX, Gavel, Printer, Monitor } from 'lucide-react';
+import { SoloScoreboard } from './SoloScoreboard';
 import { printUrl } from './PrintDocuments';
 import type { Bout, Participant, TournamentRules } from '../types/schema';
 import * as E from '../utils/boutEngine';
@@ -15,7 +16,14 @@ interface BoutConsoleProps {
   /** Called after every action; the parent saves it immediately. */
   onChange: (bout: Bout) => void;
   onClose: () => void;
+  /** Bouts of the same tatami (single-screen mode shows the next ones). */
+  tatamiBouts?: Bout[];
+  /** Opens the next bout of the tatami (single-screen mode: Enter after the bout). */
+  onNextBout?: () => void;
 }
+
+// Single-screen mode stays on for the next bouts of the session
+let soloPreferred = false;
 
 const sideName = (p?: Participant, fallback = '') => (p ? `${p.lastName} ${p.firstName}`.trim() : fallback);
 
@@ -23,7 +31,7 @@ const sideName = (p?: Participant, fallback = '') => (p ? `${p.lastName} ${p.fir
  * The single tatami console (secretary / referee). Every scoreboard in the app uses it.
  * All rules come from utils/boutEngine.ts.
  */
-export const BoutConsole: React.FC<BoutConsoleProps> = ({ bout, rules, onChange, onClose }) => {
+export const BoutConsole: React.FC<BoutConsoleProps> = ({ bout, rules, onChange, onClose, tatamiBouts, onNextBout }) => {
   const { language } = useApp();
   const lang = (language || 'ru') as 'ru' | 'ky' | 'en';
   const tr = (ru: string, ky: string, en: string) => (lang === 'ky' ? ky : lang === 'en' ? en : ru);
@@ -32,6 +40,16 @@ export const BoutConsole: React.FC<BoutConsoleProps> = ({ bout, rules, onChange,
   const [now, setNow] = React.useState(Date.now());
   const [sound, setSound] = React.useState(true);
   const [confirm, setConfirm] = React.useState<{ label: string; run: () => void } | null>(null);
+  const [solo, setSoloState] = React.useState(soloPreferred);
+  const setSolo = (v: boolean) => {
+    soloPreferred = v;
+    setSoloState(v);
+    if (v) document.documentElement.requestFullscreen?.().catch(() => {});
+    else if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+  };
+  // Undo history of this bout (single-screen mode: Z / Backspace)
+  const history = React.useRef<{ id: string; list: Bout[] }>({ id: bout.id, list: [] });
+  if (history.current.id !== bout.id) history.current = { id: bout.id, list: [] };
   const system = E.ruleSystemOf(bout, rules);
   const running = E.isRunning(bout);
   const remaining = E.remainingSeconds(bout, now);
@@ -64,6 +82,7 @@ export const BoutConsole: React.FC<BoutConsoleProps> = ({ bout, rules, onChange,
 
   const apply = (next: Bout, chime?: number) => {
     if (next === bout) return;
+    history.current.list = [...history.current.list.slice(-49), bout];
     if (sound && chime) refereeAudio.playPointChime(chime);
     if (sound && next.status === 'completed' && bout.status !== 'completed') refereeAudio.playGong();
     onChange(next);
@@ -81,6 +100,7 @@ export const BoutConsole: React.FC<BoutConsoleProps> = ({ bout, rules, onChange,
   // Space = start / stop
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (solo) return; // single-screen mode has its own keys
       if (e.code === 'Space' && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLSelectElement)) {
         e.preventDefault();
         toggleClock();
@@ -225,6 +245,25 @@ export const BoutConsole: React.FC<BoutConsoleProps> = ({ bout, rules, onChange,
 
   const low = remaining < 10;
 
+  if (solo) {
+    return (
+      <SoloScoreboard
+        bout={bout}
+        rules={rules}
+        tatamiBouts={tatamiBouts || []}
+        apply={apply}
+        toggleClock={toggleClock}
+        canUndo={history.current.list.length > 0}
+        onUndo={() => {
+          const prev = history.current.list.pop();
+          if (prev) onChange(prev);
+        }}
+        onExit={() => setSolo(false)}
+        onNextBout={onNextBout}
+      />
+    );
+  }
+
   return (
     <div className="theme-keep fixed inset-0 z-50 bg-black/60 flex items-stretch sm:items-center justify-center p-0 sm:p-4" role="dialog" aria-label="Пульт боя">
       <div className="w-full max-w-6xl max-h-full overflow-y-auto bg-[var(--app-bg)] sm:rounded-2xl shadow-2xl">
@@ -236,6 +275,13 @@ export const BoutConsole: React.FC<BoutConsoleProps> = ({ bout, rules, onChange,
             </div>
             <div className="font-semibold text-[var(--app-text-primary)] truncate">{bout.categoryName || 'Категория'}</div>
           </div>
+          <button
+            onClick={() => setSolo(true)}
+            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-[var(--app-border)] text-sm text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)] cursor-pointer"
+            title={tr('Один экран: табло для зрителей, управление с клавиатуры', 'Бир экран: көрүүчүлөр үчүн табло, баскычтоп менен башкаруу', 'Single screen: audience scoreboard, keyboard control')}
+          >
+            <Monitor className="w-4 h-4" /> {tr('Один экран', 'Бир экран', 'Single screen')}
+          </button>
           <select
             id="bout-rule-system"
             value={system === 'skif' ? `skif:${bout.skifFormat || 'shobu_ippon'}` : 'wkf'}
