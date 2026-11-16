@@ -1,4 +1,5 @@
 import React from 'react';
+import { NumberField } from './NumberField';
 import { Link2, Copy, Check, Trash2, Plus, ShieldCheck } from 'lucide-react';
 import { ROLE_LABELS, type AccessRole } from '../utils/access';
 
@@ -134,11 +135,11 @@ export const InviteLinksPanel: React.FC = () => {
           </label>
           <label className="text-xs text-[var(--app-text-secondary)] flex flex-col gap-1">
             Действует, дней
-            <input type="number" min={1} max={60} value={days} onChange={(e) => setDays(Number(e.target.value))} className={`${fieldCls} w-24`} />
+            <NumberField value={days} emptyValue={7} onValueChange={(n) => setDays(Math.min(60, Math.max(1, n)))} className={`${fieldCls} w-24`} />
           </label>
           <label className="text-xs text-[var(--app-text-secondary)] flex flex-col gap-1">
             Сколько человек
-            <input type="number" min={1} max={100} value={maxUses} onChange={(e) => setMaxUses(Number(e.target.value))} className={`${fieldCls} w-24`} />
+            <NumberField value={maxUses} emptyValue={1} onValueChange={(n) => setMaxUses(Math.min(100, Math.max(1, n)))} className={`${fieldCls} w-24`} />
           </label>
           <label className="text-xs text-[var(--app-text-secondary)] flex flex-col gap-1 flex-1 min-w-[160px]">
             Для кого (заметка)

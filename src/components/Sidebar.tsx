@@ -26,6 +26,7 @@ import {
   QrCode,
   Layers
 } from 'lucide-react';
+import { hashForTab, isPlainClick } from '../utils/routes';
 import { canAccess, type AccessRole } from '../utils/access';
 import { TournamentRules, UserRole, Tournament } from '../types/schema';
 import { Language } from '../utils/translations';
@@ -241,9 +242,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   const Icon = item.icon;
                   const active = isActive(item.id);
                   return (
-                    <button
+                    <a
                       key={`${section.key}-${item.id}`}
-                      onClick={() => select(item.id)}
+                      href={hashForTab(item.id)}
+                      onClick={(e) => {
+                        if (!isPlainClick(e)) return; // Ctrl/Cmd-click opens a new tab
+                        e.preventDefault();
+                        select(item.id);
+                      }}
                       title={item.label}
                       aria-current={active ? 'page' : undefined}
                       className={`w-full flex items-center gap-3 rounded-lg text-left transition-colors cursor-pointer ${
@@ -259,7 +265,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       {!compact && item.badge && (
                         <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-600 text-white">{item.badge}</span>
                       )}
-                    </button>
+                    </a>
                   );
                 })}
               </div>

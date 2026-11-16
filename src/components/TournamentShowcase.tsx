@@ -4,6 +4,7 @@ import { Tournament, UserRole } from '../types/schema';
 import { useApp } from '../context/AppContext';
 import { EventItem, EventActionType } from '../data/eventsData';
 import { EventEmblem } from './EventEmblems';
+import { hashForTab, isPlainClick } from '../utils/routes';
 import { trLang, localizeEventItem } from '../utils/globalDomTranslator';
 import { isTournamentArchived } from './TournamentEventsManager';
 
@@ -152,6 +153,13 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
     return tr(`Через ${d} дн.`, `${d} күндөн кийин`, `In ${d} days`);
   };
 
+  // Tournament titles are real links: Ctrl/Cmd-click or long-press opens them in a new tab
+  const openInfo = (e: React.MouseEvent, item: EventItem) => {
+    e.stopPropagation();
+    if (!isPlainClick(e)) return;
+    e.preventDefault();
+    onSelectAction(item, 'info');
+  };
   const enter = (item: EventItem) => (onStartRegistration ? onStartRegistration(item) : onSelectAction(item, 'categories_prices'));
 
   const renderMeta = (item: EventItem, big = false) => (
@@ -188,14 +196,14 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
     ) : null;
 
   return (
-    <div className="theme-keep space-y-6 pb-8">
+    <div className="theme-keep space-y-4 sm:space-y-6 pb-8">
       {/* Heading + search */}
-      <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between pt-2">
+      <div className="flex flex-col lg:flex-row lg:items-end gap-3 sm:gap-4 justify-between pt-1 sm:pt-2">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--app-text-primary)]">
+          <h1 className="text-[22px] sm:text-3xl font-bold tracking-tight text-[var(--app-text-primary)]">
             {tr('Турниры по каратэ', 'Каратэ мелдештери', 'Karate tournaments')}
           </h1>
-          <p className="mt-1 text-[15px] text-[var(--app-text-secondary)]">
+          <p className="mt-0.5 sm:mt-1 text-sm sm:text-[15px] text-[var(--app-text-secondary)]">
             {tr(
               'Календарь соревнований Кыргызстана: заявки онлайн, сетки, live-результаты.',
               'Кыргызстандагы мелдештер: онлайн табыштама, торчолор, live-жыйынтыктар.',
@@ -236,7 +244,7 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
           <button
             key={r.value}
             onClick={() => setRegion(r.value)}
-            className={`px-3.5 h-9 rounded-full text-sm whitespace-nowrap border transition-colors cursor-pointer ${
+            className={`px-3 h-8 sm:px-3.5 sm:h-9 rounded-full text-[13px] sm:text-sm whitespace-nowrap border shrink-0 transition-colors cursor-pointer ${
               region === r.value
                 ? 'bg-[var(--app-text-primary)] border-[var(--app-text-primary)] text-[var(--app-surface)] font-semibold'
                 : 'bg-[var(--app-surface)] border-[var(--app-border)] text-[var(--app-text-secondary)] hover:border-[var(--app-text-muted)]'
@@ -254,13 +262,13 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
           className="relative overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-sm cursor-pointer group"
         >
           <div className="absolute inset-y-0 left-0 w-1.5" style={{ background: featured.accentColor || 'var(--accent)' }} />
-          <div className="p-5 sm:p-7 flex flex-col md:flex-row gap-5 md:items-center">
+          <div className="p-4 sm:p-7 flex flex-col md:flex-row gap-3 sm:gap-5 md:items-center">
             <EventEmblem
               type={featured.emblemType}
               imageUrl={featured.imageUrl}
               title={featured.title}
               color={featured.accentColor}
-              className="w-20 h-20 sm:w-24 sm:h-24 text-[16px] sm:text-[19px] shrink-0"
+              className="w-14 h-14 sm:w-24 sm:h-24 text-[13px] sm:text-[19px] shrink-0"
             />
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
@@ -271,8 +279,8 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
                   </span>
                 )}
               </div>
-              <h2 className="mt-1.5 text-xl sm:text-2xl font-bold leading-snug text-[var(--app-text-primary)] group-hover:text-[var(--accent)] transition-colors">
-                {featured.title}
+              <h2 className="mt-1.5 text-lg sm:text-2xl font-bold leading-snug text-[var(--app-text-primary)] group-hover:text-[var(--accent)] transition-colors">
+                <a href={hashForTab('event_info', featured.id)} onClick={(e) => openInfo(e, featured)}>{featured.title}</a>
               </h2>
               <div className="mt-2.5">{renderMeta(featured, true)}</div>
             </div>
@@ -280,17 +288,18 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
               {featured.isRegistrationOpen !== false && (
                 <button
                   onClick={() => enter(featured)}
-                  className="h-11 px-5 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white text-sm font-semibold cursor-pointer"
+                  className="h-10 sm:h-11 px-5 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white text-sm font-semibold cursor-pointer"
                 >
                   {tr('Подать заявку', 'Табыштама берүү', 'Enter')}
                 </button>
               )}
-              <button
-                onClick={() => onSelectAction(featured, 'info')}
-                className="h-11 px-5 rounded-xl border border-[var(--app-border)] text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)] text-sm font-semibold cursor-pointer inline-flex items-center justify-center gap-1.5"
+              <a
+                href={hashForTab('event_info', featured.id)}
+                onClick={(e) => openInfo(e, featured)}
+                className="h-10 sm:h-11 px-5 rounded-xl border border-[var(--app-border)] text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)] text-sm font-semibold cursor-pointer inline-flex items-center justify-center gap-1.5"
               >
                 {tr('Подробнее', 'Толугураак', 'Details')} <ArrowRight className="w-4 h-4" />
-              </button>
+              </a>
             </div>
           </div>
         </article>
@@ -311,25 +320,27 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
                   onClick={() => onSelectAction(item, 'info')}
                   className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] hover:border-[var(--accent)] hover:shadow-md transition-all cursor-pointer flex flex-col"
                 >
-                  <div className="p-4 sm:p-5 flex gap-4 flex-1">
+                  <div className="p-3 sm:p-5 flex gap-3 sm:gap-4 flex-1">
                     <EventEmblem
                       type={item.emblemType}
                       imageUrl={item.imageUrl}
                       title={item.title}
                       color={item.accentColor}
-                      className="w-14 h-14 text-[12px] shrink-0"
+                      className="w-11 h-11 sm:w-14 sm:h-14 text-[11px] sm:text-[12px] shrink-0"
                     />
                     <div className="min-w-0 flex-1">
                       <span className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-semibold ${toneCls[st.tone]}`}>{st.label}</span>
-                      <h4 className="mt-1.5 text-[17px] font-semibold leading-snug text-[var(--app-text-primary)] line-clamp-2">{item.title}</h4>
-                      <div className="mt-2">{renderMeta(item)}</div>
+                      <h4 className="mt-1 sm:mt-1.5 text-[15px] sm:text-[17px] font-semibold leading-snug text-[var(--app-text-primary)] line-clamp-2">
+                        <a href={hashForTab('event_info', item.id)} onClick={(e) => openInfo(e, item)}>{item.title}</a>
+                      </h4>
+                      <div className="mt-1.5 sm:mt-2">{renderMeta(item)}</div>
                     </div>
                   </div>
-                  <div className="px-4 sm:px-5 py-3 border-t border-[var(--app-border)] flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  <div className="px-3 sm:px-5 py-2 sm:py-3 border-t border-[var(--app-border)] flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     {item.isRegistrationOpen !== false && (
                       <button
                         onClick={() => enter(item)}
-                        className="h-9 px-4 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white text-sm font-semibold whitespace-nowrap cursor-pointer"
+                        className="h-8 sm:h-9 px-3 sm:px-4 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white text-[13px] sm:text-sm font-semibold whitespace-nowrap cursor-pointer"
                       >
                         {tr('Подать заявку', 'Табыштама', 'Enter')}
                       </button>

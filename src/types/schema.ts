@@ -153,6 +153,8 @@ export interface Tournament {
   clubCount?: number;
   disciplines?: string[];
   tatamiCount?: number;
+  /** Rules in the organizer's own words (shown to participants). */
+  rulesLabel?: string;
   registrationDeadline?: string;
   description?: string;
   imageUrl?: string;

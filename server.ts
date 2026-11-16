@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
-import { GoogleGenAI } from '@google/genai';
+import Anthropic from '@anthropic-ai/sdk';
 import crypto from 'crypto';
 import os from 'os';
 import path from 'path';
@@ -40,7 +40,8 @@ const PORT = Number(process.env.PORT) || 3000;
 // `npm start` passes --production (works on Windows too); NODE_ENV=production also works
 const IS_PRODUCTION = process.env.NODE_ENV === 'production' || process.argv.includes('--production');
 if (IS_PRODUCTION) process.env.NODE_ENV = 'production';
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+// AI assistant «Сенсей»: Claude. Shown on the site only when ANTHROPIC_API_KEY is set.
+const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'claude-opus-5-5';
 
 app.disable('x-powered-by');
 // Basic security headers
@@ -78,17 +79,14 @@ app.use(databaseMiddleware(() => ensureAdminAccount(true)));
 import { DEMO_EVENTS } from './src/data/eventsData';
 import { SAMPLE_BOUTS, SAMPLE_PARTICIPANTS } from './src/data/sampleTournamentData';
 
-const hasGeminiKey = () => {
-  const k = process.env.GEMINI_API_KEY;
-  return !!k && k !== 'MY_GEMINI_API_KEY';
-};
+const hasAiKey = () => !!process.env.ANTHROPIC_API_KEY?.trim();
 
 // Health Check API
 app.get('/api/health', (_req: Request, res: Response) => {
   res.json({
     status: 'ok',
     service: 'Tatami.kg Server',
-    aiEnabled: hasGeminiKey(),
+    aiEnabled: hasAiKey(),
     timestamp: new Date().toISOString(),
     serverTime: Date.now(),
     realtime: REALTIME,
@@ -1339,7 +1337,7 @@ function generateExpertFallbackResponse(prompt: string, context: Record<string, 
 Вопросы о заявках, взносах и расписании турнира задавайте организатору: его контакты указаны на странице турнира.${context.tournamentTitle ? `\n\n*Текущий турнир:* ${context.tournamentTitle}` : ''}`;
 }
 
-// Full Gemini Chat Endpoint
+// AI chat endpoint (Claude)
 const aiLimiter = rateLimiter(15, 60_000);
 
 app.post('/api/chat', aiLimiter, async (req: Request, res: Response) => {
@@ -1350,92 +1348,61 @@ app.post('/api/chat', aiLimiter, async (req: Request, res: Response) => {
       return;
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    console.log('[Sensei AI] Request received:', { hasKey: !!apiKey, messageLength: message.length });
-
-    if (!hasGeminiKey()) {
-      // Offline / Local knowledge base response
-      const fallback = generateExpertFallbackResponse(message, context);
-      res.json({
-        reply: fallback,
-        source: 'sensei-knowledge-engine',
-        status: 'ok'
-      });
+    if (!hasAiKey()) {
+      res.json({ reply: generateExpertFallbackResponse(message, context), source: 'sensei-knowledge-engine', status: 'ok' });
       return;
     }
 
-    const ai = new GoogleGenAI({
-      apiKey: apiKey!,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        },
-      },
-    });
+    const system = `Ты — «Сенсей», ассистент сайта Tatami.kg (турниры по каратэ в Кыргызстане).
+Отвечай на языке вопроса (русский, кыргызский или английский), коротко и по делу, простым языком; Markdown можно.
+Темы: правила WKF и SKIF (оценки Yuko/Waza-ari/Ippon, Senshu, предупреждения C1/C2, Хансоку, Кикен, Шиккаку, Хантей, судейство ката), подготовка к турниру и как пользоваться сайтом.
+Сайт Tatami.kg умеет: заявки («Подать заявку», тренер — сразу на всех учеников), «Мои заявки и оплата», категории и жеребьёвку с разведением одноклубников (организатор), пульт боя и табло по QR-коду, режим «Один экран» с клавишами, печать сеток, протоколов и дипломов в PDF, рейтинги и клубы по результатам. Онлайн-оплаты картой нет: взносы принимает организатор.
+Не выдумывай функции сайта, цифры, даты и правила. Если не уверен — так и скажи и посоветуй уточнить у организатора или в действующем регламенте федерации.
+Текущий турнир на экране пользователя: ${String(context.tournamentTitle || 'не выбран').slice(0, 200)}.`;
 
-    const systemInstruction = `Ты — лучший в мире интеллектуальный спортивный ассистент и супер-эксперт по спортивным единоборствам («Sensei AI Supreme» платформы Tatami.kg).
-Ты обладаешь энциклопедическими знаниями правил Всемирной федерации каратэ (WKF 2026) и традиционного каратэ SKIF (Shotokan Karate-Do International Federation).
-
-Контекст активного турнира:
-- Название турнира: ${context.tournamentTitle || 'не указано'}
-- Действующий регламент: ${context.rules || 'WKF'}
-- Количество татами: ${context.tatamiCount || 4}
-- Зарегистрировано спортсменов: ${context.participantCount ?? 'не указано'}
-- Категорий: ${context.categoryCount ?? 'не указано'}
-
-Правила ответа:
-1. Отвечай авторитетно, доброжелательно, четко, спортивным и судейским языком высокого класса.
-2. Всегда форматируй ответ в красивом Markdown: заголовки, списки, таблицы сравнений, жирные акценты.
-3. Разбирай тонкие моменты: Senshu, Ippon/Waza-ari/Yuko, дисквалификации Hansoku/Shikkaku, видеоповторы VR, судейство Ката (70% техника, 30% атлетика), умную жеребьевку с разведением одноклубников.
-4. Функции сайта Tatami.kg: заявки (раздел «Подать заявку», для тренеров — сразу на всех учеников), «Мои заявки и оплата», категории и жеребьёвка (организатор), пульт боя и табло по QR-коду, режим «Один экран» с клавишами, печать протоколов, сеток и дипломов в PDF, рейтинги и клубы по результатам. Онлайн-оплаты картой нет: взносы принимает организатор.
-5. Не выдумывай функции сайта, цифры, даты и правила. Если не уверен — скажи об этом и посоветуй уточнить у организатора или в действующем регламенте WKF/федерации.`;
-
-    const contents: any[] = [];
+    // Conversation: the page sends {role: 'user' | 'model', text}; Claude needs user/assistant, starting with user
+    const messages: Anthropic.MessageParam[] = [];
     if (Array.isArray(history)) {
-      for (const item of history.slice(-10)) {
-        if ((item?.role === 'user' || item?.role === 'model') && typeof item.text === 'string') {
-          contents.push({
-            role: item.role,
-            parts: [{ text: item.text.slice(0, 4000) }]
-          });
-        }
+      for (const item of history.slice(-12)) {
+        const role = item?.role === 'user' ? 'user' : item?.role === 'model' || item?.role === 'assistant' ? 'assistant' : null;
+        if (!role || typeof item.text !== 'string' || !item.text.trim()) continue;
+        if (messages.length === 0 && role === 'assistant') continue;
+        messages.push({ role, content: item.text.slice(0, 4000) });
       }
     }
+    messages.push({ role: 'user', content: message.slice(0, 4000) });
 
-    contents.push({
-      role: 'user',
-      parts: [{ text: message.slice(0, 4000) }]
+    const client = new Anthropic({ timeout: 60_000, maxRetries: 1 });
+    // Server-side fallback: if a request is declined by a safety classifier, another model answers
+    const response = await client.beta.messages.create({
+      model: CLAUDE_MODEL,
+      max_tokens: 16000,
+      system,
+      messages: messages as Anthropic.Beta.BetaMessageParam[],
+      output_config: { effort: 'low' },
+      betas: ['server-side-fallback-2026-07-01'],
+      fallbacks: 'default'
     });
 
-    // 12-second safety timeout so requests never hang or block user interface
-    const generatePromise = ai.models.generateContent({
-      model: GEMINI_MODEL,
-      contents,
-      config: {
-        systemInstruction,
-      }
-    });
-
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Gemini API timeout')), 12000)
-    );
-
-    const response = await Promise.race([generatePromise, timeoutPromise]);
-    const reply = response.text || generateExpertFallbackResponse(message, context);
-    
-    res.json({
-      reply,
-      source: GEMINI_MODEL,
-      status: 'ok'
-    });
+    if (response.stop_reason === 'refusal') {
+      res.json({ reply: 'Извините, на этот вопрос я ответить не могу. Спросите про правила каратэ или про работу сайта.', source: 'claude', status: 'ok' });
+      return;
+    }
+    const reply = response.content
+      .filter((b: any) => b.type === 'text')
+      .map((b: any) => b.text)
+      .join('\n')
+      .trim();
+    res.json({ reply: reply || generateExpertFallbackResponse(message, context), source: 'claude', status: 'ok' });
   } catch (error: any) {
-    console.error('Error generating AI response with Gemini:', error);
-    const fallback = generateExpertFallbackResponse(req.body?.message || '', req.body?.context || {});
+    if (error instanceof Anthropic.RateLimitError) console.warn('[Sensei AI] rate limited');
+    else if (error instanceof Anthropic.AuthenticationError) console.error('[Sensei AI] invalid ANTHROPIC_API_KEY');
+    else if (error instanceof Anthropic.APIError) console.error(`[Sensei AI] API error ${error.status}:`, error.message);
+    else console.error('[Sensei AI] error:', error?.message || error);
     res.json({
-      reply: fallback,
-      source: 'sensei-knowledge-engine-fallback',
-      status: 'ok',
-      errorDetails: error?.message || 'Gemini fallback activated'
+      reply: 'Ассистент сейчас недоступен. Попробуйте позже.',
+      source: 'error',
+      status: 'ok'
     });
   }
 });

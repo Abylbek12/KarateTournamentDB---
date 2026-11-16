@@ -72,7 +72,7 @@ const loadHistory = (): Message[] => {
 
 const sourceLabel = (source?: string) => {
   if (!source || source === 'welcome') return null;
-  if (source.startsWith('gemini')) return 'Ответ ИИ';
+  if (source === 'claude') return 'Ответ ИИ (Claude)';
   if (source === 'local-diagnostic') return 'Нет связи';
   return 'Справочник (офлайн)';
 };

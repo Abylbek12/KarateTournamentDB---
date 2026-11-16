@@ -9,7 +9,8 @@ import {
   ShieldCheck, 
   Layers, 
   Ticket,
-  ChevronRight
+  ChevronRight,
+  Pencil
 } from 'lucide-react';
 import { EventItem } from '../data/eventsData';
 import { EventEmblem } from './EventEmblems';
@@ -21,38 +22,48 @@ interface TournamentInfoDetailViewProps {
   onBack: () => void;
   onNavigateAction: (action: string) => void;
   onStartRegistration: () => void;
+  /** Real number of entries (not withdrawn) for this tournament. */
+  entriesCount?: number;
+  /** Administrators can open the edit form from here. */
+  onEdit?: () => void;
 }
+
+const RULES_NAMES: Record<string, string> = {
+  wkf: 'WKF',
+  skif: 'SKIF',
+  kyokushin: 'Kyokushin',
+  jka: 'JKA',
+  olympic: 'Olympic WKF'
+};
 
 export const TournamentInfoDetailView: React.FC<TournamentInfoDetailViewProps> = ({
   tournament: rawTournament,
   onBack,
   onNavigateAction,
   onStartRegistration,
+  entriesCount,
+  onEdit,
 }) => {
   const { language } = useApp();
   const tr = (ru: string, ky: string, en: string) => trLang(language, ru, ky, en);
   const tournament = localizeEventItem(rawTournament, language);
 
-  // Live countdown timer calculation
-  const [timeLeft, setTimeLeft] = useState({
-    days: 241,
-    hours: 14,
-    minutes: 32,
-    seconds: 18
-  });
-
+  // Countdown to the first day of the tournament (09:00 local time)
+  const startsAt = new Date(`${(rawTournament.startDate || '').slice(0, 10)}T09:00:00`).getTime();
+  const [now, setNow] = useState(Date.now());
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev.seconds > 0) return { ...prev, seconds: prev.seconds - 1 };
-        if (prev.minutes > 0) return { ...prev, minutes: 59, seconds: 59 };
-        if (prev.hours > 0) return { ...prev, hours: prev.hours - 1, minutes: 59, seconds: 59 };
-        if (prev.days > 0) return { ...prev, days: prev.days - 1, hours: 23, minutes: 59, seconds: 59 };
-        return prev;
-      });
-    }, 1000);
+    const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
+  const msLeft = Number.isFinite(startsAt) ? Math.max(0, startsAt - now) : 0;
+  const timeLeft = {
+    days: Math.floor(msLeft / 86_400_000),
+    hours: Math.floor(msLeft / 3_600_000) % 24,
+    minutes: Math.floor(msLeft / 60_000) % 60,
+    seconds: Math.floor(msLeft / 1000) % 60
+  };
+  const rulesText = (rawTournament as any).rulesLabel || RULES_NAMES[rawTournament.rulesType] || 'WKF';
+  const showDetails = () => document.getElementById('event-details')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   return (
     <div className="space-y-4 animate-fadeIn font-sans pb-16 max-w-7xl mx-auto">
@@ -149,6 +160,16 @@ export const TournamentInfoDetailView: React.FC<TournamentInfoDetailViewProps> =
                 <span>{tr('Зарегистрироваться на событие', 'Иш-чарага катталуу', 'Register for Event')}</span>
               </button>
 
+              {onEdit && (
+                <button
+                  onClick={onEdit}
+                  className="px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-800 text-sm font-semibold transition-all cursor-pointer flex items-center gap-2"
+                >
+                  <Pencil className="w-4 h-4" />
+                  <span>{tr('Изменить турнир', 'Мелдешти өзгөртүү', 'Edit tournament')}</span>
+                </button>
+              )}
+
               {tournament.availableActions.includes('live_scoring') && (
                 <button
                   onClick={() => onNavigateAction('live_scoring')}
@@ -188,7 +209,7 @@ export const TournamentInfoDetailView: React.FC<TournamentInfoDetailViewProps> =
 
             <div className="text-[11px] text-slate-500 flex items-center justify-center gap-1">
               <Clock className="w-3.5 h-3.5 text-slate-400" />
-              <span>{tr('Дедлайн', 'Мөөнөтү', 'Deadline')}: {tournament.registrationDeadline || '2026-11-03'}</span>
+              <span>{tr('Приём заявок до', 'Өтүнмөлөр', 'Entries until')}: {tournament.registrationDeadline || '—'}</span>
             </div>
           </div>
         </div>
@@ -197,25 +218,64 @@ export const TournamentInfoDetailView: React.FC<TournamentInfoDetailViewProps> =
         <div className="grid grid-cols-2 md:grid-cols-4 border-t border-slate-100 bg-slate-50/50">
           <div className="p-4 border-r border-b md:border-b-0 border-slate-100 text-center">
             <div className="text-[11px] text-slate-400">{tr('Организатор', 'Уюштуруучу', 'Organization')}</div>
-            <div className="text-xs font-bold text-slate-800 mt-0.5 truncate">{tournament.organization || 'National Program'}</div>
+            <div className="text-xs font-bold text-slate-800 mt-0.5 truncate">{tournament.organization || '—'}</div>
           </div>
           <div className="p-4 border-r border-b md:border-b-0 border-slate-100 text-center">
             <div className="text-[11px] text-slate-400">{tr('Татами / Рингов', 'Татами / Рингдер', 'Tatami / Rings')}</div>
             <div className="text-xs font-bold text-slate-800 mt-0.5">
-              {tournament.tatamiCount || tournament.ringsCount || 6} {tr('площадок', 'аянтча', 'mats')}
+              {tournament.tatamiCount || tournament.ringsCount || 1} {tr('татами', 'татами', 'tatami')}
             </div>
           </div>
           <div className="p-4 border-r border-slate-100 text-center">
             <div className="text-[11px] text-slate-400">{tr('Участников заявлено', 'Катталган катышуучулар', 'Registered Athletes')}</div>
             <div className="text-xs font-bold text-slate-800 mt-0.5">
-              {tournament.athleteCount || 380} {tr('спортсменов', 'спортчу', 'athletes')}
+              {entriesCount ?? 0} {tr('заявок', 'өтүнмө', 'entries')}
             </div>
           </div>
           <div className="p-4 text-center">
             <div className="text-[11px] text-slate-400">{tr('Регламент', 'Регламент', 'Rules Standard')}</div>
-            <div className="text-xs font-bold text-sky-600 mt-0.5 uppercase">{tournament.rulesType || 'WKF'} 2026</div>
+            <div className="text-xs font-bold text-sky-600 mt-0.5 truncate" title={rulesText}>{rulesText}</div>
           </div>
         </div>
+      </div>
+
+      {/* Full information: what the organizer entered */}
+      <div id="event-details" className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-6 space-y-4 scroll-mt-20">
+        <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-sky-600" />
+          <span>{tr('Информация о турнире', 'Мелдеш жөнүндө маалымат', 'Tournament information')}</span>
+        </h3>
+        <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2 text-sm">
+          {[
+            [tr('Даты', 'Даталар', 'Dates'), [rawTournament.startDate, rawTournament.endDate].filter(Boolean).join(' — ')],
+            [tr('Приём заявок до', 'Өтүнмөлөр кабыл алынат', 'Entries until'), rawTournament.registrationDeadline || '—'],
+            [tr('Место', 'Орун', 'Venue'), [rawTournament.venueName, rawTournament.city, rawTournament.country].filter(Boolean).join(', ') || '—'],
+            [tr('Организатор', 'Уюштуруучу', 'Organizer'), rawTournament.organization || '—'],
+            [tr('Правила и регламент', 'Эрежелер жана регламент', 'Rules'), rulesText],
+            [tr('Татами', 'Татами', 'Tatami'), String(rawTournament.tatamiCount || 1)]
+          ].map(([k, v]) => (
+            <div key={k}>
+              <dt className="text-[11px] uppercase tracking-wide text-slate-400">{k}</dt>
+              <dd className="text-slate-800 font-medium">{v}</dd>
+            </div>
+          ))}
+        </dl>
+        {rawTournament.disciplines && rawTournament.disciplines.length > 0 && (
+          <div>
+            <div className="text-[11px] uppercase tracking-wide text-slate-400 mb-1.5">{tr('Дисциплины в программе', 'Программадагы дисциплиналар', 'Disciplines')}</div>
+            <div className="flex flex-wrap gap-1.5">
+              {rawTournament.disciplines.map((d) => (
+                <span key={d} className="px-2.5 py-1 rounded-lg bg-sky-50 border border-sky-200 text-sky-800 text-xs">{d}</span>
+              ))}
+            </div>
+          </div>
+        )}
+        {rawTournament.description && (
+          <div>
+            <div className="text-[11px] uppercase tracking-wide text-slate-400 mb-1">{tr('Описание и условия допуска', 'Сүрөттөмө жана шарттар', 'Description & eligibility')}</div>
+            <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">{rawTournament.description}</p>
+          </div>
+        )}
       </div>
 
       {/* Available Modules for this Sport Category */}
@@ -248,13 +308,13 @@ export const TournamentInfoDetailView: React.FC<TournamentInfoDetailViewProps> =
               desc = tr('Зачет по клубам, федерациям и странам', 'Клубдар, федерациялар жана өлкөлөр боюнча эсеп', 'Club, federation and national medal ranks');
             } else if (actionKey === 'live_scoring') {
               title = tr('Live Scoring', 'Түз эфир таблосу', 'Live Scoring');
-              desc = tr('Онлайн-монитор 4-х татами в реальном времени', '4 татаминин реалдуу убакыттагы онлайн-монитору', 'Real-time multi-mat scoreboard view');
+              desc = tr('Счёт и время на каждом татами в реальном времени', 'Ар бир татамидеги эсеп жана убакыт', 'Score and clock on every tatami in real time');
             }
 
             return (
               <button
                 key={actionKey}
-                onClick={() => onNavigateAction(actionKey)}
+                onClick={() => (actionKey === 'info' ? showDetails() : onNavigateAction(actionKey))}
                 className="flex items-start gap-3 p-3.5 rounded-xl border border-slate-200/80 hover:border-sky-300 hover:bg-sky-50/50 transition-all text-left group cursor-pointer"
               >
                 <div className="p-2 rounded-lg bg-sky-50 text-sky-600 group-hover:bg-sky-100 transition-colors">

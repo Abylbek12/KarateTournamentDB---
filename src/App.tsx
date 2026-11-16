@@ -64,7 +64,8 @@ import {
   SAMPLE_TOURNAMENT_CATEGORIES,
   SAMPLE_REFEREE_PROTOCOLS,
   SAMPLE_TOURNAMENTS,
-  durationForCategory
+  durationForCategory,
+  belongsToEvent
 } from './data/sampleTournamentData';
 import { Bout, Participant, TournamentRules, RefereeProtocol, UserRole, EventCategory, TournamentCategory, TournamentRegistrationConfig, Tournament, AppNotification, AuthenticatedUserProfile } from './types/schema';
 
@@ -84,6 +85,7 @@ import { EventSetupPanel } from './components/EventSetupPanel';
 import { activeEntries, categoryName } from './utils/eventCategories';
 import { getDeviceKey, setDeviceKey } from './utils/liveStream';
 import { startServerClock } from './utils/serverClock';
+import { hashForTab, tabFromHash, isEventTab, isPlainClick } from './utils/routes';
 import { TatamiDisplay, CallRoomDisplay, TatamiControl, upcomingOf } from './components/TatamiScreens';
 import { MyAccountPanel } from './components/MyAccountPanel';
 import { RoleGuide } from './components/RoleGuide';
@@ -167,6 +169,15 @@ function AppContent() {
     };
     if (moved[activeTab]) setActiveTab(moved[activeTab]);
   }, [activeTab]);
+
+  // The AI assistant is shown only when the server has an AI key
+  const [aiAssistantEnabled, setAiAssistantEnabled] = React.useState(false);
+  React.useEffect(() => {
+    fetch('/api/health')
+      .then((r) => r.json())
+      .then((d) => setAiAssistantEnabled(!!d.aiEnabled))
+      .catch(() => {});
+  }, []);
 
   // One clock for every device (bout timers are timestamps)
   React.useEffect(() => startServerClock(), []);
@@ -455,6 +466,7 @@ function AppContent() {
     canWrite: !!currentUser && ['admin', 'chief_referee'].includes(currentUser.role)
   });
   const [activeScoreboardBout, setActiveScoreboardBout] = useState<Bout | null>(null);
+  const [editTournamentRequest, setEditTournamentRequest] = useState<string | null>(null);
   const [selectedConsoleBoutId, setSelectedConsoleBoutId] = useState<string>(SAMPLE_BOUTS[0].id);
   const [isGlobalManualModalOpen, setIsGlobalManualModalOpen] = useState<boolean>(false);
   const [isResetModalOpen, setIsResetModalOpen] = useState<boolean>(false);
@@ -589,31 +601,45 @@ function AppContent() {
 
   const [isTrainingMenuOpen, setIsTrainingMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-
-  const navigateWithHash = (tab: string, eventId?: string) => {
-    setActiveTab(tab);
-    try {
-      const hashMap: Record<string, string> = {
-        tournaments: '#home',
-        studios: '#studios',
-        virtual_studios: '#virtual_studios',
-        rankings: '#rankings',
-        about: '#about',
-        help: '#help',
-        event_info: `#info;id=${eventId || selectedEvent.id}`,
-        event_categories_prices: `#categories;id=${eventId || selectedEvent.id}`,
-        event_brackets: `#brackets;id=${eventId || selectedEvent.id}`,
-        event_results: `#results;id=${eventId || selectedEvent.id}`,
-        event_medals: `#medals;id=${eventId || selectedEvent.id}`,
-        event_live_scoring: `#live_scoring;id=${eventId || selectedEvent.id}`,
-      };
-      const targetHash = hashMap[tab] || `#${tab}`;
-      if (window.location.hash !== targetHash) {
-        window.history.replaceState(null, '', targetHash);
+  // Close the profile menu on a tap/click anywhere outside it (and on Esc)
+  const profileMenuRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    if (!isProfileMenuOpen) return;
+    let closed = false;
+    const onDown = (e: Event) => {
+      if (closed) return;
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
+        closed = true;
+        setIsProfileMenuOpen(false);
+        // This tap only closes the menu: don't also press whatever is under the finger
+        const swallow = (ev: MouseEvent) => {
+          ev.stopPropagation();
+          ev.preventDefault();
+        };
+        document.addEventListener('click', swallow, { capture: true, once: true });
+        setTimeout(() => document.removeEventListener('click', swallow, { capture: true } as any), 400);
       }
-    } catch {
-      // Ignore history API restrictions in sandboxed iframes
+    };
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setIsProfileMenuOpen(false);
+    const events = ['pointerdown', 'mousedown', 'touchstart'] as const;
+    events.forEach((t) => document.addEventListener(t, onDown, true));
+    document.addEventListener('keydown', onKey);
+    return () => {
+      events.forEach((t) => document.removeEventListener(t, onDown, true));
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [isProfileMenuOpen]);
+
+  // The address bar follows the screen (see the history effect below)
+  const navigateWithHash = (tab: string, eventId?: string) => {
+    if (eventId && eventId !== selectedEvent.id) {
+      const ev = tournaments.find((t) => t.id === eventId);
+      if (ev) {
+        setSelectedEvent(ev);
+        setSelectedTournament(ev);
+      }
     }
+    setActiveTab(tab);
   };
 
   const handleSelectTournamentAction = (item: EventItem, action: EventActionType) => {
@@ -728,59 +754,22 @@ function AppContent() {
           setLanguage('ky');
         }
 
-        const rawHash = window.location.hash.replace(/^#/, '');
-        if (rawHash) {
-          const [hashRoute, ...hashParams] = rawHash.split(';');
-          const idParam = hashParams.find((p) => p.startsWith('id='))?.split('=')[1];
-          if (idParam) {
-            const matchedEvent = tournaments.find((e) => e.id === idParam);
+        if (window.location.hash === '#login') {
+          setAuthModalMode('login');
+          setIsAuthModalOpen(true);
+          return;
+        }
+        const route = tabFromHash(window.location.hash);
+        if (route) {
+          if (route.eventId) {
+            const matchedEvent = tournaments.find((e) => e.id === route.eventId);
             if (matchedEvent) {
               setSelectedEvent(matchedEvent);
               setSelectedTournament(matchedEvent);
             }
           }
-
-          if (hashRoute === 'home' || hashRoute === 'events' || hashRoute === 'tournaments') {
-            setActiveTab('tournaments');
-            return;
-          } else if (hashRoute === 'studios') {
-            setActiveTab('studios');
-            return;
-          } else if (hashRoute === 'virtual_studios') {
-            setActiveTab('virtual_studios');
-            return;
-          } else if (hashRoute === 'rankings') {
-            setActiveTab('rankings');
-            return;
-          } else if (hashRoute === 'about') {
-            setActiveTab('about');
-            return;
-          } else if (hashRoute === 'help') {
-            setActiveTab('help');
-            return;
-          } else if (hashRoute === 'info') {
-            setActiveTab('event_info');
-            return;
-          } else if (hashRoute === 'categories') {
-            setActiveTab('event_categories_prices');
-            return;
-          } else if (hashRoute === 'brackets') {
-            setActiveTab('event_brackets');
-            return;
-          } else if (hashRoute === 'results') {
-            setActiveTab('event_results');
-            return;
-          } else if (hashRoute === 'medals') {
-            setActiveTab('event_medals');
-            return;
-          } else if (hashRoute === 'live_scoring') {
-            setActiveTab('event_live_scoring');
-            return;
-          } else if (hashRoute === 'login') {
-            setAuthModalMode('login');
-            setIsAuthModalOpen(true);
-            return;
-          }
+          setActiveTab(route.tab);
+          return;
         }
 
         if (mode === 'registration' || mode === 'vinted' || tab === 'registration' || tab === 'vinted_reg') {
@@ -797,8 +786,28 @@ function AppContent() {
 
     syncFromLocation();
     window.addEventListener('hashchange', syncFromLocation);
-    return () => window.removeEventListener('hashchange', syncFromLocation);
+    window.addEventListener('popstate', syncFromLocation);
+    return () => {
+      window.removeEventListener('hashchange', syncFromLocation);
+      window.removeEventListener('popstate', syncFromLocation);
+    };
   }, [tournaments]);
+
+  // Every screen change becomes a browser history step, so the phone's Back button
+  // returns to the previous screen instead of leaving the site.
+  React.useEffect(() => {
+    if (screenMode || printRequest) return;
+    const target = hashForTab(activeTab, isEventTab(activeTab) ? selectedEvent.id : undefined);
+    if (window.location.hash === target) return;
+    const current = tabFromHash(window.location.hash);
+    // Opening a link to a tournament page before the tournament list has loaded: keep it
+    if (current && current.tab === activeTab && current.eventId && !tournaments.some((t) => t.id === current.eventId)) return;
+    if (!window.location.hash && activeTab === 'tournaments') {
+      window.history.replaceState(null, '', target);
+      return;
+    }
+    window.history.pushState(null, '', target);
+  }, [activeTab, selectedEvent.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
   // 1-Click Database Reset Handler (Preserving Database Schema)
@@ -941,7 +950,7 @@ function AppContent() {
             {/* ========================================================
                 UNIFIED PROFILE & SETTINGS MENU (Role RBAC, Theme, Language & Account)
                ======================================================== */}
-            <div className="relative">
+            <div className="relative" ref={profileMenuRef}>
               <button
                 type="button"
                 onClick={() => {
@@ -996,13 +1005,8 @@ function AppContent() {
 
               {isProfileMenuOpen && (
                 <>
-                  {/* Click-outside backdrop */}
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setIsProfileMenuOpen(false)}
-                  />
 
-                  <div className="absolute right-0 mt-2 w-72 sm:w-80 rounded-2xl bg-white border border-slate-200 shadow-2xl p-3 z-50 text-xs space-y-3 animate-fadeIn">
+                  <div className="fixed left-3 right-3 top-14 max-h-[calc(100dvh-8rem)] overflow-y-auto sm:absolute sm:left-auto sm:top-auto sm:right-0 sm:mt-2 sm:w-80 sm:max-h-none sm:overflow-visible rounded-2xl bg-white border border-slate-200 shadow-2xl p-3 z-50 text-xs space-y-3 animate-fadeIn">
                     {/* 1. User Account Header */}
                     <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
                       <div className="flex items-center justify-between gap-2">
@@ -1421,6 +1425,15 @@ function AppContent() {
                 setSelectedTournament(selectedEvent);
                 setActiveTab('registration');
               }}
+              entriesCount={participants.filter((p) => belongsToEvent(p.tournamentId, selectedEvent.id) && p.status !== 'withdrawn').length}
+              onEdit={
+                effectiveRole === 'admin'
+                  ? () => {
+                      setEditTournamentRequest(selectedEvent.id);
+                      navigateWithHash('admin');
+                    }
+                  : undefined
+              }
             />
           )}
 
@@ -1585,6 +1598,8 @@ function AppContent() {
               onUpdateTournament={handleUpdateTournament}
               onDeleteTournament={handleDeleteTournament}
               onNavigateToDetails={(t) => handleSelectTournamentAction(t as EventItem, 'info')}
+              editRequestId={editTournamentRequest}
+              onEditRequestHandled={() => setEditTournamentRequest(null)}
             />
           )}
 
@@ -1650,141 +1665,81 @@ function AppContent() {
         {/* ========================================================
             TATAMI.KG OFFICIAL FOOTER WITH PRIVACY POLICY & COMPACT BOT DOCK
            ======================================================== */}
-        <footer className="mt-auto border-t border-slate-800/80 bg-slate-950 pt-8 pb-24 lg:pb-8 px-4 sm:px-6 text-xs text-slate-400 font-sans">
-          <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 mb-8">
-            {/* Col 1: Brand & Mission */}
+        <footer className="theme-keep mt-auto border-t border-[var(--app-border)] bg-[var(--app-surface)] pt-10 pb-24 lg:pb-10 px-5 sm:px-8 text-[var(--app-text-secondary)]">
+          <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-8 mb-8">
+            {/* Brand */}
             <div className="space-y-3">
-              <div className="flex items-center gap-2.5">
-                <TatamiMark className="w-8 h-8" />
-                <span className="text-sm font-black tracking-wider text-white font-mono uppercase">
-                  TATAMI.KG
+              <a href="#home" onClick={(e) => { if (isPlainClick(e)) { e.preventDefault(); navigateWithHash('tournaments'); } }} className="flex items-center gap-2.5">
+                <TatamiMark className="w-9 h-9" />
+                <span className="text-xl font-extrabold tracking-tight text-[var(--app-text-primary)]">
+                  Tatami<span className="text-rose-500">.kg</span>
                 </span>
-              </div>
-              <p className="text-slate-400 text-xs font-mono leading-relaxed">
+              </a>
+              <p className="text-[15px] leading-relaxed text-[var(--app-text-secondary)] max-w-xs">
                 {tr(
-                  'Профессиональная экосистема спортивных единоборств и боевых искусств.',
-                  'Спорттук жекпе-жек жана согуш өнөрлөрүнүн кесиптик экосистемасы.',
-                  'Professional tournament management platform for Martial Arts & Combat Sports.'
+                  'Турниры по каратэ онлайн: заявки, жеребьёвка, табло и результаты — в одном месте.',
+                  'Каратэ мелдештери онлайн: өтүнмөлөр, чүчүкулак, табло жана жыйынтыктар — бир жерде.',
+                  'Karate tournaments online: entries, draw, scoreboards and results in one place.'
                 )}
               </p>
             </div>
 
-            {/* Col 2: Navigation */}
-            <div className="space-y-2.5 font-mono">
-              <div className="text-xs font-bold uppercase tracking-wider text-white">
-                {tr('Разделы платформы', 'Платформанын бөлүмдөрү', 'Platform Navigation')}
-              </div>
-              <ul className="space-y-1.5 text-xs text-slate-400">
-                <li>
-                  <button onClick={() => setActiveTab('tournaments')} className="hover:text-blue-400 transition-colors cursor-pointer">
-                    {tr('• События и турниры', '• Окуялар жана мелдештер', '• Events & Tournaments')}
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => setActiveTab('studios')} className="hover:text-blue-400 transition-colors cursor-pointer">
-                    {tr('• Клубы', '• Клубдар', '• Clubs')}
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => setActiveTab('virtual_studios')} className="hover:text-blue-400 transition-colors cursor-pointer">
-                    {tr('• Сейчас на татами (LIVE)', '• Азыр татамиде (LIVE)', '• Live now')}
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => setActiveTab('rankings')} className="hover:text-blue-400 transition-colors cursor-pointer">
-                    {tr('• Рейтинги атлетов', '• Спортчулардын рейтинги', '• Athlete Rankings')}
-                  </button>
-                </li>
+            {/* Sections */}
+            <nav className="space-y-3" aria-label={tr('Разделы', 'Бөлүмдөр', 'Sections')}>
+              <div className="text-sm font-semibold text-[var(--app-text-primary)]">{tr('Разделы', 'Бөлүмдөр', 'Sections')}</div>
+              <ul className="space-y-2 text-[15px]">
+                {([
+                  ['tournaments', tr('Турниры', 'Мелдештер', 'Tournaments')],
+                  ['virtual_studios', tr('Идут бои', 'Беттештер жүрүүдө', 'Live now')],
+                  ['rankings', tr('Рейтинги', 'Рейтингдер', 'Rankings')],
+                  ['studios', tr('Клубы', 'Клубдар', 'Clubs')]
+                ] as const).map(([tab, label]) => (
+                  <li key={tab}>
+                    <a
+                      href={hashForTab(tab)}
+                      onClick={(e) => { if (isPlainClick(e)) { e.preventDefault(); navigateWithHash(tab); } }}
+                      className="text-[var(--app-text-secondary)] hover:text-[var(--accent)] transition-colors"
+                    >
+                      {label}
+                    </a>
+                  </li>
+                ))}
               </ul>
-            </div>
+            </nav>
 
-            {/* Col 3: Legal & Compliance */}
-            <div className="space-y-2.5 font-mono">
-              <div className="text-xs font-bold uppercase tracking-wider text-white">
-                {tr('Документы и регламент', 'Документтер жана регламент', 'Legal & Compliance')}
-              </div>
-              <ul className="space-y-1.5 text-xs text-slate-400">
+            {/* Help */}
+            <div className="space-y-3">
+              <div className="text-sm font-semibold text-[var(--app-text-primary)]">{tr('Помощь', 'Жардам', 'Help')}</div>
+              <ul className="space-y-2 text-[15px]">
                 <li>
-                  <button 
-                    onClick={() => setIsPrivacyModalOpen(true)}
-                    className="text-blue-400 hover:text-blue-300 font-semibold underline underline-offset-2 transition-colors cursor-pointer flex items-center gap-1"
-                  >
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>{tr('Политика конфиденциальности', 'Купуялуулук саясаты', 'Privacy Policy')}</span>
-                  </button>
+                  <a href="#help" onClick={(e) => { if (isPlainClick(e)) { e.preventDefault(); navigateWithHash('help'); } }} className="text-[var(--app-text-secondary)] hover:text-[var(--accent)] transition-colors">
+                    {tr('Инструкция', 'Нускама', 'How it works')}
+                  </a>
                 </li>
                 <li>
-                  <button 
-                    onClick={() => {
-                      setGlobalSystemToast(
-                        tr(
-                          'Пользовательское соглашение: регламент участия в официальных спортивных соревнованиях',
-                          'Колдонуучу келишими: расмий спорттук мелдештерге катышуу регламенти',
-                          'Terms of Service: official sports competition participation regulations'
-                        )
-                      );
-                      setTimeout(() => setGlobalSystemToast(null), 4000);
-                    }} 
-                    className="hover:text-slate-200 transition-colors cursor-pointer"
-                  >
-                    {tr('• Пользовательское соглашение', '• Колдонуучу келишими', '• Terms of Service')}
-                  </button>
+                  <a href="#about" onClick={(e) => { if (isPlainClick(e)) { e.preventDefault(); navigateWithHash('about'); } }} className="text-[var(--app-text-secondary)] hover:text-[var(--accent)] transition-colors">
+                    {tr('О платформе', 'Платформа жөнүндө', 'About')}
+                  </a>
                 </li>
                 <li>
-                  <button 
-                    onClick={() => setActiveTab('about')}
-                    className="hover:text-slate-200 transition-colors cursor-pointer"
-                  >
-                    {tr('• Международный регламент соревнований', '• Мелдештин эл аралык регламенти', '• Competition Rulebook')}
+                  <button onClick={() => setIsPrivacyModalOpen(true)} className="text-[var(--app-text-secondary)] hover:text-[var(--accent)] transition-colors cursor-pointer">
+                    {tr('Политика конфиденциальности', 'Купуялуулук саясаты', 'Privacy policy')}
                   </button>
                 </li>
-              </ul>
-            </div>
-
-            {/* Col 4: Support & Sensei AI Assistant */}
-            <div className="space-y-3 font-mono">
-              <div className="text-xs font-bold uppercase tracking-wider text-white">
-                {tr('Поддержка и Помощник', 'Колдоо жана Жардамчы', 'Support & AI Assistant')}
-              </div>
-              <p className="text-xs text-slate-400">
-                {tr(
-                  'Круглосуточный судейский консультант по регламентам соревнований, жеребьевке и протоколам.',
-                  'Мелдеш регламенттери, чүчүкулак жана протоколдор боюнча күнү-түнү калыстык консультант.',
-                  '24/7 rulebook assistant for competition scoring and tournament bracket guidelines.'
+                {aiAssistantEnabled && (
+                  <li>
+                    <button onClick={() => window.dispatchEvent(new Event('open-sensei-ai'))} className="inline-flex items-center gap-1.5 text-[var(--accent)] hover:underline transition-colors cursor-pointer">
+                      <Bot className="w-4 h-4" /> {tr('Спросить ассистента', 'Жардамчыдан суроо', 'Ask the assistant')}
+                    </button>
+                  </li>
                 )}
-              </p>
-              
-              {/* Footer Compact Sensei AI Summon Button */}
-              <button
-                onClick={() => {
-                  window.dispatchEvent(new Event('open-sensei-ai'));
-                }}
-                className="w-full flex items-center justify-between gap-2 p-2.5 rounded-xl bg-gradient-to-r from-blue-950/80 to-indigo-950/80 hover:from-blue-900/90 hover:to-indigo-900/90 border border-blue-500/40 text-blue-200 text-xs transition-all cursor-pointer shadow-md group"
-              >
-                <span className="flex items-center gap-2">
-                  <Bot className="w-4 h-4 text-blue-400 group-hover:rotate-6 transition-transform" />
-                  <span className="font-bold text-white">{tr('Чат-бот Sensei AI', 'Sensei AI чат-боту', 'Sensei AI Assistant')}</span>
-                </span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-600 text-white">
-                  AI
-                </span>
-              </button>
-
+              </ul>
             </div>
           </div>
 
-          {/* Bottom Copyright bar */}
-          <div className="max-w-7xl mx-auto pt-6 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between gap-3 text-slate-500 font-mono text-[11px]">
-            <span>
-              {tr(
-                '© 2026 Tatami.kg. Все права защищены.',
-                '© 2026 Tatami.kg. Бардык укуктар корголгон.',
-                '© 2026 Tatami.kg. All rights reserved.'
-              )}
-            </span>
-            <div className="flex items-center gap-4">
-              <span>{tr('Сделано для каратэ Кыргызстана', 'Кыргызстандын каратэси үчүн жасалган', 'Made for karate in Kyrgyzstan')}</span>
-            </div>
+          <div className="max-w-7xl mx-auto pt-6 border-t border-[var(--app-border)] flex flex-col sm:flex-row items-center justify-between gap-2 text-sm text-[var(--app-text-muted)]">
+            <span>© {new Date().getFullYear()} Tatami.kg</span>
+            <span>{tr('Сделано для каратэ Кыргызстана', 'Кыргызстандын каратэси үчүн жасалган', 'Made for karate in Kyrgyzstan')}</span>
           </div>
         </footer>
       </div>
@@ -1815,13 +1770,15 @@ function AppContent() {
       )}
 
 
-      {/* Supreme AI Assistant: Sensei AI powered by Gemini 3.8 Flash */}
-      <SenseiAiChatbot
-        currentTournament={selectedTournament}
-        tournamentRules={tournamentRules}
-        participantCount={participants.length}
-        tatamiCount={SAMPLE_TATAMIS.length}
-      />
+      {/* AI assistant «Сенсей» (Claude) — only when the server has an AI key */}
+      {aiAssistantEnabled && (
+        <SenseiAiChatbot
+          currentTournament={selectedTournament}
+          tournamentRules={tournamentRules}
+          participantCount={participants.length}
+          tatamiCount={tatamiNumbers.length}
+        />
+      )}
 
 
       {/* Sign-in modal */}

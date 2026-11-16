@@ -1,6 +1,7 @@
 import React from 'react';
 import { Plus, Trash2, Shuffle, Lock, Unlock, ChevronDown, Layers, Printer, ListChecks } from 'lucide-react';
 import { printUrl } from './PrintDocuments';
+import { NumberField } from './NumberField';
 import type { Bout, EventCategory, Gender, Participant, Tournament } from '../types/schema';
 import { WKF_AGE_GROUPS, buildWkfSet, categoryName, newCategoryId, activeEntries, DISCIPLINE_LABELS, isTeamCategory } from '../utils/eventCategories';
 
@@ -99,7 +100,7 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
             <label className="inline-flex items-center gap-1.5"><input type="checkbox" checked={withKata} onChange={(e) => setWithKata(e.target.checked)} /> Ката</label>
             <label className="inline-flex items-center gap-1.5"><input type="checkbox" checked={withKumite} onChange={(e) => setWithKumite(e.target.checked)} /> Кумитэ по весам</label>
             <label className="inline-flex items-center gap-1.5"><input type="checkbox" checked={withTeamKata} onChange={(e) => setWithTeamKata(e.target.checked)} /> Командное ката</label>
-            <label className="inline-flex items-center gap-1.5">Взнос <input type="number" min={0} value={fee} onChange={(e) => setFee(Number(e.target.value))} className={`${field} w-24`} /> {currency}</label>
+            <label className="inline-flex items-center gap-1.5">Взнос <NumberField value={fee} onValueChange={setFee} className={`${field} w-24`} /> {currency}</label>
           </div>
           <button onClick={addWkf} disabled={!tid || groups.length === 0} className="inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white text-sm font-semibold disabled:opacity-40 cursor-pointer">
             <Plus className="w-4 h-4" /> Добавить категории
@@ -120,12 +121,12 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
               <option value="female">Женский</option>
               <option value="mixed">Смешанный</option>
             </select>
-            <input type="number" value={custom.ageMin} onChange={(e) => setCustom({ ...custom, ageMin: Number(e.target.value) })} className={field} placeholder="Возраст от" title="Возраст от" />
+            <NumberField value={custom.ageMin} onValueChange={(n) => setCustom({ ...custom, ageMin: n })} className={field} placeholder="Возраст от" title="Возраст от" />
             <input value={custom.ageMax} onChange={(e) => setCustom({ ...custom, ageMax: e.target.value })} className={field} placeholder="до (пусто = без)" title="Возраст до" />
             <input value={custom.weightMin} onChange={(e) => setCustom({ ...custom, weightMin: e.target.value })} disabled={custom.discipline !== 'kumite'} className={field} placeholder="вес больше, кг" />
             <input value={custom.weightMax} onChange={(e) => setCustom({ ...custom, weightMax: e.target.value })} disabled={custom.discipline !== 'kumite'} className={field} placeholder="вес до, кг" />
-            <input type="number" value={custom.fee} onChange={(e) => setCustom({ ...custom, fee: Number(e.target.value) })} className={field} title={`Взнос, ${currency}`} />
-            <input type="number" value={custom.duration} onChange={(e) => setCustom({ ...custom, duration: Number(e.target.value) })} className={field} title="Длительность боя, сек" />
+            <NumberField value={custom.fee} onValueChange={(n) => setCustom({ ...custom, fee: n })} className={field} title={`Взнос, ${currency}`} />
+            <NumberField value={custom.duration} emptyValue={120} onValueChange={(n) => setCustom({ ...custom, duration: n })} className={field} title="Длительность боя, сек" />
           </div>
           <button onClick={addCustom} disabled={!tid} className="inline-flex items-center gap-2 h-10 px-4 rounded-lg border border-[var(--app-border)] text-sm text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)] cursor-pointer">
             <Plus className="w-4 h-4" /> Добавить

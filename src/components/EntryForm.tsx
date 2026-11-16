@@ -243,7 +243,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
               </div>
               <div className="lg:col-span-2">
                 <label className={label} htmlFor={`a-weight-${a.key}`}>Вес, кг</label>
-                <input id={`a-weight-${a.key}`} type="number" step="0.1" min="15" max="200" value={a.weightKg} onChange={(e) => update(a.key, { weightKg: e.target.value, categoryIds: [] })} className={field} />
+                <input id={`a-weight-${a.key}`} type="text" inputMode="decimal" value={a.weightKg} onChange={(e) => update(a.key, { weightKg: e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''), categoryIds: [] })} className={field} />
               </div>
               <div className="lg:col-span-2">
                 <label className={label} htmlFor={`a-belt-${a.key}`}>Пояс</label>

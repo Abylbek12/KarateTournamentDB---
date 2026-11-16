@@ -50,6 +50,9 @@ export interface TournamentEventsManagerProps {
   onUpdateTournament: (tournament: Tournament) => void;
   onDeleteTournament?: (tournamentId: string) => void;
   onNavigateToDetails?: (tournament: Tournament) => void;
+  /** Opens the edit form for this tournament (e.g. «Изменить турнир» on its page). */
+  editRequestId?: string | null;
+  onEditRequestHandled?: () => void;
 }
 
 export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = ({
@@ -61,14 +64,17 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
   onAddTournament,
   onUpdateTournament,
   onDeleteTournament,
-  onNavigateToDetails
+  onNavigateToDetails,
+  editRequestId,
+  onEditRequestHandled
 }) => {
   const { language } = useApp();
   const tr = (ru: string, ky: string, en: string) => trLang(language, ru, ky, en);
   const isAdmin = currentUserRole === 'admin';
 
   // Open the creation form by default for Administrators so they can immediately create an event and upload an image
-  const [isFormOpen, setIsFormOpen] = useState(true);
+  // Open by default on big screens; on phones the list comes first (form opens with «+ Создать турнир»)
+  const [isFormOpen, setIsFormOpen] = useState(() => typeof window === 'undefined' || window.innerWidth >= 768);
   const [editingTournamentId, setEditingTournamentId] = useState<string | null>(null);
 
   // Form State
@@ -82,7 +88,13 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
   const [endDate, setEndDate] = useState('2026-12-07');
   const [registrationDeadline, setRegistrationDeadline] = useState('2026-11-28 23:59');
   const [status, setStatus] = useState<TournamentStatus>('registration_open');
-  const [tatamiCount, setTatamiCount] = useState<number>(4);
+  // Kept as text while typing, so the field can be cleared and «2» typed (not «12»)
+  const [tatamiText, setTatamiText] = useState<string>('4');
+  const tatamiCount = Math.min(12, Math.max(1, parseInt(tatamiText, 10) || 1));
+  const setTatamiCount = (n: number) => setTatamiText(String(n));
+  // Rules in the organizer's own words and custom disciplines
+  const [rulesLabel, setRulesLabel] = useState<string>('');
+  const [customDiscipline, setCustomDiscipline] = useState<string>('');
   const [description, setDescription] = useState('');
   const [selectedDisciplines, setSelectedDisciplines] = useState<string[]>([
     'Кумитэ Индивидуальное (WKF)',
@@ -147,6 +159,8 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
     setRegistrationDeadline('2026-11-28 23:59');
     setStatus('registration_open');
     setTatamiCount(4);
+    setRulesLabel('');
+    setCustomDiscipline('');
     setDescription('');
     setSelectedDisciplines([
       'Кумитэ Индивидуальное (WKF)',
@@ -319,6 +333,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
     setRegistrationDeadline(t.registrationDeadline || '');
     setStatus(t.status);
     setTatamiCount(t.tatamiCount || 4);
+    setRulesLabel((t as any).rulesLabel || '');
     setDescription(t.description || '');
     setSelectedDisciplines(
       t.disciplines && t.disciplines.length > 0
@@ -340,6 +355,13 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  React.useEffect(() => {
+    if (!editRequestId) return;
+    const t = tournaments.find((x) => x.id === editRequestId);
+    if (t) handleStartEdit(t);
+    onEditRequestHandled?.();
+  }, [editRequestId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Quick template filler
   const handleFillTemplate = (templateType: 'wkf_championship' | 'skif_cup' | 'youth_open') => {
     if (templateType === 'wkf_championship') {
@@ -356,9 +378,9 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
       setTatamiCount(6);
       setDescription(
         tr(
-          'Международный турнир по правилам WKF 2026. Электронное судейство на 6 татами, онлайн-трансляция поединков и видеоповторы VR.',
-          'WKF 2026 эрежелери боюнча эл аралык мелдеш. 6 татамиде электрондук калыстык, түз эфир жана VR видеокайталоо.',
-          'International WKF 2026 tournament featuring electronic scoring across 6 tatamis, live streaming, and VR video review.'
+          'Международный турнир по правилам WKF. Электронное табло на каждом татами, результаты и сетки онлайн.',
+          'WKF эрежелери боюнча эл аралык мелдеш. Ар бир татамиде электрондук табло, жыйынтыктар жана торчолор онлайн.',
+          'International WKF tournament with an electronic scoreboard on every tatami and live results online.'
         )
       );
       setSelectedDisciplines([
@@ -463,6 +485,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
         registrationDeadline,
         status: effectiveStatus,
         tatamiCount,
+        rulesLabel: rulesLabel.trim() || undefined,
         disciplines: selectedDisciplines,
         description: description.trim() || tr('Официальные соревнования по каратэ.', 'Каратэ боюнча расмий мелдеш.', 'Official karate championship.'),
         imageUrl: cleanImageUrl,
@@ -505,6 +528,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
         registrationDeadline,
         status: effectiveStatus,
         tatamiCount,
+        rulesLabel: rulesLabel.trim() || undefined,
         disciplines: selectedDisciplines,
         description: description.trim() || tr('Официальные соревнования по каратэ.', 'Каратэ боюнча расмий мелдеш.', 'Official karate championship.'),
         imageUrl: cleanImageUrl,
@@ -634,7 +658,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Toast Notification */}
       {notification && (
         <div
@@ -654,7 +678,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
       )}
 
       {/* Top Banner & Action */}
-      <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-900 border border-slate-800 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-900 border border-slate-800 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <span
@@ -733,7 +757,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
 
       {/* Form: Create or Edit Tournament (Administrator Only) */}
       {isAdmin && isFormOpen && (
-        <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl space-y-6 animate-fadeIn">
+        <div className="p-4 sm:p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl space-y-4 sm:space-y-6 animate-fadeIn">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
             <div>
               <h3 className="text-base font-bold text-white flex items-center gap-2">
@@ -784,7 +808,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
             )}
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
             {/* Row 1: Title & Organization */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
               <div className="md:col-span-8">
@@ -973,6 +997,16 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                   <option value="jka">JKA (Japan Karate Association)</option>
                   <option value="olympic">Olympic WKF (Repechage)</option>
                 </select>
+                <input
+                  type="text"
+                  value={rulesLabel}
+                  onChange={(e) => setRulesLabel(e.target.value)}
+                  placeholder={tr('Или своими словами: напр. «Правила ФКР 2026»', 'Же өз сөзүңүз менен', 'Or in your own words')}
+                  className="mt-2 w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
+                />
+                <p className="mt-1 text-[10px] text-slate-500">
+                  {tr('Список выше задаёт систему подсчёта очков на табло; текст показывается участникам.', 'Тизме таблодогу упай эсептөөнү аныктайт; текст катышуучуларга көрсөтүлөт.', 'The list sets the scoreboard scoring; the text is shown to participants.')}
+                </p>
               </div>
 
               <div>
@@ -997,11 +1031,11 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                   {tr('Количество татами (площадок)', 'Татамилердин саны', 'Number of Tatamis')}
                 </label>
                 <input
-                  type="number"
-                  min={1}
-                  max={12}
-                  value={tatamiCount}
-                  onChange={(e) => setTatamiCount(parseInt(e.target.value) || 1)}
+                  type="text"
+                  inputMode="numeric"
+                  value={tatamiText}
+                  onChange={(e) => setTatamiText(e.target.value.replace(/[^0-9]/g, '').slice(0, 2))}
+                  onBlur={() => setTatamiText(String(tatamiCount))}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500 font-mono"
                 />
               </div>
@@ -1112,7 +1146,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                 {tr('Соревновательные дисциплины в программе:', 'Программадагы мелдеш дисциплиналары:', 'Competition Disciplines:')}
               </label>
               <div className="flex flex-wrap gap-2">
-                {availableDisciplinesList.map((disc) => {
+                {[...availableDisciplinesList, ...selectedDisciplines.filter((d) => !availableDisciplinesList.includes(d))].map((disc) => {
                   const isChecked = selectedDisciplines.includes(disc);
                   return (
                     <button
@@ -1131,6 +1165,35 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                   );
                 })}
               </div>
+            </div>
+
+            <div className="flex gap-2 -mt-3">
+              <input
+                type="text"
+                value={customDiscipline}
+                onChange={(e) => setCustomDiscipline(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const d = customDiscipline.trim();
+                    if (d && !selectedDisciplines.includes(d)) setSelectedDisciplines([...selectedDisciplines, d]);
+                    setCustomDiscipline('');
+                  }
+                }}
+                placeholder={tr('Своя дисциплина: напр. «Кихон», «Фукуго», «Тамешивари»', 'Өз дисциплинаңыз', 'Your own discipline')}
+                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const d = customDiscipline.trim();
+                  if (d && !selectedDisciplines.includes(d)) setSelectedDisciplines([...selectedDisciplines, d]);
+                  setCustomDiscipline('');
+                }}
+                className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold cursor-pointer"
+              >
+                {tr('+ Добавить', '+ Кошуу', '+ Add')}
+              </button>
             </div>
 
             {/* Row 7: Description */}
@@ -1277,7 +1340,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
             {displayedTournaments.map((t) => {
               const isSelected = selectedTournament?.id === t.id;
               const isExpired = isTournamentDateExpired(t.endDate);
@@ -1286,7 +1349,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
               return (
                 <div
                   key={t.id}
-                  className={`p-5 rounded-2xl border transition-all flex flex-col justify-between space-y-4 ${
+                  className={`p-4 sm:p-5 rounded-2xl border transition-all flex flex-col justify-between space-y-3 sm:space-y-4 ${
                     isSelected
                       ? 'bg-gradient-to-b from-slate-900 to-slate-900 border-rose-500/80 shadow-xl shadow-rose-950/20'
                       : 'bg-slate-900/90 border-slate-800 hover:border-slate-700 shadow-md'
@@ -1436,10 +1499,11 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                         <button
                           type="button"
                           onClick={() => handleStartEdit(t)}
-                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                          className="px-2.5 py-1.5 rounded-lg bg-sky-700 hover:bg-sky-600 text-white text-xs font-semibold transition-colors flex items-center gap-1 cursor-pointer"
                           title={tr('Редактировать турнир', 'Мелдешти түзөтүү', 'Edit tournament')}
                         >
                           <Edit3 className="w-3.5 h-3.5" />
+                          <span>{tr('Изменить', 'Өзгөртүү', 'Edit')}</span>
                         </button>
 
                         {onDeleteTournament && (

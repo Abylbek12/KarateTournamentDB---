@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { NumberField } from './NumberField';
 import { 
   Users, 
   Search, 
@@ -348,11 +349,10 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
                 <label className="block text-xs font-medium text-slate-300 mb-1">
                   Фактический вес на весах (кг):
                 </label>
-                <input
-                  type="number"
-                  step="0.05"
+                <NumberField
+                  decimals
                   value={actualWeightInput}
-                  onChange={(e) => setActualWeightInput(parseFloat(e.target.value) || 0)}
+                  onValueChange={setActualWeightInput}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-base text-white focus:outline-none focus:border-rose-500 font-mono font-bold"
                 />
               </div>
