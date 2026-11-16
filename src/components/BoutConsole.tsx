@@ -4,6 +4,7 @@ import { SoloScoreboard } from './SoloScoreboard';
 import { printUrl } from './PrintDocuments';
 import type { Bout, Participant, TournamentRules } from '../types/schema';
 import * as E from '../utils/boutEngine';
+import { clockNow } from '../utils/serverClock';
 import { stageLabel } from '../utils/bracketProgression';
 import { refereeAudio } from '../utils/refereeAudio';
 import { useApp } from '../context/AppContext';
@@ -37,7 +38,7 @@ export const BoutConsole: React.FC<BoutConsoleProps> = ({ bout, rules, onChange,
   const tr = (ru: string, ky: string, en: string) => (lang === 'ky' ? ky : lang === 'en' ? en : ru);
   const AKA = tr('АКА', 'АКА', 'AKA');
   const AO = tr('АО', 'АО', 'AO');
-  const [now, setNow] = React.useState(Date.now());
+  const [now, setNow] = React.useState(clockNow());
   const [sound, setSound] = React.useState(true);
   const [confirm, setConfirm] = React.useState<{ label: string; run: () => void } | null>(null);
   const [solo, setSoloState] = React.useState(soloPreferred);
@@ -52,14 +53,14 @@ export const BoutConsole: React.FC<BoutConsoleProps> = ({ bout, rules, onChange,
   if (history.current.id !== bout.id) history.current = { id: bout.id, list: [] };
   const system = E.ruleSystemOf(bout, rules);
   const running = E.isRunning(bout);
-  const remaining = E.remainingSeconds(bout, now);
+  const remaining = E.remainingSeconds(bout, running ? Math.max(now, clockNow()) : now);
   const finished = bout.status === 'completed';
   const ready = !!bout.akaParticipantId && !!bout.aoParticipantId;
 
   // Smooth clock: redraw 10 times per second while running
   React.useEffect(() => {
     if (!running) return;
-    const id = setInterval(() => setNow(Date.now()), 100);
+    const id = setInterval(() => setNow(clockNow()), 100);
     return () => clearInterval(id);
   }, [running]);
 

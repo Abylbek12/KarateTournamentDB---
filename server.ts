@@ -36,6 +36,15 @@ const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 
 app.disable('x-powered-by');
+// Basic security headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  if (req.secure || req.get('x-forwarded-proto') === 'https') res.setHeader('Strict-Transport-Security', 'max-age=15552000');
+  next();
+});
 app.set('trust proxy', 1);
 app.use(express.json({ limit: '10mb' }));
 
@@ -52,9 +61,9 @@ app.get('/api/health', (_req: Request, res: Response) => {
   res.json({
     status: 'ok',
     service: 'Tatami.kg Server',
-    model: GEMINI_MODEL,
     aiEnabled: hasGeminiKey(),
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    serverTime: Date.now()
   });
 });
 
@@ -62,7 +71,8 @@ app.get('/api/health', (_req: Request, res: Response) => {
 // ========================================================
 // EVENTS BACKEND API (SYNCHRONIZED REGISTRY + RBAC)
 // ========================================================
-let STORED_EVENTS: any[] = db.events ?? JSON.parse(JSON.stringify(DEMO_EVENTS));
+// Demo tournaments only in development; a production install starts empty.
+let STORED_EVENTS: any[] = db.events ?? (process.env.NODE_ENV === 'production' ? [] : JSON.parse(JSON.stringify(DEMO_EVENTS)));
 const persistEvents = () => {
   db.events = STORED_EVENTS;
   saveDb();
@@ -293,138 +303,6 @@ app.get('/api/events/:id', (req: Request, res: Response) => {
   res.json(event);
 });
 
-app.get('/api/events/:id/divisions', (req: Request, res: Response) => {
-  const event = STORED_EVENTS.find((e) => e.id === req.params.id);
-  if (!event) {
-    res.status(404).json({ error: 'Event not found' });
-    return;
-  }
-  res.json({
-    eventId: event.id,
-    eventTitle: event.title,
-    priceTiers: event.priceTiers || [],
-    divisions: event.divisions || []
-  });
-});
-
-app.get('/api/events/:id/rings', (req: Request, res: Response) => {
-  const event = STORED_EVENTS.find((e) => e.id === req.params.id);
-  if (!event) {
-    res.status(404).json({ error: 'Event not found' });
-    return;
-  }
-  res.json({
-    eventId: event.id,
-    eventTitle: event.title,
-    ringsSchedule: event.ringsSchedule || []
-  });
-});
-
-app.get('/api/events/:id/medals', (req: Request, res: Response) => {
-  const event = STORED_EVENTS.find((e) => e.id === req.params.id);
-  if (!event) {
-    res.status(404).json({ error: 'Event not found' });
-    return;
-  }
-  res.json({
-    eventId: event.id,
-    eventTitle: event.title,
-    medalsReport: event.medalsReport || []
-  });
-});
-
-app.get('/api/events/:id/live-scoring', (req: Request, res: Response) => {
-  const event = STORED_EVENTS.find((e) => e.id === req.params.id);
-  if (!event) {
-    res.status(404).json({ error: 'Event not found' });
-    return;
-  }
-  res.json({
-    eventId: event.id,
-    eventTitle: event.title,
-    days: event.days || ["Fri (pre's)", 'Fri premiere', 'Saturday'],
-    ringsCount: event.ringsCount || 6,
-    activeMats: [
-      { ring: 1, label: 'ПТ / 1', category: 'KO-10 Kobudo 6-7 yrs', timeRemaining: '06:30', status: 'upcoming', aka: { name: 'S. Robinson', score: 0 }, ao: { name: 'C. Martinez', score: 0 } },
-      { ring: 2, label: 'ПТ / 2', category: 'KO-51 Kobudo 14 yrs', timeRemaining: '06:30', status: 'upcoming', aka: { name: 'D. Walker', score: 0 }, ao: { name: 'J. Bennett', score: 0 } },
-      { ring: 3, label: 'ПТ / 3', category: 'EF-25 Extreme Forms 18+', timeRemaining: '06:30', status: 'upcoming', aka: { name: 'Т. Бакиров', score: 0 }, ao: { name: 'R. Cooper', score: 0 } },
-      { ring: 4, label: 'ПТ / 4', category: 'HC-1 Para Divisions', timeRemaining: '06:30', status: 'upcoming', aka: { name: 'L. Young', score: 0 }, ao: { name: 'E. Hughes', score: 0 } }
-    ]
-  });
-});
-
-app.get('/api/events/:id/results', (req: Request, res: Response) => {
-  const event = STORED_EVENTS.find((e) => e.id === req.params.id);
-  if (!event) {
-    res.status(404).json({ error: 'Event not found' });
-    return;
-  }
-  res.json({
-    eventId: event.id,
-    eventTitle: event.title,
-    podiums: [
-      {
-        category: 'Мужчины 18+ Кумитэ -75 кг',
-        finishers: [
-          { place: '1st', name: 'Абдыкадыров Адилет', club: 'СК "Тигр"', country: 'Кыргызстан', points: 30 },
-          { place: '2nd', name: 'Орозбеков Бакыт', club: 'Клуб "Ала-Тоо"', country: 'Кыргызстан', points: 20 },
-          { place: '3rd', name: 'Токтосунов Эмир', club: 'СК "Тигр"', country: 'Кыргызстан', points: 10 },
-          { place: '3rd', name: 'Исаков Бектур', club: 'СК "Манас"', country: 'Кыргызстан', points: 10 }
-        ]
-      },
-      {
-        category: 'Женщины 18+ Кумитэ -61 кг',
-        finishers: [
-          { place: '1st', name: 'Жумабекова Айгерим', club: 'СК "Манас"', country: 'Кыргызстан', points: 30 },
-          { place: '2nd', name: 'Мамытова Айзада', club: 'Клуб "Ала-Тоо"', country: 'Кыргызстан', points: 20 },
-          { place: '3rd', name: 'Мамытова Анна', club: 'СК "Тянь-Шань"', country: 'Кыргызстан', points: 10 },
-          { place: '3rd', name: 'Касымова Айпери', club: 'Клуб "Барс"', country: 'Кыргызстан', points: 10 }
-        ]
-      }
-    ],
-    boutsCount: 42,
-    status: 'certified'
-  });
-});
-
-app.get('/api/studios', (req: Request, res: Response) => {
-  const city = req.query.city as string;
-  const q = (req.query.q as string || '').toLowerCase().trim();
-  
-  const studios = [
-    { id: 'c1', name: 'СК "Тигр"', city: 'Бишкек', headCoach: 'Асанов Бакыт Таалайбекович', phone: '+996 (495) 123-45-67', studentCount: 160, isVerified: true },
-    { id: 'c2', name: 'Клуб "Ала-Тоо"', city: 'Ош', headCoach: 'Мамытов Улан Кубанычбекович', phone: '+996 (812) 987-65-43', studentCount: 125, isVerified: true },
-    { id: 'c3', name: 'СК "Манас"', city: 'Каракол', headCoach: 'Токтогулов Эрлан Маратович', phone: '+996 (843) 555-12-34', studentCount: 210, isVerified: true },
-    { id: 'c4', name: 'Клуб "Барс"', city: 'Кант', headCoach: 'Исаков Нурбек Жыргалбекович', phone: '+996 (343) 222-33-44', studentCount: 95, isVerified: true },
-    { id: 'c5', name: 'СК "Тянь-Шань"', city: 'Джалал-Абад', headCoach: 'Сулайманов Азамат Бакытович', phone: '+996 (383) 777-88-99', studentCount: 110, isVerified: true }
-  ];
-
-  let filtered = studios;
-  if (city && city !== 'all') {
-    filtered = filtered.filter(s => s.city.toLowerCase() === city.toLowerCase());
-  }
-  if (q) {
-    filtered = filtered.filter(s => s.name.toLowerCase().includes(q) || s.headCoach.toLowerCase().includes(q) || s.city.toLowerCase().includes(q));
-  }
-
-  res.json({ total: filtered.length, studios: filtered });
-});
-
-app.get('/api/rankings', (_req: Request, res: Response) => {
-  res.json({
-    season: '2026',
-    athletes: [
-      { rank: 1, name: 'Абдыкадыров Адилет', club: 'СК "Тигр"', points: 480, gold: 8, silver: 2, bronze: 1 },
-      { rank: 2, name: 'Орозбеков Бакыт', club: 'Клуб "Ала-Тоо"', points: 395, gold: 6, silver: 3, bronze: 2 },
-      { rank: 3, name: 'Жумабекова Айгерим', club: 'СК "Манас"', points: 370, gold: 6, silver: 2, bronze: 1 }
-    ],
-    clubs: [
-      { rank: 1, name: 'СК "Тигр"', points: 1450, medals: 51 },
-      { rank: 2, name: 'СК "Тигр"', points: 1220, medals: 45 },
-      { rank: 3, name: 'Клуб "Ала-Тоо"', points: 1150, medals: 41 }
-    ]
-  });
-});
 
 // ========================================================
 // REAL OAUTH 2.0 (GOOGLE & FACEBOOK) & AUTHENTICATION API
@@ -1313,7 +1191,7 @@ app.get('/api/network', (req: Request, res: Response) => {
 // Comprehensive Karate Domain Fallback Engine
 function generateExpertFallbackResponse(prompt: string, context: Record<string, any>): string {
   const q = prompt.toLowerCase();
-  const currentTourn = context.tournamentTitle || 'Открытый Кубок по каратэ WKF 2026';
+  const currentTourn = context.tournamentTitle || 'вашем турнире';
   const rules = context.rules || 'wkf';
 
   if (q.includes('senshu') || q.includes('сеншу') || q.includes('первый балл')) {
@@ -1329,7 +1207,7 @@ function generateExpertFallbackResponse(prompt: string, context: Record<string, 
    - Если оба спортсмена набирают баллы одновременно (взаимная атака / *Aiuchi*), *Senshu* не присуждается ни одному из них.
    - Если обладатель *Senshu* получает предупреждение Категории 2 (*Hansoku Chui* или *Jogai* в последние 15 секунд поединка), статус *Senshu* аннулируется, и при равенстве счета победитель определяется решением судейской бригады (*Hantei*).
 
-*Контекст текущего турнира:* На турнире **«${currentTourn}»** система судейского табло автоматически фиксирует и отображает Senshu в реальном времени!`;
+*На Tatami.kg* табло автоматически отмечает Senshu у спортсмена, первым набравшего балл; судья может снять его вручную в пульте.`;
   }
 
   if (q.includes('skif') || q.includes('shobu') || q.includes('сетокан') || q.includes('сётокан')) {
@@ -1343,7 +1221,7 @@ function generateExpertFallbackResponse(prompt: string, context: Record<string, 
 | **Контакт** | Строгий контроль (Skin-touch в юниорах/взрослых, запрет в кадетах) | Максимальная фокусировка удара, глубокий контроль дистанции |
 | **Судейская бригада** | Рефери на татами + 4 боковых судьи (флажки/джойстики) | 1 Рефери (Shushin) + 4 угловых судьи (Fukushin) с красным/белым флагами |
 
-*В нашей платформе переключение между регламентами WKF и SKIF происходит в 1 клик через шапку сайта!*`;
+*На Tatami.kg* правила WKF или SKIF выбираются в пульте боя до его начала.`;
   }
 
   if (q.includes('оценк') || q.includes('ippon') || q.includes('waza') || q.includes('yuko') || q.includes('баллы') || q.includes('иппон')) {
@@ -1367,10 +1245,10 @@ function generateExpertFallbackResponse(prompt: string, context: Record<string, 
     return `### 🛡️ Алгоритм «Умной жеребьевки» Tatami.kg
 
 В систему встроен алгоритм сеяния участников по стандартам WKF:
-1. **Строгое разведение одноклубников**: Представители одного спортивного клуба (**club_id**) гарантированно не встречаются в 1-м и 2-м кругах.
-2. **Географическое разведение**: Спортсмены из одного города и страны распределяются в противоположные пулы (Пул A / Пул B).
+1. **Разведение одноклубников**: спортсмены одного клуба разводятся по разным частям сетки, чтобы встретиться как можно позже.
+2. **Географическое разведение**: на турнире по стране — по городам и областям, на международном — по странам.
 3. **Утешительные поединки (Repechage)**: Все бойцы, проигравшие финалистам, получают второй шанс и борются за две бронзовые медали.
-4. **Автоматическое назначение татами**: В зависимости от дивизиона система направляет бойцов на свободный ковер.`;
+4. **Татами** для категории выбирает организатор при жеребьёвке.`;
   }
 
   if (q.includes('ката') || q.includes('kata')) {
@@ -1383,23 +1261,16 @@ function generateExpertFallbackResponse(prompt: string, context: Record<string, 
 - При выставлении баллов крайние верхний и нижний результаты отбрасываются для исключения судейской предвзятости.`;
   }
 
-  return `### 🥋 Ответ эксперта Sensei AI (Платформа Tatami.kg)
+  return `### 🥋 Сенсей
 
-По вашему запросу: **«${prompt}»**
+ИИ-ассистент сейчас не подключён, поэтому я отвечаю только готовыми справками. Спросите, например:
+- «Что такое Senshu?»
+- «Какие оценки в кумитэ (Yuko, Waza-ari, Ippon)?»
+- «Чем отличаются WKF и SKIF?»
+- «Как работает жеребьёвка?»
+- «Как судят ката?»
 
-*Текущий контекст системы:*
-- **Турнир:** ${currentTourn}
-- **Регламент:** ${rules.toUpperCase()}
-- **Число татами:** ${context.tatamiCount || 4} ковра
-- **Заявлено спортсменов:** ${context.participantCount || 248} атлетов
-
-Платформа **Tatami.kg** обеспечивает:
-1. Полную автоматизацию соревнований по регламентам WKF и SKIF.
-2. Локальный режим работы (LAN Hub) без зависимости от интернета.
-3. Электронные протоколы с цифровыми подписями судейской коллегии (ГСК).
-4. Защищенную реляционную базу данных PostgreSQL.
-
-*Задайте любой вопрос по правилам WKF 2026, жеребьевке, категориям или работе табло!*`;
+Вопросы о заявках, взносах и расписании турнира задавайте организатору: его контакты указаны на странице турнира.${context.tournamentTitle ? `\n\n*Текущий турнир:* ${context.tournamentTitle}` : ''}`;
 }
 
 // Full Gemini Chat Endpoint
@@ -1440,17 +1311,18 @@ app.post('/api/chat', aiLimiter, async (req: Request, res: Response) => {
 Ты обладаешь энциклопедическими знаниями правил Всемирной федерации каратэ (WKF 2026) и традиционного каратэ SKIF (Shotokan Karate-Do International Federation).
 
 Контекст активного турнира:
-- Название турнира: ${context.tournamentTitle || 'Открытый Кубок по каратэ WKF 2026'}
+- Название турнира: ${context.tournamentTitle || 'не указано'}
 - Действующий регламент: ${context.rules || 'WKF'}
 - Количество татами: ${context.tatamiCount || 4}
-- Зарегистрировано спортсменов: ${context.participantCount || 248}
-- Категорий/Дивизионов: ${context.categoryCount || 18}
+- Зарегистрировано спортсменов: ${context.participantCount ?? 'не указано'}
+- Категорий: ${context.categoryCount ?? 'не указано'}
 
 Правила ответа:
 1. Отвечай авторитетно, доброжелательно, четко, спортивным и судейским языком высокого класса.
 2. Всегда форматируй ответ в красивом Markdown: заголовки, списки, таблицы сравнений, жирные акценты.
 3. Разбирай тонкие моменты: Senshu, Ippon/Waza-ari/Yuko, дисквалификации Hansoku/Shikkaku, видеоповторы VR, судейство Ката (70% техника, 30% атлетика), умную жеребьевку с разведением одноклубников.
-4. Если пользователь спрашивает про технические функции сайта (регистрация, табло, LAN-режим, сброс базы данных, экспорт SQL) — давай прямые и точные инструкции.`;
+4. Функции сайта Tatami.kg: заявки (раздел «Подать заявку», для тренеров — сразу на всех учеников), «Мои заявки и оплата», категории и жеребьёвка (организатор), пульт боя и табло по QR-коду, режим «Один экран» с клавишами, печать протоколов, сеток и дипломов в PDF, рейтинги и клубы по результатам. Онлайн-оплаты картой нет: взносы принимает организатор.
+5. Не выдумывай функции сайта, цифры, даты и правила. Если не уверен — скажи об этом и посоветуй уточнить у организатора или в действующем регламенте WKF/федерации.`;
 
     const contents: any[] = [];
     if (Array.isArray(history)) {
@@ -1502,88 +1374,6 @@ app.post('/api/chat', aiLimiter, async (req: Request, res: Response) => {
   }
 });
 
-// Official Federation Analytics & Executive Report Generator Endpoint
-app.post('/api/ai/federation-report', aiLimiter, async (req: Request, res: Response) => {
-  try {
-    const { tournamentTitle, stats, chiefReferee, language } = req.body || {};
-    const apiKey = process.env.GEMINI_API_KEY;
-
-    const fallbackSummary = `Официальный аналитический отчет по итогам турнира «${tournamentTitle || 'Открытый Кубок по каратэ WKF 2026'}»:
-1. Общие показатели: Проведено ${stats?.totalBouts || 148} поединков на 4 татами. Зафиксировано ${stats?.totalPoints || 612} результативных действий. Средняя результативность составила 4.14 балла за бой, что свидетельствует о высоком техническом уровне спортсменов.
-2. Техническая картина: 65% всех баллов набрано ударами кулаком Yuko (встречные Gyaku-tsuki и передние Kizami-tsuki). 27.5% пришлось на удары ногами Waza-ari (Chudan Geri), 7.5% — на зрелищные Ippon (Ura-mawashi-geri в голову и подсечки Ashi-barai).
-3. Судейство и VR-контроль: Из 28 видеоповторов по запросам тренеров удовлетворено 18 (64.3%), что подтверждает беспристрастность и полезность видеосистемы для соблюдения спортивного принципа. Консенсус боковых судей составил 94.8%.
-4. Безопасность и регламент Doctor 80s: Медицинская бригада оперативно реагировала на инциденты, среднее время остановки 46 секунд. Случаев тяжелого травматизма не зафиксировано.
-
-Рекомендации судейско-технической комиссии:
-- Продолжить планомерное обучение тренеров таймингу подачи апелляций (VR).
-- Сфокусировать судейские семинары на унификации критериев предупреждений Категории 2 (Jogai/Mubobi) в заключительные 15 секунд поединка.`;
-
-    if (!hasGeminiKey()) {
-      res.json({
-        executiveSummary: fallbackSummary,
-        source: 'federation-knowledge-engine',
-        status: 'ok'
-      });
-      return;
-    }
-
-    const ai = new GoogleGenAI({
-      apiKey: apiKey!,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        },
-      },
-    });
-
-    const prompt = `Ты — ведущий спортивный аналитик и Главный секретарь Всемирной федерации каратэ (WKF).
-Составь авторитетное, строгое и профессиональное официальное заключение (Executive Summary) для исполнительного комитета национальной Федерации по итогам прошедшего турнира.
-
-Данные турнира:
-- Название: ${tournamentTitle || 'Открытый Кубок по каратэ WKF 2026'}
-- Главный судья: ${chiefReferee || 'Турдубаев В.И.'}
-- Количество боев: ${stats?.totalBouts || 148}
-- Всего баллов: ${stats?.totalPoints || 612}
-- Доля Yuko: ${stats?.yukoPct || 65}%
-- Доля Waza-ari: ${stats?.wazaAriPct || 27.5}%
-- Доля Ippon: ${stats?.ipponPct || 7.5}%
-- Видеоповторов VR: ${stats?.vrTotal || 28} (из них подтверждено ${stats?.vrOverturned || 18})
-- Медицинских таймаутов Doctor 80s: ${stats?.docTimeouts || 16}
-
-Язык ответа: ${language === 'en' ? 'English' : 'Русский'}.
-Требования к отчету:
-1. Краткий вводный статус соревнований.
-2. Анализ технико-тактического мастерства и результативности.
-3. Оценка объективности судейства и эффективности системы видеоповторов (VR).
-4. Оценка безопасности и регламента Doctor 80s Time.
-5. 3 ключевые рекомендации Федерации на следующий сезон.`;
-
-    const generatePromise = ai.models.generateContent({
-      model: GEMINI_MODEL,
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    });
-
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Gemini API timeout')), 10000)
-    );
-
-    const response = await Promise.race([generatePromise, timeoutPromise]);
-    const executiveSummary = response.text || fallbackSummary;
-
-    res.json({
-      executiveSummary,
-      source: GEMINI_MODEL,
-      status: 'ok'
-    });
-  } catch (error: any) {
-    console.error('Error generating federation report:', error);
-    res.json({
-      executiveSummary: 'Отчет сформирован на базе локальных протоколов ГСК турнира. Все поединки прошли в штатном режиме с соблюдением правил WKF 2026.',
-      source: 'fallback',
-      status: 'ok'
-    });
-  }
-});
 
 // Start Express Server with Vite Dev Server in Middleware Mode
 async function startServer() {
@@ -1591,11 +1381,11 @@ async function startServer() {
   ensureAdminAccount(isProduction);
   // Bouts are saved one by one, so the server must hold the full list from the start.
   // Demo data is used only until the site is prepared for launch.
-  if (!db.state.bouts && !db.launchedAt) {
+  if (!db.state.bouts && !db.launchedAt && !isProduction) {
     db.state.bouts = { version: 1, value: JSON.parse(JSON.stringify(SAMPLE_BOUTS)), updatedAt: new Date().toISOString(), updatedBy: 'seed' };
     saveDb();
   }
-  if (!db.state.participants && !db.launchedAt) {
+  if (!db.state.participants && !db.launchedAt && !isProduction) {
     db.state.participants = { version: 1, value: JSON.parse(JSON.stringify(SAMPLE_PARTICIPANTS)), updatedAt: new Date().toISOString(), updatedBy: 'seed' };
     saveDb();
   }

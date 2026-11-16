@@ -26,6 +26,11 @@ const bout = (extra: Partial<Bout> = {}): Bout =>
   check('clock: 2.5 s later shows 177.5 s', Math.abs(E.remainingSeconds(b, t0 + 2500) - 177.5) < 1e-9);
   b = E.stopClock(b, t0 + 2500);
   check('clock: stop keeps the remaining time', !E.isRunning(b) && Math.abs(b.timerSecondsRemaining - 177.5) < 1e-9);
+  {
+    // A screen whose clock reads earlier than the start must not show more than the bout time
+    const started = E.startClock(E.resetClock({ ...b, status: 'scheduled', timerStartedAt: null } as any), t0);
+    check('clock: never above the bout time (clock difference)', E.remainingSeconds(started, t0 - 13000) === started.timerSecondsRemaining, String(E.remainingSeconds(started, t0 - 13000)));
+  }
   check('format: 2:58 above ten seconds', E.formatClock(177.5) === '2:58', E.formatClock(177.5));
   check('format: tenths in the last ten seconds', E.formatClock(9.46) === '9.4' && E.formatClock(0.04) === '0.0', `${E.formatClock(9.46)} ${E.formatClock(0.04)}`);
   check('format: exactly 10 s shows 0:10', E.formatClock(10) === '0:10');

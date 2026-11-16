@@ -2,6 +2,7 @@ import React from 'react';
 import { Maximize, Tv, Gavel, ListOrdered } from 'lucide-react';
 import type { Bout, Participant, TournamentRules } from '../types/schema';
 import * as E from '../utils/boutEngine';
+import { clockNow } from '../utils/serverClock';
 import { stageLabel } from '../utils/bracketProgression';
 import { BoutConsole } from './BoutConsole';
 import { TatamiMark } from './BrandLogo';
@@ -42,10 +43,10 @@ export function upcomingOf(bouts: Bout[], tatamiNumber: number, skipId?: string,
 }
 
 function useTicker(active: boolean) {
-  const [now, setNow] = React.useState(Date.now());
+  const [now, setNow] = React.useState(clockNow());
   React.useEffect(() => {
     if (!active) return;
-    const id = setInterval(() => setNow(Date.now()), 100);
+    const id = setInterval(() => setNow(clockNow()), 100);
     return () => clearInterval(id);
   }, [active]);
   return now;
@@ -125,7 +126,7 @@ export const TatamiDisplay: React.FC<{
   }
 
   const system = E.ruleSystemOf(bout, rules);
-  const left = E.remainingSeconds(bout, now);
+  const left = E.remainingSeconds(bout, E.isRunning(bout) ? Math.max(now, clockNow()) : now);
   const finished = bout.status === 'completed';
   const winner = finished ? (bout.winnerId === bout.akaParticipantId ? 'aka' : 'ao') : null;
   const scoreOf = (s: E.Side) =>

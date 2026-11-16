@@ -7,6 +7,7 @@ import type { EventItem, EventActionType } from '../data/eventsData';
 import { belongsToEvent } from '../data/sampleTournamentData';
 import { ELIMINATION_ORDER, computeStandings, repechageHalf, repechageStep, stageLabel } from '../utils/bracketProgression';
 import * as E from '../utils/boutEngine';
+import { clockNow } from '../utils/serverClock';
 import { displayName, displayClub, localizeCategoryName, nameModeFor, participantFlag, participantNoc, participantCountry, type NameMode } from '../utils/names';
 import { countryName, flagEmoji } from '../utils/countries';
 import { currentBoutOf, upcomingOf } from './TatamiScreens';
@@ -379,10 +380,10 @@ export const PublicLiveView: React.FC<BaseProps> = (props) => {
   useEventNameMode(eventBouts, language);
   const tatamis = Array.from(new Set(eventBouts.map((b) => b.tatamiNumber).filter((n): n is number => !!n))).sort((a, b) => a - b);
   const anyRunning = eventBouts.some((b) => E.isRunning(b));
-  const [now, setNow] = React.useState(Date.now());
+  const [now, setNow] = React.useState(clockNow());
   React.useEffect(() => {
     if (!anyRunning) return;
-    const id = setInterval(() => setNow(Date.now()), 100);
+    const id = setInterval(() => setNow(clockNow()), 100);
     return () => clearInterval(id);
   }, [anyRunning]);
 

@@ -1,4 +1,5 @@
 import type { Bout, TournamentRules, WinReason } from '../types/schema';
+import { clockNow } from './serverClock';
 
 /**
  * Bout rules engine — the single source of truth for every scoreboard and console.
@@ -31,10 +32,11 @@ export const ruleSystemOf = (b: Bout, fallback: TournamentRules = 'wkf'): Tourna
 
 // ---------------- Clock ----------------
 
-export function remainingSeconds(b: Bout, now = Date.now()): number {
+export function remainingSeconds(b: Bout, now = clockNow()): number {
   const base = Math.max(0, b.timerSecondsRemaining ?? 0);
   if (!b.timerStartedAt) return base;
-  return Math.max(0, base - (now - b.timerStartedAt) / 1000);
+  // Never more than the time left when the clock started (protects against clock differences)
+  return Math.max(0, base - Math.max(0, now - b.timerStartedAt) / 1000);
 }
 
 export const isRunning = (b: Bout) => !!b.timerStartedAt;
@@ -49,7 +51,7 @@ export function formatClock(seconds: number): string {
 
 const canPlay = (b: Bout) => b.status !== 'completed' && !b.awaitingDecision && !!b.akaParticipantId && !!b.aoParticipantId;
 
-export function startClock(b: Bout, now = Date.now()): Bout {
+export function startClock(b: Bout, now = clockNow()): Bout {
   if (!canPlay(b) || isRunning(b) || remainingSeconds(b, now) <= 0) return b;
   return {
     ...b,
@@ -59,12 +61,12 @@ export function startClock(b: Bout, now = Date.now()): Bout {
   };
 }
 
-export function stopClock(b: Bout, now = Date.now()): Bout {
+export function stopClock(b: Bout, now = clockNow()): Bout {
   if (!isRunning(b)) return b;
   return { ...b, timerSecondsRemaining: remainingSeconds(b, now), timerStartedAt: null };
 }
 
-export function adjustClock(b: Bout, deltaSeconds: number, now = Date.now()): Bout {
+export function adjustClock(b: Bout, deltaSeconds: number, now = clockNow()): Bout {
   const full = b.durationSeconds ?? 180;
   const stopped = stopClock(b, now);
   const next = Math.min(full, Math.max(0, stopped.timerSecondsRemaining + deltaSeconds));
@@ -78,7 +80,7 @@ export function resetClock(b: Bout): Bout {
 
 // ---------------- Finishing ----------------
 
-export function declareWinner(b: Bout, side: Side, reason: WinReason, now = Date.now()): Bout {
+export function declareWinner(b: Bout, side: Side, reason: WinReason, now = clockNow()): Bout {
   const stopped = stopClock(b, now);
   return {
     ...stopped,
@@ -99,7 +101,7 @@ export function reopenBout(b: Bout): Bout {
 const skifPoints = (b: Bout, s: Side) => 2 * ((s === 'aka' ? b.akaIppon : b.aoIppon) ?? 0) + ((s === 'aka' ? b.akaWazaAri : b.aoWazaAri) ?? 0);
 
 /** What happens when the clock reaches zero. */
-export function onTimeUp(b: Bout, rules: TournamentRules = 'wkf', now = Date.now()): Bout {
+export function onTimeUp(b: Bout, rules: TournamentRules = 'wkf', now = clockNow()): Bout {
   if (b.status === 'completed') return b;
   const stopped = { ...stopClock(b, now), timerSecondsRemaining: 0, timerStartedAt: null };
   if (ruleSystemOf(b, rules) === 'skif') {
@@ -115,14 +117,14 @@ export function onTimeUp(b: Bout, rules: TournamentRules = 'wkf', now = Date.now
 }
 
 /** Judges' decision (Hantei) after a tie without Senshu. */
-export function hantei(b: Bout, side: Side, now = Date.now()): Bout {
+export function hantei(b: Bout, side: Side, now = clockNow()): Bout {
   return declareWinner(b, side, 'hantei_decision', now);
 }
 
 // ---------------- WKF scoring ----------------
 
 /** Adds (points > 0) or corrects (points < 0) the score of one side. */
-export function addScore(b: Bout, side: Side, points: number, now = Date.now()): Bout {
+export function addScore(b: Bout, side: Side, points: number, now = clockNow()): Bout {
   if (b.status === 'completed') return b;
   const key = side === 'aka' ? 'akaScore' : 'aoScore';
   const before = b[key];
@@ -148,7 +150,7 @@ export function setSenshu(b: Bout, side: Side, value: boolean): Bout {
 }
 
 /** Sets a warning level (0–4) in category C1 or C2. Level 4 = Hansoku: the opponent wins. */
-export function setPenalty(b: Bout, side: Side, category: 'c1' | 'c2', level: number, now = Date.now()): Bout {
+export function setPenalty(b: Bout, side: Side, category: 'c1' | 'c2', level: number, now = clockNow()): Bout {
   const lv = Math.max(0, Math.min(4, Math.round(level)));
   const key = `${side}Penalties${category === 'c1' ? 'C1' : 'C2'}` as 'akaPenaltiesC1';
   const next = { ...b, [key]: lv };
@@ -156,12 +158,12 @@ export function setPenalty(b: Bout, side: Side, category: 'c1' | 'c2', level: nu
   return next;
 }
 
-export const kiken = (b: Bout, side: Side, now = Date.now()) => declareWinner(b, other(side), 'kiken_injury', now);
-export const shikkaku = (b: Bout, side: Side, now = Date.now()) => declareWinner(b, other(side), 'hansoku_dq', now);
+export const kiken = (b: Bout, side: Side, now = clockNow()) => declareWinner(b, other(side), 'kiken_injury', now);
+export const shikkaku = (b: Bout, side: Side, now = clockNow()) => declareWinner(b, other(side), 'hansoku_dq', now);
 
 // ---------------- SKIF scoring ----------------
 
-export function addSkif(b: Bout, side: Side, kind: 'waza_ari' | 'ippon', delta = 1, now = Date.now()): Bout {
+export function addSkif(b: Bout, side: Side, kind: 'waza_ari' | 'ippon', delta = 1, now = clockNow()): Bout {
   if (b.status === 'completed') return b;
   const key = (side === 'aka' ? (kind === 'ippon' ? 'akaIppon' : 'akaWazaAri') : kind === 'ippon' ? 'aoIppon' : 'aoWazaAri') as 'akaIppon';
   const next: Bout = {

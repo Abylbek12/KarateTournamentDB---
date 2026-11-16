@@ -85,6 +85,7 @@ import { EntryForm } from './components/EntryForm';
 import { EventSetupPanel } from './components/EventSetupPanel';
 import { activeEntries, categoryName } from './utils/eventCategories';
 import { getDeviceKey, setDeviceKey } from './utils/liveStream';
+import { startServerClock } from './utils/serverClock';
 import { TatamiDisplay, CallRoomDisplay, TatamiControl, upcomingOf } from './components/TatamiScreens';
 import { MyAccountPanel } from './components/MyAccountPanel';
 import { RoleGuide } from './components/RoleGuide';
@@ -157,6 +158,9 @@ function AppContent() {
     );
     setTimeout(() => setGlobalSystemToast(null), 4000);
   };
+
+  // One clock for every device (bout timers are timestamps)
+  React.useEffect(() => startServerClock(), []);
 
   // Unified tournaments registry fetch on mount
   React.useEffect(() => {
