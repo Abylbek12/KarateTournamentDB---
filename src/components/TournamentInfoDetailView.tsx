@@ -188,7 +188,7 @@ export const TournamentInfoDetailView: React.FC<TournamentInfoDetailViewProps> =
               {tr('До старта турнира', 'Мелдештин башталышына чейин', 'Countdown to Event')}
             </div>
 
-            <div className="grid grid-cols-4 gap-1.5 font-mono">
+            <div className="grid grid-cols-4 gap-1.5 tabular-nums">
               <div className="bg-white rounded-xl p-2 border border-slate-200 shadow-2xs">
                 <div className="text-lg font-black text-slate-800">{timeLeft.days}</div>
                 <div className="text-[9px] text-slate-400 font-sans uppercase">{tr('Дней', 'Күн', 'Days')}</div>

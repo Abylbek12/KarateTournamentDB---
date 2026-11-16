@@ -132,7 +132,7 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
       <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-slate-900 border border-slate-800">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-rose-400">
+            <div className="flex items-center gap-2 text-xs tabular-nums uppercase tracking-wider text-rose-400">
               <Users className="w-3.5 h-3.5" />
               <span>Таблица participants & category_entries</span>
             </div>
@@ -145,7 +145,7 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
             </p>
           </div>
 
-          <div className="flex items-center gap-3 text-xs font-mono">
+          <div className="flex items-center gap-3 text-xs tabular-nums">
             <div className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800">
               Всего заявлено: <span className="font-bold text-white">{participants.length}</span>
             </div>
@@ -211,7 +211,7 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
       <div className="rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-950 text-slate-400 uppercase font-mono text-[11px] border-b border-slate-800">
+            <thead className="bg-slate-950 text-slate-400 uppercase tabular-nums text-[11px] border-b border-slate-800">
               <tr>
                 <th className="px-5 py-3.5">Спортсмен</th>
                 <th className="px-5 py-3.5">Клуб / Город</th>
@@ -233,7 +233,7 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
                       <div className="font-bold text-white text-sm">
                         {p.lastName} {p.firstName}
                       </div>
-                      <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                      <div className="text-[11px] text-slate-500 tabular-nums mt-0.5">
                         Лицензия: {p.licenseNumber} · {p.gender === 'male' ? 'Мужской' : 'Женский'}
                       </div>
                     </td>
@@ -243,25 +243,25 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
                       <div className="text-slate-200 font-medium">
                         {p.clubName || club?.name}
                       </div>
-                      <div className="text-[11px] text-sky-400 font-mono">
+                      <div className="text-[11px] text-sky-400 tabular-nums">
                         {p.city || club?.city || 'г. Бишкек'} · {p.country || 'Кыргызстан'}
                       </div>
                     </td>
 
                     {/* Belt */}
-                    <td className="px-5 py-4 font-mono">
+                    <td className="px-5 py-4 tabular-nums">
                       <span className="px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-300 text-[11px]">
                         {beltLabels[p.beltRank] || p.beltRank}
                       </span>
                     </td>
 
                     {/* Declared weight */}
-                    <td className="px-5 py-4 text-right font-mono text-slate-400 tabular-nums">
+                    <td className="px-5 py-4 text-right tabular-nums text-slate-400 tabular-nums">
                       {p.declaredWeightKg} кг
                     </td>
 
                     {/* Actual weight */}
-                    <td className="px-5 py-4 text-right font-mono tabular-nums">
+                    <td className="px-5 py-4 text-right tabular-nums tabular-nums">
                       {p.actualWeightKg !== null ? (
                         <span className="font-bold text-white">
                           {p.actualWeightKg} кг
@@ -274,18 +274,18 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
                     {/* Medical clearance */}
                     <td className="px-5 py-4 text-center">
                       {p.isMedicalCleared ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-400 font-mono text-[11px]">
+                        <span className="inline-flex items-center gap-1 text-emerald-400 tabular-nums text-[11px]">
                           <CheckCircle2 className="w-3.5 h-3.5" /> Допущен
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-rose-400 font-mono text-[11px]">
+                        <span className="inline-flex items-center gap-1 text-rose-400 tabular-nums text-[11px]">
                           <XCircle className="w-3.5 h-3.5" /> Отказ
                         </span>
                       )}
                     </td>
 
                     {/* Status */}
-                    <td className="px-5 py-4 text-center font-mono text-[11px]">
+                    <td className="px-5 py-4 text-center tabular-nums text-[11px]">
                       {p.isWeighedIn ? (
                         <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800">
                           Взвешен
@@ -328,7 +328,7 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
               </div>
               <button
                 onClick={() => setWeighInAthlete(null)}
-                className="text-slate-400 hover:text-white text-xs font-mono"
+                className="text-slate-400 hover:text-white text-xs tabular-nums"
               >
                 Закрыть
               </button>
@@ -336,7 +336,7 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
 
             <div className="space-y-3">
               <div>
-                <span className="text-xs text-slate-500 font-mono">Спортсмен:</span>
+                <span className="text-xs text-slate-500 tabular-nums">Спортсмен:</span>
                 <div className="text-base font-bold text-white">
                   {weighInAthlete.lastName} {weighInAthlete.firstName}
                 </div>
@@ -353,7 +353,7 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
                   decimals
                   value={actualWeightInput}
                   onValueChange={setActualWeightInput}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-base text-white focus:outline-none focus:border-rose-500 font-mono font-bold"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-base text-white focus:outline-none focus:border-rose-500 tabular-nums font-bold"
                 />
               </div>
 

@@ -357,7 +357,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
     );
     setImageUploadError(null);
     setIsFormOpen(true);
-    setTimeout(() => document.getElementById('tournament-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    [60, 400].forEach((ms) => setTimeout(() => document.getElementById('tournament-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), ms));
   };
 
   React.useEffect(() => {
@@ -371,7 +371,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
     if (!createRequestId) return;
     resetForm();
     setIsFormOpen(true);
-    setTimeout(() => document.getElementById('tournament-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    [60, 400].forEach((ms) => setTimeout(() => document.getElementById('tournament-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), ms));
     onCreateRequestHandled?.();
   }, [createRequestId]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -620,33 +620,33 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
     switch (st) {
       case 'registration_open':
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-950/80 border border-emerald-600/70 text-emerald-400 flex items-center gap-1">
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950/80 border border-emerald-600/70 text-emerald-400 flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             {tr('Регистрация открыта', 'Каттоо ачык', 'Registration Open')}
           </span>
         );
       case 'in_progress':
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-950/80 border border-rose-600/70 text-rose-400 flex items-center gap-1">
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-950/80 border border-rose-600/70 text-rose-400 flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
             {tr('Идет турнир (LIVE)', 'Мелдеш жүрүүдө (LIVE)', 'In Progress (LIVE)')}
           </span>
         );
       case 'draw_completed':
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-950/80 border border-blue-600/70 text-blue-400 flex items-center gap-1">
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-950/80 border border-blue-600/70 text-blue-400 flex items-center gap-1">
             {tr('Сетки сформированы', 'Торчолор түзүлдү', 'Brackets Ready')}
           </span>
         );
       case 'completed':
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-900 border border-slate-700 text-slate-400">
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-900 border border-slate-700 text-slate-400">
             {tr('Завершен', 'Аяктады', 'Completed')}
           </span>
         );
       default:
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-950/80 border border-amber-600/70 text-amber-400">
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-950/80 border border-amber-600/70 text-amber-400">
             {tr('Черновик', 'Долбоор', 'Draft')}
           </span>
         );
@@ -656,17 +656,17 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
   const getRulesBadge = (r: TournamentRules) => {
     switch (r) {
       case 'wkf':
-        return <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-600 text-white">WKF</span>;
+        return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-600 text-white">WKF</span>;
       case 'skif':
-        return <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-600 text-white">SKIF</span>;
+        return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-600 text-white">SKIF</span>;
       case 'kyokushin':
-        return <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-600 text-white">KYOKUSHIN</span>;
+        return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-600 text-white">KYOKUSHIN</span>;
       case 'jka':
-        return <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-600 text-white">JKA</span>;
+        return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-600 text-white">JKA</span>;
       case 'olympic':
-        return <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-600 text-white">OLYMPIC</span>;
+        return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-600 text-white">OLYMPIC</span>;
       default:
-        return <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-700 text-white">WKF</span>;
+        return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-700 text-white">WKF</span>;
     }
   };
 
@@ -675,7 +675,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
       {/* Toast Notification */}
       {notification && (
         <div
-          className={`p-4 rounded-xl border flex items-center gap-3 text-xs font-mono shadow-xl transition-all ${
+          className={`p-4 rounded-xl border flex items-center gap-3 text-xs shadow-xl transition-all ${
             notification.type === 'success'
               ? 'bg-emerald-950/90 border-emerald-500/80 text-emerald-200'
               : 'bg-rose-950/90 border-rose-500/80 text-rose-200'
@@ -695,7 +695,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <span
-              className={`px-2.5 py-0.5 rounded-md border text-[10px] font-mono font-bold uppercase tracking-wider flex items-center gap-1 ${
+              className={`px-2.5 py-0.5 rounded-md border text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${
                 isAdmin
                   ? 'bg-rose-500/10 border-rose-500/30 text-rose-400'
                   : 'bg-sky-500/10 border-sky-500/30 text-sky-400'
@@ -708,7 +708,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                   : tr('RBAC: Участник / Учреждение (Ограниченный кабинет)', 'RBAC: Катышуучу / Мекеме (Чектелген кабинет)', 'RBAC: Participant / Institution (Limited Cabinet)')}
               </span>
             </span>
-            <span className="text-xs font-mono text-slate-400">
+            <span className="text-xs text-slate-400">
               {tr('В реестре:', 'Реестрде:', 'In registry:')}{' '}
               <strong className="text-white">{tournaments.length}</strong>
             </span>
@@ -718,7 +718,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
               ? tr('Создание и управление событиями', 'Мелдештерди түзүү жана башкаруу', 'Create & Manage Tournaments')
               : tr('Реестр и Архив турниров (Кабинет участника)', 'Мелдештердин реестри жана Архив (Катышуучу кабинети)', 'Tournaments Registry & Archive (Participant Cabinet)')}
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-sm text-[var(--app-text-secondary)] mt-1">
             {isAdmin
               ? tr(
                   'Создавайте новые соревнования, загружайте эмблему события (JPG/WebP до 2 МБ), управляйте архивом и удалением с подтверждением',
@@ -745,7 +745,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                   setIsFormOpen(true);
                 }
               }}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white text-xs font-bold font-mono transition-all shadow-lg shadow-rose-950/50 flex items-center gap-2 cursor-pointer shrink-0"
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white text-xs font-bold transition-all shadow-lg shadow-rose-950/50 flex items-center gap-2 cursor-pointer shrink-0"
             >
               {isFormOpen && !editingTournamentId ? (
                 <>
@@ -760,7 +760,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
               )}
             </button>
           ) : (
-            <span className="px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 text-xs font-mono flex items-center gap-1.5">
+            <span className="px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 text-xs flex items-center gap-1.5">
               <Lock className="w-3.5 h-3.5 text-amber-400" />
               <span>{tr('Изменение и удаление заблокировано (RBAC)', 'Өзгөртүү жана өчүрүү кулпуланган (RBAC)', 'Edit & Delete Locked (RBAC)')}</span>
             </span>
@@ -770,10 +770,10 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
 
       {/* Form: Create or Edit Tournament (Administrator Only) */}
       {isAdmin && isFormOpen && (
-        <div id="tournament-form" className="scroll-mt-20 p-4 sm:p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl space-y-4 sm:space-y-6 animate-fadeIn">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
+        <div id="tournament-form" className="scroll-mt-20 max-w-4xl mx-auto p-5 sm:p-8 rounded-2xl bg-[var(--app-surface)] border border-[var(--app-border)] shadow-sm space-y-5 sm:space-y-6 animate-fadeIn">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[var(--app-border)]">
             <div>
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <h3 className="text-xl font-bold text-[var(--app-text-primary)] flex items-center gap-2">
                 <Edit3 className="w-4 h-4 text-rose-400" />
                 <span>
                   {editingTournamentId
@@ -793,27 +793,27 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
             {/* Quick Templates Buttons */}
             {!editingTournamentId && (
               <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-[11px] font-mono text-slate-400 mr-1">
+                <span className="text-[13px] text-[var(--app-text-muted)] mr-1">
                   {tr('Быстрый шаблон:', 'Тез үлгү:', 'Quick template:')}
                 </span>
                 <button
                   type="button"
                   onClick={() => handleFillTemplate('wkf_championship')}
-                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-rose-300 text-[11px] font-mono transition-colors cursor-pointer"
+                  className="h-8 px-3 rounded-full border border-[var(--app-border)] bg-[var(--app-surface)] hover:border-[var(--accent)] hover:text-[var(--accent)] text-[13px] font-medium text-[var(--app-text-secondary)] transition-colors cursor-pointer"
                 >
                   {tr('Кубок WKF', 'WKF Кубогу', 'WKF Cup')}
                 </button>
                 <button
                   type="button"
                   onClick={() => handleFillTemplate('skif_cup')}
-                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-purple-300 text-[11px] font-mono transition-colors cursor-pointer"
+                  className="h-8 px-3 rounded-full border border-[var(--app-border)] bg-[var(--app-surface)] hover:border-[var(--accent)] hover:text-[var(--accent)] text-[13px] font-medium text-[var(--app-text-secondary)] transition-colors cursor-pointer"
                 >
                   {tr('Сётокан SKIF', 'Сётокан SKIF', 'Shotokan SKIF')}
                 </button>
                 <button
                   type="button"
                   onClick={() => handleFillTemplate('youth_open')}
-                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-blue-300 text-[11px] font-mono transition-colors cursor-pointer"
+                  className="h-8 px-3 rounded-full border border-[var(--app-border)] bg-[var(--app-surface)] hover:border-[var(--accent)] hover:text-[var(--accent)] text-[13px] font-medium text-[var(--app-text-secondary)] transition-colors cursor-pointer"
                 >
                   {tr('Юношеский WKF', 'Өспүрүмдөр WKF', 'Youth WKF')}
                 </button>
@@ -825,7 +825,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
             {/* Row 1: Title & Organization */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
               <div className="md:col-span-8">
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                <label className="block text-sm font-semibold text-[var(--app-text-primary)] mb-1.5">
                   {tr('Название соревнования', 'Мелдештин аталышы', 'Tournament Title')} <span className="text-rose-400">*</span>
                 </label>
                 <input
@@ -839,7 +839,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
               </div>
 
               <div className="md:col-span-4">
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                <label className="block text-sm font-semibold text-[var(--app-text-primary)] mb-1.5">
                   {tr('Организатор / Федерация', 'Уюштуруучу / Федерация', 'Organizer / Federation')}
                 </label>
                 <input
@@ -847,7 +847,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                   placeholder="WKF National Federation"
                   value={organization}
                   onChange={(e) => setOrganization(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
+                  className="w-full h-11 bg-[var(--app-surface)] border border-[var(--app-border)] rounded-xl px-3.5 text-[15px] text-[var(--app-text-primary)] placeholder:text-[var(--app-text-muted)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)] transition"
                 />
               </div>
             </div>
@@ -866,7 +866,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                       )}
                     </span>
                   </label>
-                  <p className="text-[11px] text-slate-400 mt-0.5 font-mono">
+                  <p className="text-[11px] text-slate-400 mt-0.5">
                     {tr('Проверка формата:', 'Форматты текшерүү:', 'Format validation:')}{' '}
                     <strong className="text-emerald-400">JPG (.jpg, .jpeg)</strong> / <strong className="text-emerald-400">WebP (.webp)</strong> ·{' '}
                     {tr('Лимит размера:', 'Көлөм чеги:', 'Max file size:')}{' '}
@@ -883,7 +883,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                       setImageUploadError(null);
                       if (fileInputRef.current) fileInputRef.current.value = '';
                     }}
-                    className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-rose-950 text-slate-300 hover:text-rose-300 border border-slate-800 text-[11px] font-mono transition-colors cursor-pointer self-start sm:self-auto"
+                    className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-rose-950 text-slate-300 hover:text-rose-300 border border-slate-800 text-[11px] transition-colors cursor-pointer self-start sm:self-auto"
                   >
                     {tr('✕ Удалить изображение', '✕ Сүрөттү өчүрүү', '✕ Remove Image')}
                   </button>
@@ -944,7 +944,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                     <button
                       type="button"
                       onClick={(e) => handleTriggerFilePicker(e)}
-                      className="px-3.5 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold font-mono transition-colors cursor-pointer shrink-0 shadow-sm"
+                      className="px-3.5 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-colors cursor-pointer shrink-0 shadow-sm"
                     >
                       {tr('Выбрать файл', 'Файл тандоо', 'Choose File')}
                     </button>
@@ -952,7 +952,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
 
                   {/* Stored DB URL display */}
                   {imageUrl && (
-                    <div className="flex items-center gap-2 text-[11px] font-mono bg-emerald-950/50 border border-emerald-700/60 text-emerald-300 px-3 py-2 rounded-lg">
+                    <div className="flex items-center gap-2 text-[11px] bg-emerald-950/50 border border-emerald-700/60 text-emerald-300 px-3 py-2 rounded-lg">
                       <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                       <span className="truncate">
                         {tr('Сохранено в БД:', 'Базага сакталды:', 'Saved in DB:')} <strong>{imageUrl}</strong>
@@ -967,7 +967,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
 
                   {/* Validation Error Message */}
                   {imageUploadError && (
-                    <div className="flex items-center gap-2 text-xs font-mono bg-rose-950/90 border border-rose-500/80 text-rose-200 px-3 py-2 rounded-lg">
+                    <div className="flex items-center gap-2 text-xs bg-rose-950/90 border border-rose-500/80 text-rose-200 px-3 py-2 rounded-lg">
                       <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
                       <span>{imageUploadError}</span>
                     </div>
@@ -983,7 +983,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                   ) : (
                     <div
                       onClick={handleTriggerFilePicker}
-                      className="w-24 h-24 rounded-xl border border-dashed border-slate-700 hover:border-rose-500 bg-slate-900/50 flex flex-col items-center justify-center text-slate-400 text-[10px] font-mono text-center p-2 cursor-pointer transition-colors"
+                      className="w-24 h-24 rounded-xl border border-dashed border-slate-700 hover:border-rose-500 bg-slate-900/50 flex flex-col items-center justify-center text-slate-400 text-[10px] text-center p-2 cursor-pointer transition-colors"
                     >
                       <ImageIcon className="w-5 h-5 mb-1 text-slate-500" />
                       <span>{tr('Превью JPG/WebP', 'JPG/WebP превью', 'JPG/WebP Preview')}</span>
@@ -996,13 +996,13 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
             {/* Row 3: Rules, Status, Tatami Count */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                <label className="block text-sm font-semibold text-[var(--app-text-primary)] mb-1.5">
                   {tr('Правила и регламент', 'Эрежелер жана регламент', 'Rules & Regulations')} <span className="text-rose-400">*</span>
                 </label>
                 <select
                   value={rulesType}
                   onChange={(e) => setRulesType(e.target.value as TournamentRules)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500 font-medium"
+                  className="w-full h-11 bg-[var(--app-surface)] border border-[var(--app-border)] rounded-xl px-3.5 text-[15px] text-[var(--app-text-primary)] placeholder:text-[var(--app-text-muted)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)] transition"
                 >
                   <option value="wkf">WKF (World Karate Federation)</option>
                   <option value="skif">SKIF (Shotokan Shobu Ippon / Sanbon)</option>
@@ -1015,7 +1015,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                   value={rulesLabel}
                   onChange={(e) => setRulesLabel(e.target.value)}
                   placeholder={tr('Или своими словами: напр. «Правила ФКР 2026»', 'Же өз сөзүңүз менен', 'Or in your own words')}
-                  className="mt-2 w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
+                  className="mt-2 w-full h-11 bg-[var(--app-surface)] border border-[var(--app-border)] rounded-xl px-3.5 text-[15px] text-[var(--app-text-primary)] placeholder:text-[var(--app-text-muted)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)] transition"
                 />
                 <p className="mt-1 text-[10px] text-slate-500">
                   {tr('Список выше задаёт систему подсчёта очков на табло; текст показывается участникам.', 'Тизме таблодогу упай эсептөөнү аныктайт; текст катышуучуларга көрсөтүлөт.', 'The list sets the scoreboard scoring; the text is shown to participants.')}
@@ -1023,13 +1023,13 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                <label className="block text-sm font-semibold text-[var(--app-text-primary)] mb-1.5">
                   {tr('Статус турнира', 'Мелдештин статусу', 'Tournament Status')}
                 </label>
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value as TournamentStatus)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500 font-medium"
+                  className="w-full h-11 bg-[var(--app-surface)] border border-[var(--app-border)] rounded-xl px-3.5 text-[15px] text-[var(--app-text-primary)] placeholder:text-[var(--app-text-muted)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)] transition"
                 >
                   <option value="registration_open">{tr('Регистрация открыта', 'Каттоо ачык', 'Registration Open')}</option>
                   <option value="in_progress">{tr('Идет соревнование (LIVE)', 'Мелдеш жүрүүдө (LIVE)', 'In Progress (LIVE)')}</option>
@@ -1040,7 +1040,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                <label className="block text-sm font-semibold text-[var(--app-text-primary)] mb-1.5">
                   {tr('Количество татами (площадок)', 'Татамилердин саны', 'Number of Tatamis')}
                 </label>
                 <input
@@ -1049,7 +1049,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                   value={tatamiText}
                   onChange={(e) => setTatamiText(e.target.value.replace(/[^0-9]/g, '').slice(0, 2))}
                   onBlur={() => setTatamiText(String(tatamiCount))}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500 font-mono"
+                  className="w-full h-11 bg-[var(--app-surface)] border border-[var(--app-border)] rounded-xl px-3.5 text-[15px] text-[var(--app-text-primary)] placeholder:text-[var(--app-text-muted)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)] transition"
                 />
               </div>
             </div>
@@ -1057,7 +1057,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
             {/* Row 4: Dates & Registration Deadline */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                <label className="block text-sm font-semibold text-[var(--app-text-primary)] mb-1.5">
                   {tr('Дата начала', 'Башталуу датасы', 'Start Date')} <span className="text-rose-400">*</span>
                 </label>
                 <input
@@ -1065,12 +1065,12 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                   required
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500 font-mono"
+                  className="w-full h-11 bg-[var(--app-surface)] border border-[var(--app-border)] rounded-xl px-3.5 text-[15px] text-[var(--app-text-primary)] placeholder:text-[var(--app-text-muted)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)] transition"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                <label className="block text-sm font-semibold text-[var(--app-text-primary)] mb-1.5">
                   {tr('Дата окончания', 'Аяктоо датасы', 'End Date')} <span className="text-rose-400">*</span>
                 </label>
                 <input
@@ -1078,10 +1078,10 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                   required
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500 font-mono"
+                  className="w-full h-11 bg-[var(--app-surface)] border border-[var(--app-border)] rounded-xl px-3.5 text-[15px] text-[var(--app-text-primary)] placeholder:text-[var(--app-text-muted)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)] transition"
                 />
                 {isTournamentDateExpired(endDate) && (
-                  <p className="mt-1 text-[11px] font-mono text-amber-400 flex items-center gap-1">
+                  <p className="mt-1 text-[11px] text-amber-400 flex items-center gap-1">
                     <Clock className="w-3 h-3 shrink-0" />
                     <span>
                       {tr(
@@ -1095,7 +1095,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                <label className="block text-sm font-semibold text-[var(--app-text-primary)] mb-1.5">
                   {tr('Дедлайн подачи заявок', 'Өтүнмөлөрдүн акыркы мөөнөтү', 'Registration Deadline')}
                 </label>
                 <input
@@ -1103,7 +1103,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                   placeholder="2026-11-28 23:59"
                   value={registrationDeadline}
                   onChange={(e) => setRegistrationDeadline(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500 font-mono"
+                  className="w-full h-11 bg-[var(--app-surface)] border border-[var(--app-border)] rounded-xl px-3.5 text-[15px] text-[var(--app-text-primary)] placeholder:text-[var(--app-text-muted)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)] transition"
                 />
               </div>
             </div>
@@ -1111,7 +1111,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
             {/* Row 5: Location (Country, City, Venue) */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                <label className="block text-sm font-semibold text-[var(--app-text-primary)] mb-1.5">
                   {tr('Страна', 'Өлкө', 'Country')} <span className="text-rose-400">*</span>
                 </label>
                 <input
@@ -1120,12 +1120,12 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                   placeholder={tr('Кыргызстан', 'Кыргызстан', 'Kyrgyzstan')}
                   value={country}
                   onChange={(e) => setCountry(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
+                  className="w-full h-11 bg-[var(--app-surface)] border border-[var(--app-border)] rounded-xl px-3.5 text-[15px] text-[var(--app-text-primary)] placeholder:text-[var(--app-text-muted)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)] transition"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                <label className="block text-sm font-semibold text-[var(--app-text-primary)] mb-1.5">
                   {tr('Город', 'Шаар', 'City')} <span className="text-rose-400">*</span>
                 </label>
                 <input
@@ -1134,12 +1134,12 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                   placeholder={tr('Бишкек', 'Бишкек', 'Bishkek')}
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
+                  className="w-full h-11 bg-[var(--app-surface)] border border-[var(--app-border)] rounded-xl px-3.5 text-[15px] text-[var(--app-text-primary)] placeholder:text-[var(--app-text-muted)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)] transition"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                <label className="block text-sm font-semibold text-[var(--app-text-primary)] mb-1.5">
                   {tr('Арена / Спорткомплекс', 'Арена / Спорткомплекс', 'Venue / Sports Arena')} <span className="text-rose-400">*</span>
                 </label>
                 <input
@@ -1148,14 +1148,14 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                   placeholder={tr('напр. Дворец спорта им. Кожомкула', 'мис. Кожомкул атындагы Спорт Ордосу', 'e.g. National Sports Arena')}
                   value={venueName}
                   onChange={(e) => setVenueName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
+                  className="w-full h-11 bg-[var(--app-surface)] border border-[var(--app-border)] rounded-xl px-3.5 text-[15px] text-[var(--app-text-primary)] placeholder:text-[var(--app-text-muted)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)] transition"
                 />
               </div>
             </div>
 
             {/* Row 6: Disciplines selection */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-2">
+              <label className="block text-sm font-semibold text-[var(--app-text-primary)] mb-2">
                 {tr('Соревновательные дисциплины в программе:', 'Программадагы мелдеш дисциплиналары:', 'Competition Disciplines:')}
               </label>
               <div className="flex flex-wrap gap-2">
@@ -1166,10 +1166,10 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                       key={disc}
                       type="button"
                       onClick={() => toggleDiscipline(disc)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
+                      className={`h-9 px-3.5 rounded-full text-sm transition-all flex items-center gap-1.5 cursor-pointer border ${
                         isChecked
-                          ? 'bg-rose-600/90 text-white font-bold border border-rose-500 shadow-sm'
-                          : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-white'
+                          ? 'bg-[var(--accent)] border-[var(--accent)] text-white font-semibold shadow-sm'
+                          : 'bg-[var(--app-surface)] border-[var(--app-border)] text-[var(--app-text-secondary)] hover:border-[var(--accent)] hover:text-[var(--accent)]'
                       }`}
                     >
                       <Check className={`w-3.5 h-3.5 ${isChecked ? 'opacity-100' : 'opacity-0'}`} />
@@ -1194,7 +1194,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                   }
                 }}
                 placeholder={tr('Своя дисциплина: напр. «Кихон», «Фукуго», «Тамешивари»', 'Өз дисциплинаңыз', 'Your own discipline')}
-                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
+                className="flex-1 h-11 bg-[var(--app-surface)] border border-[var(--app-border)] rounded-xl px-3.5 text-[15px] text-[var(--app-text-primary)] placeholder:text-[var(--app-text-muted)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)] transition"
               />
               <button
                 type="button"
@@ -1203,7 +1203,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                   if (d && !selectedDisciplines.includes(d)) setSelectedDisciplines([...selectedDisciplines, d]);
                   setCustomDiscipline('');
                 }}
-                className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold cursor-pointer"
+                className="h-11 px-4 rounded-xl border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent-soft)] text-sm font-semibold cursor-pointer"
               >
                 {tr('+ Добавить', '+ Кошуу', '+ Add')}
               </button>
@@ -1211,7 +1211,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
 
             {/* Row 7: Description */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label className="block text-sm font-semibold text-[var(--app-text-primary)] mb-1.5">
                 {tr('Описание турнира и регламент допуска', 'Мелдештин сүрөттөлүшү жана регламенти', 'Tournament Description & Regulations')}
               </label>
               <textarea
@@ -1223,7 +1223,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                 )}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 leading-relaxed"
+                className="w-full bg-[var(--app-surface)] border border-[var(--app-border)] rounded-xl p-3.5 text-[15px] text-[var(--app-text-primary)] placeholder:text-[var(--app-text-muted)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)] leading-relaxed"
               />
             </div>
 
@@ -1242,7 +1242,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
               <button
                 type="submit"
                 disabled={isUploadingImage}
-                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white text-xs font-bold font-mono transition-all shadow-md cursor-pointer"
+                className="h-11 px-6 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white text-[15px] font-bold transition-all shadow-md shadow-[var(--accent-soft)] cursor-pointer"
               >
                 {editingTournamentId
                   ? tr('Сохранить изменения', 'Өзгөртүүлөрдү сактоо', 'Save Changes')
@@ -1261,7 +1261,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
               <Archive className="w-4 h-4" />
             </div>
             <div className="space-y-1">
-              <div className="text-xs font-bold font-mono text-amber-300 uppercase tracking-wide">
+              <div className="text-xs font-bold text-amber-300 uppercase tracking-wide">
                 {tr(
                   `Автоматическая архивация завершённых турниров: в архиве — ${archivedTournaments.length}`,
                   `Аяктаган мелдештерди автоматтык архивдөө: архивде — ${archivedTournaments.length}`,
@@ -1280,7 +1280,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
           <button
             type="button"
             onClick={() => setRegistryViewTab(registryViewTab === 'archive' ? 'active' : 'archive')}
-            className="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-xs font-mono font-bold transition-colors cursor-pointer shrink-0 flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-xs font-bold transition-colors cursor-pointer shrink-0 flex items-center gap-1.5"
           >
             <Archive className="w-3.5 h-3.5" />
             <span>
@@ -1295,7 +1295,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
       {/* Tournaments Registry Grid with Active / Archive Tabs */}
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
-          <h3 className="text-sm font-bold font-mono text-slate-300 uppercase tracking-wider flex items-center gap-2">
+          <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
             <Layers className="w-4 h-4 text-rose-400" />
             <span>
               {tr('Реестр соревнований в системе', 'Системадагы мелдештердин реестри', 'System Tournaments Registry')} ({tournaments.length})
@@ -1307,7 +1307,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
             <button
               type="button"
               onClick={() => setRegistryViewTab('active')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                 registryViewTab === 'active'
                   ? 'bg-rose-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-white'
@@ -1323,7 +1323,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
             <button
               type="button"
               onClick={() => setRegistryViewTab('archive')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                 registryViewTab === 'archive'
                   ? 'bg-amber-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-white'
@@ -1376,7 +1376,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                           {getRulesBadge(t.rulesType)}
                           {getStatusBadge(isArchived ? 'completed' : t.status)}
                           {isArchived && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-950/90 border border-amber-600/70 text-amber-300 flex items-center gap-1">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-950/90 border border-amber-600/70 text-amber-300 flex items-center gap-1">
                               <Archive className="w-3 h-3 text-amber-400" />
                               <span>
                                 {isExpired
@@ -1386,7 +1386,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                             </span>
                           )}
                           {isSelected && (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-950 border border-rose-700 text-rose-300">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 border border-rose-700 text-rose-300">
                               {tr('★ Выбран', '★ Тандалган', '★ Selected')}
                             </span>
                           )}
@@ -1394,7 +1394,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                         <h4 className="text-base font-bold text-white group-hover:text-rose-300 transition-colors">
                           {t.title}
                         </h4>
-                        <p className="text-xs text-slate-400 font-mono">
+                        <p className="text-xs text-slate-400">
                           {t.organization || 'WKF Federation'}
                         </p>
                       </div>
@@ -1408,7 +1408,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                     </div>
 
                     {/* Dates & Location */}
-                    <div className="grid grid-cols-2 gap-2 text-xs font-mono pt-1 text-slate-300">
+                    <div className="grid grid-cols-2 gap-2 text-xs pt-1 text-slate-300">
                       <div className="flex items-center gap-1.5 text-slate-400">
                         <Calendar className="w-3.5 h-3.5 text-rose-400 shrink-0" />
                         <span>{t.startDate} — {t.endDate}</span>
@@ -1420,13 +1420,13 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                     </div>
 
                     {/* Venue */}
-                    <div className="text-xs font-mono text-slate-400 flex items-center gap-1.5">
+                    <div className="text-xs text-slate-400 flex items-center gap-1.5">
                       <Building2 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                       <span className="text-slate-300">{t.venueName}</span>
                     </div>
 
                     {/* Quick stats */}
-                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-800/80 text-[11px] font-mono">
+                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-800/80 text-[11px]">
                       <div className="text-slate-400">
                         {tr('Атлетов:', 'Спортчулар:', 'Athletes:')} <strong className="text-white">{t.athleteCount || 0}</strong>
                       </div>
@@ -1446,7 +1446,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                         <button
                           type="button"
                           onClick={() => onSelectTournament(t)}
-                          className="px-3 py-1.5 rounded-lg bg-rose-600/90 hover:bg-rose-500 text-white text-xs font-bold font-mono transition-colors cursor-pointer"
+                          className="px-3 py-1.5 rounded-lg bg-rose-600/90 hover:bg-rose-500 text-white text-xs font-bold transition-colors cursor-pointer"
                         >
                           {tr('Выбрать активным', 'Активдүү кылуу', 'Set Active')}
                         </button>
@@ -1456,7 +1456,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                         <button
                           type="button"
                           onClick={() => onNavigateToDetails(t)}
-                          className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono transition-colors flex items-center gap-1 cursor-pointer"
+                          className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors flex items-center gap-1 cursor-pointer"
                         >
                           <span>{tr('Витрина', 'Витрина', 'Showcase')}</span>
                           <ExternalLink className="w-3 h-3 text-slate-400" />
@@ -1480,7 +1480,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                                 )
                               );
                             }}
-                            className="px-2.5 py-1.5 rounded-lg bg-amber-950/60 hover:bg-amber-900/80 border border-amber-600/50 text-amber-300 text-xs font-mono transition-colors flex items-center gap-1 cursor-pointer"
+                            className="px-2.5 py-1.5 rounded-lg bg-amber-950/60 hover:bg-amber-900/80 border border-amber-600/50 text-amber-300 text-xs transition-colors flex items-center gap-1 cursor-pointer"
                             title={tr('Перенести турнир в Архив без удаления', 'Мелдешти өчүрбөстөн Архивге которуу', 'Move tournament to Archive without deleting')}
                           >
                             <Archive className="w-3.5 h-3.5 text-amber-400" />
@@ -1500,7 +1500,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                                   )
                                 );
                               }}
-                              className="px-2.5 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-600/50 text-emerald-300 text-xs font-mono transition-colors flex items-center gap-1 cursor-pointer"
+                              className="px-2.5 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-600/50 text-emerald-300 text-xs transition-colors flex items-center gap-1 cursor-pointer"
                               title={tr('Вернуть в актуальные турниры', 'Актуалдуу мелдештерге кайтаруу', 'Restore to active tournaments')}
                             >
                               <RotateCcw className="w-3.5 h-3.5 text-emerald-400" />
@@ -1523,7 +1523,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                           <button
                             type="button"
                             onClick={() => handleRequestDelete(t)}
-                            className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-950 hover:text-rose-300 hover:border-rose-700 border border-slate-700/80 text-slate-300 text-xs font-mono transition-colors flex items-center gap-1 cursor-pointer"
+                            className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-950 hover:text-rose-300 hover:border-rose-700 border border-slate-700/80 text-slate-300 text-xs transition-colors flex items-center gap-1 cursor-pointer"
                             title={tr('Удалить турнир (откроется подтверждение Да/Нет)', 'Мелдешти өчүрүү (Ооба/Жок тастыктоосу ачылат)', 'Delete tournament (opens Yes/No confirmation)')}
                           >
                             <Trash2 className="w-3.5 h-3.5 text-rose-400" />
@@ -1532,7 +1532,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                         )}
                       </div>
                     ) : (
-                      <span className="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 text-[11px] font-mono flex items-center gap-1">
+                      <span className="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 text-[11px] flex items-center gap-1">
                         <Lock className="w-3 h-3 text-slate-500" />
                         <span>{tr('Только просмотр (RBAC)', 'Көрүү гана (RBAC)', 'View Only (RBAC)')}</span>
                       </span>
@@ -1584,14 +1584,14 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
               <button
                 type="button"
                 onClick={handleCancelDeleteNo}
-                className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold font-mono transition-colors cursor-pointer"
+                className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-colors cursor-pointer"
               >
                 {tr('Нет', 'Жок', 'No')}
               </button>
               <button
                 type="button"
                 onClick={handleConfirmDeleteYes}
-                className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold font-mono transition-colors shadow-md cursor-pointer flex items-center gap-1.5"
+                className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-colors shadow-md cursor-pointer flex items-center gap-1.5"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>{tr('Да', 'Ооба', 'Yes')}</span>

@@ -361,7 +361,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <TatamiFullLogo />
 
             {/* Security Badge */}
-            <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-[11px] font-mono border border-slate-200">
+            <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-[11px] tabular-nums border border-slate-200">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
               <span>Обязательная аутентификация · SSL 256-bit</span>
             </div>
@@ -501,13 +501,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <button
                       type="button"
                       onClick={() => setShowDemoAccounts(!showDemoAccounts)}
-                      className="text-[11px] text-[#3b668d] hover:underline font-mono"
+                      className="text-[11px] text-[#3b668d] hover:underline tabular-nums"
                     >
                       {showDemoAccounts ? '▲ Скрыть демо-аккаунты' : '▼ Быстрый выбор учетных записей (Демо)'}
                     </button>
 
                     {showDemoAccounts && (
-                      <div className="mt-2 text-left bg-white p-2.5 rounded-xl border border-slate-200 text-[11px] space-y-1 font-mono">
+                      <div className="mt-2 text-left bg-white p-2.5 rounded-xl border border-slate-200 text-[11px] space-y-1 tabular-nums">
                         <button
                           type="button"
                           onClick={() => fillCredentials('coach.smr@samurai.club', 'Coach2026!', 'club_coach')}
@@ -743,7 +743,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                     <span className="text-slate-400">E-mail:</span>
-                    <span className="font-mono text-slate-800">{pendingProfileUser.email}</span>
+                    <span className="tabular-nums text-slate-800">{pendingProfileUser.email}</span>
                   </div>
 
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100">

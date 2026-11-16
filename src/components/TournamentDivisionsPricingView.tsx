@@ -241,7 +241,7 @@ export const TournamentDivisionsPricingView: React.FC<TournamentDivisionsPricing
 
                 return (
                   <tr key={div.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-3 px-4 font-mono font-bold text-slate-900">
+                    <td className="py-3 px-4 tabular-nums font-bold text-slate-900">
                       {div.code}
                     </td>
                     <td className="py-3 px-4">
@@ -275,7 +275,7 @@ export const TournamentDivisionsPricingView: React.FC<TournamentDivisionsPricing
                     <td className="py-3 px-4 text-center font-bold text-slate-800">
                       {div.participantsCount}
                     </td>
-                    <td className="py-3 px-4 text-right font-mono font-bold text-teal-700 text-sm">
+                    <td className="py-3 px-4 text-right tabular-nums font-bold text-teal-700 text-sm">
                       {div.price} сом
                     </td>
                   </tr>

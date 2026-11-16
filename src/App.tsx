@@ -1261,7 +1261,7 @@ function AppContent() {
 
         {/* Incoming Emergency / Critical Live Toast Banner */}
         {incomingLiveToast && (
-          <div className="bg-rose-950/95 border-b border-rose-500 text-white px-4 py-2.5 shadow-2xl backdrop-blur sticky top-16 z-30 flex items-center justify-between text-xs sm:text-sm font-mono animate-fadeIn">
+          <div className="bg-rose-950/95 border-b border-rose-500 text-white px-4 py-2.5 shadow-2xl backdrop-blur sticky top-16 z-30 flex items-center justify-between text-xs sm:text-sm tabular-nums animate-fadeIn">
             <div className="flex items-center gap-2.5">
               <span className="w-2.5 h-2.5 rounded-full bg-rose-400 animate-ping" />
               <span className="font-bold text-rose-300 uppercase">[{incomingLiveToast.title}]:</span>
@@ -1274,7 +1274,7 @@ function AppContent() {
                     setActiveTab(incomingLiveToast.actionTab!);
                     setIncomingLiveToast(null);
                   }}
-                  className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold font-mono transition-colors cursor-pointer"
+                  className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold tabular-nums transition-colors cursor-pointer"
                 >
                   {incomingLiveToast.actionLabel || 'Перейти'}
                 </button>
@@ -1372,7 +1372,7 @@ function AppContent() {
         )}
 
         {/* Full-width Stretched Content Area */}
-        <main className="flex-1 w-full min-w-0 px-3 sm:px-6 py-2.5 sm:py-3 space-y-4">
+        <main className="flex-1 w-full min-w-0 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-4 space-y-4">
           <React.Suspense fallback={<ScreenLoader />}>
           {!canAccess(activeTab, effectiveRole) ? (
             <AccessGate
@@ -1851,7 +1851,7 @@ function AppContent() {
               <button
                 type="button"
                 onClick={() => setGlobalPendingDeleteTournament(null)}
-                className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold font-mono transition-colors cursor-pointer"
+                className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold tabular-nums transition-colors cursor-pointer"
               >
                 {tr('Нет', 'Жок', 'No')}
               </button>
@@ -1862,7 +1862,7 @@ function AppContent() {
                   setGlobalPendingDeleteTournament(null);
                   handleDeleteTournament(targetId);
                 }}
-                className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold font-mono transition-colors shadow-md cursor-pointer flex items-center gap-1.5"
+                className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold tabular-nums transition-colors shadow-md cursor-pointer flex items-center gap-1.5"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>{tr('Да', 'Ооба', 'Yes')}</span>
