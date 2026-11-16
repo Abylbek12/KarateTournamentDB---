@@ -90,7 +90,10 @@ export const DATA_DIR = path.resolve(process.env.DATA_DIR || 'data');
 export const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 
-if (!USE_DATABASE) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+/** On Vercel without a connected database nothing can be saved (the disk is read-only). */
+export const DATABASE_MISSING = !USE_DATABASE && !!process.env.VERCEL;
+
+if (!USE_DATABASE && !DATABASE_MISSING) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
 const emptyDb = (): DbShape => ({ events: null, state: {}, invites: {}, deviceKeys: {}, accounts: [], sessions: {}, images: {} });
 
@@ -108,7 +111,7 @@ function normalize(raw: any): DbShape {
 }
 
 function loadDb(): DbShape {
-  if (USE_DATABASE) return emptyDb(); // loaded per request
+  if (USE_DATABASE || DATABASE_MISSING) return emptyDb(); // loaded per request
   try {
     return normalize(JSON.parse(fs.readFileSync(DB_FILE, 'utf8')));
   } catch {
@@ -412,6 +415,10 @@ const NO_DB_PATHS = new Set(['/api/health', '/api/chat', '/api/stream']);
 /** Express middleware: load data before the handler, save changes before the answer is sent. */
 export function databaseMiddleware(onLoaded?: () => void) {
   return (req: Request, res: Response, next: NextFunction) => {
+    if (DATABASE_MISSING && !NO_DB_PATHS.has(req.path)) {
+      res.status(503).json({ error: 'База данных не подключена. В Vercel откройте Storage → Create Database → Neon и сделайте Redeploy.' });
+      return;
+    }
     if (!USE_DATABASE || NO_DB_PATHS.has(req.path)) return next();
     let release!: () => void;
     const turn = new Promise<void>((r) => (release = r));

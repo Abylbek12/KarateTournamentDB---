@@ -91,7 +91,8 @@ app.get('/api/health', (_req: Request, res: Response) => {
     aiEnabled: hasGeminiKey(),
     timestamp: new Date().toISOString(),
     serverTime: Date.now(),
-    realtime: REALTIME
+    realtime: REALTIME,
+    database: USE_DATABASE ? 'postgres' : process.env.VERCEL ? 'missing' : 'file'
   });
 });
 
