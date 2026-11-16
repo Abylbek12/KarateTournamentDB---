@@ -467,6 +467,7 @@ function AppContent() {
   });
   const [activeScoreboardBout, setActiveScoreboardBout] = useState<Bout | null>(null);
   const [editTournamentRequest, setEditTournamentRequest] = useState<string | null>(null);
+  const [createTournamentRequest, setCreateTournamentRequest] = useState<number | null>(null);
   const [selectedConsoleBoutId, setSelectedConsoleBoutId] = useState<string>(SAMPLE_BOUTS[0].id);
   const [isGlobalManualModalOpen, setIsGlobalManualModalOpen] = useState<boolean>(false);
   const [isResetModalOpen, setIsResetModalOpen] = useState<boolean>(false);
@@ -1409,7 +1410,10 @@ function AppContent() {
               }}
               onOpenScoreboard={() => setActiveTab('scoreboard')}
               onOpenBracket={() => setActiveTab('bracket')}
-              onOpenCreateTournament={() => navigateWithHash('admin')}
+              onOpenCreateTournament={() => {
+                setCreateTournamentRequest(Date.now());
+                navigateWithHash('admin');
+              }}
               onRequestDeleteTournament={(t) => setGlobalPendingDeleteTournament(t)}
               onOpenLiveBroadcast={() => navigateWithHash('virtual_studios')}
             />
@@ -1573,17 +1577,6 @@ function AppContent() {
             <DocumentsPanel tournaments={tournaments} initialTournamentId={selectedEvent.id} categories={eventCategories} bouts={bouts} />
           )}
 
-          {activeTab === 'admin' && effectiveRole === 'admin' && <UsersRolesPanel currentUserId={currentUser?.id} />}
-          {activeTab === 'admin' && effectiveRole === 'admin' && <InviteLinksPanel />}
-          {activeTab === 'admin' && effectiveRole === 'admin' && <LaunchPanel />}
-          {activeTab === 'admin' && effectiveRole !== 'admin' && currentUser && (
-            <MyAccountPanel
-              user={currentUser}
-              onNavigate={(tab) => navigateWithHash(tab)}
-              onUserUpdated={(u) => setCurrentUser(u)}
-            />
-          )}
-
           {activeTab === 'admin' && effectiveRole === 'admin' && (
             <TournamentEventsManager
               tournaments={tournaments}
@@ -1600,8 +1593,21 @@ function AppContent() {
               onNavigateToDetails={(t) => handleSelectTournamentAction(t as EventItem, 'info')}
               editRequestId={editTournamentRequest}
               onEditRequestHandled={() => setEditTournamentRequest(null)}
+              createRequestId={createTournamentRequest}
+              onCreateRequestHandled={() => setCreateTournamentRequest(null)}
             />
           )}
+          {activeTab === 'admin' && effectiveRole === 'admin' && <UsersRolesPanel currentUserId={currentUser?.id} />}
+          {activeTab === 'admin' && effectiveRole === 'admin' && <InviteLinksPanel />}
+          {activeTab === 'admin' && effectiveRole === 'admin' && <LaunchPanel />}
+          {activeTab === 'admin' && effectiveRole !== 'admin' && currentUser && (
+            <MyAccountPanel
+              user={currentUser}
+              onNavigate={(tab) => navigateWithHash(tab)}
+              onUserUpdated={(u) => setCurrentUser(u)}
+            />
+          )}
+
 
 
           {activeTab === 'registration' && currentUser && (

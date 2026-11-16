@@ -199,10 +199,24 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
     <div className="theme-keep space-y-4 sm:space-y-6 pb-8">
       {/* Heading + search */}
       <div className="flex flex-col lg:flex-row lg:items-end gap-3 sm:gap-4 justify-between pt-1 sm:pt-2">
-        <div>
-          <h1 className="text-[22px] sm:text-3xl font-bold tracking-tight text-[var(--app-text-primary)]">
-            {tr('Турниры по каратэ', 'Каратэ мелдештери', 'Karate tournaments')}
-          </h1>
+        <div className="min-w-0">
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="text-[22px] sm:text-3xl font-bold tracking-tight text-[var(--app-text-primary)]">
+              {tr('Турниры по каратэ', 'Каратэ мелдештери', 'Karate tournaments')}
+            </h1>
+            {/* Organizer only: create a tournament in one tap */}
+            {isAdmin && onOpenCreateTournament && (
+              <button
+                onClick={onOpenCreateTournament}
+                className="group shrink-0 inline-flex items-center gap-2 h-10 sm:h-11 pl-1.5 pr-4 sm:pr-5 rounded-full bg-gradient-to-r from-rose-600 to-red-500 hover:from-rose-500 hover:to-red-500 text-white text-sm sm:text-[15px] font-bold shadow-md shadow-rose-600/25 hover:shadow-lg hover:shadow-rose-600/35 active:scale-[0.98] transition-all cursor-pointer lg:hidden"
+              >
+                <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/20 flex items-center justify-center group-hover:rotate-90 transition-transform">
+                  <Plus className="w-4 h-4 sm:w-[18px] sm:h-[18px]" strokeWidth={3} />
+                </span>
+                {tr('Создать турнир', 'Мелдеш түзүү', 'New tournament')}
+              </button>
+            )}
+          </div>
           <p className="mt-0.5 sm:mt-1 text-sm sm:text-[15px] text-[var(--app-text-secondary)]">
             {tr(
               'Календарь соревнований Кыргызстана: заявки онлайн, сетки, live-результаты.',
@@ -229,10 +243,12 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
           {isAdmin && onOpenCreateTournament && (
             <button
               onClick={onOpenCreateTournament}
-              className="h-11 px-4 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white text-sm font-semibold inline-flex items-center gap-2 shrink-0 cursor-pointer"
+              className="group hidden lg:inline-flex shrink-0 items-center gap-2 h-11 pl-1.5 pr-5 rounded-full bg-gradient-to-r from-rose-600 to-red-500 hover:from-rose-500 hover:to-red-500 text-white text-[15px] font-bold shadow-md shadow-rose-600/25 hover:shadow-lg hover:shadow-rose-600/35 active:scale-[0.98] transition-all cursor-pointer"
             >
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">{tr('Создать турнир', 'Мелдеш түзүү', 'New tournament')}</span>
+              <span className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center group-hover:rotate-90 transition-transform">
+                <Plus className="w-[18px] h-[18px]" strokeWidth={3} />
+              </span>
+              {tr('Создать турнир', 'Мелдеш түзүү', 'New tournament')}
             </button>
           )}
         </div>

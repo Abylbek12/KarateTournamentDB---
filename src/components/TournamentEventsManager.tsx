@@ -53,6 +53,9 @@ export interface TournamentEventsManagerProps {
   /** Opens the edit form for this tournament (e.g. «Изменить турнир» on its page). */
   editRequestId?: string | null;
   onEditRequestHandled?: () => void;
+  /** Opens an empty creation form (the «Создать турнир» button on the home page). */
+  createRequestId?: number | null;
+  onCreateRequestHandled?: () => void;
 }
 
 export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = ({
@@ -66,7 +69,9 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
   onDeleteTournament,
   onNavigateToDetails,
   editRequestId,
-  onEditRequestHandled
+  onEditRequestHandled,
+  createRequestId,
+  onCreateRequestHandled
 }) => {
   const { language } = useApp();
   const tr = (ru: string, ky: string, en: string) => trLang(language, ru, ky, en);
@@ -352,7 +357,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
     );
     setImageUploadError(null);
     setIsFormOpen(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => document.getElementById('tournament-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   };
 
   React.useEffect(() => {
@@ -361,6 +366,14 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
     if (t) handleStartEdit(t);
     onEditRequestHandled?.();
   }, [editRequestId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  React.useEffect(() => {
+    if (!createRequestId) return;
+    resetForm();
+    setIsFormOpen(true);
+    setTimeout(() => document.getElementById('tournament-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    onCreateRequestHandled?.();
+  }, [createRequestId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Quick template filler
   const handleFillTemplate = (templateType: 'wkf_championship' | 'skif_cup' | 'youth_open') => {
@@ -757,7 +770,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
 
       {/* Form: Create or Edit Tournament (Administrator Only) */}
       {isAdmin && isFormOpen && (
-        <div className="p-4 sm:p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl space-y-4 sm:space-y-6 animate-fadeIn">
+        <div id="tournament-form" className="scroll-mt-20 p-4 sm:p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl space-y-4 sm:space-y-6 animate-fadeIn">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
             <div>
               <h3 className="text-base font-bold text-white flex items-center gap-2">
