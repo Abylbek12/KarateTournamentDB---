@@ -92,7 +92,9 @@ app.get('/api/health', (_req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
     serverTime: Date.now(),
     realtime: REALTIME,
-    database: USE_DATABASE ? 'postgres' : process.env.VERCEL ? 'missing' : 'file'
+    database: USE_DATABASE ? 'postgres' : process.env.VERCEL ? 'missing' : 'file',
+    // whether ADMIN_EMAIL / ADMIN_PASSWORD are set (values are never shown)
+    adminConfigured: !!(process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD)
   });
 });
 
