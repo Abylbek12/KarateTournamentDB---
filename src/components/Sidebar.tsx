@@ -140,12 +140,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       key: 'officials',
       title: tr('Судейство', 'Калыстык', 'Officiating'),
       items: [
-        { id: 'scoreboard' as NavTabId, label: tr('Табло татами', 'Татами таблосу', 'Tatami scoreboard'), icon: Tv },
-        { id: 'schedule' as NavTabId, label: tr('Расписание татами', 'Татами графиги', 'Tatami schedule'), icon: Calendar },
+        { id: 'scoreboard' as NavTabId, label: tr('Татами: бои и пульты', 'Татами: беттештер', 'Tatami: bouts & consoles'), icon: Tv },
         { id: 'participants' as NavTabId, label: tr('Взвешивание и допуск', 'Таразалоо жана уруксат', 'Weigh-in & clearance'), icon: Scale },
-        { id: 'protocols' as NavTabId, label: tr('Протоколы', 'Протоколдор', 'Protocols'), icon: FileText },
-        { id: 'referee_vr' as NavTabId, label: tr('Видеоповтор (VR)', 'Видеокайталоо (VR)', 'Video review'), icon: Shield },
-        { id: 'doctor' as NavTabId, label: tr('Медконтроль', 'Медкөзөмөл', 'Medical'), icon: Stethoscope },
         // Chief referee runs the draw too (admins have it under «Организатор»)
         ...(isAdmin ? [] : [{ id: 'event_setup' as NavTabId, label: tr('Категории и жеребьёвка', 'Категориялар жана чүчүкулак', 'Categories & draw'), icon: Layers }])
       ]
@@ -158,7 +154,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             { id: 'admin' as NavTabId, label: tr('Турниры и пользователи', 'Мелдештер жана колдонуучулар', 'Events & users'), icon: ShieldCheck },
             { id: 'event_setup' as NavTabId, label: tr('Категории и жеребьёвка', 'Категориялар жана чүчүкулак', 'Categories & draw'), icon: Layers },
             { id: 'screens' as NavTabId, label: tr('Экраны и QR-коды', 'Экрандар жана QR', 'Screens & QR'), icon: QrCode },
-            { id: 'bracket' as NavTabId, label: tr('Сетки и жеребьёвка', 'Торчолор жана чүчүкулак', 'Brackets & draw'), icon: GitBranch },
             { id: 'acquiring' as NavTabId, label: tr('Взносы', 'Төгүмдөр', 'Entry fees'), icon: CreditCard },
             { id: 'exports' as NavTabId, label: tr('Документы и печать', 'Документтер жана басып чыгаруу', 'Documents & printing'), icon: Stamp },
             { id: 'lan' as NavTabId, label: tr('Работа без интернета', 'Интернетсиз режим', 'Offline (LAN)'), icon: Wifi }

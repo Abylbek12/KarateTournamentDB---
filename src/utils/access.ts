@@ -13,7 +13,6 @@ const SIGNED_IN: AccessRole[] = ['admin', 'chief_referee', 'tatami_referee', 'sc
 export const TAB_ACCESS: Record<string, 'public' | AccessRole[]> = {
   // Public portal
   tournaments: 'public',
-  tournament_details: 'public',
   event_info: 'public',
   event_categories_prices: 'public',
   event_brackets: 'public',
@@ -32,13 +31,8 @@ export const TAB_ACCESS: Record<string, 'public' | AccessRole[]> = {
   acquiring: ['admin', 'club_coach', 'athlete'],
 
   // Competition operations (officials)
-  scoreboard: STAFF,
-  schedule: [...STAFF, 'medical_officer'],
-  bracket: ['admin', 'chief_referee'],
+  scoreboard: [...STAFF, 'medical_officer'],
   participants: ['admin', 'chief_referee', 'scorekeeper', 'medical_officer'],
-  referee_vr: ['admin', 'chief_referee', 'tatami_referee'],
-  protocols: STAFF,
-  doctor: ['admin', 'chief_referee', 'medical_officer'],
 
   // Organizer / site owner
   admin: SIGNED_IN, // admins manage events here; other roles see their personal cabinet

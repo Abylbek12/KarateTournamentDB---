@@ -40,14 +40,12 @@ import {
   Trash2,
   Archive
 } from 'lucide-react';
-import { isTournamentDateExpired } from './components/TournamentEventsManager';
+import { isTournamentDateExpired, TournamentEventsManager } from './components/TournamentEventsManager';
 import { Sidebar } from './components/Sidebar';
 
-import { ResetTournamentDataModal, ResetOptions } from './components/ResetTournamentDataModal';
 import { TournamentShowcase } from './components/TournamentShowcase';
 import { DEMO_EVENTS, EventItem, EventActionType } from './data/eventsData';
 import { SenseiAiChatbot } from './components/SenseiAiChatbot';
-import { NotificationCenterModal } from './components/NotificationCenterModal';
 import { AboutUsView, HelpFaqView } from './components/InfoPages';
 import { RankingsPanel, ClubsPanel, LiveNowPanel } from './components/CommunityViews';
 import { MyEntriesPanel, FeesPanel } from './components/EntriesPanels';
@@ -92,19 +90,13 @@ import { RoleGuide } from './components/RoleGuide';
 import { PrintDocuments, parsePrintRequest } from './components/PrintDocuments';
 import { DocumentsPanel } from './components/DocumentsPanel';
 import { LaunchPanel } from './components/LaunchPanel';
+import { TatamiOverview } from './components/TatamiOverview';
+import { OfflinePanel } from './components/OfflinePanel';
 
 // Heavy screens are loaded on demand so the first page opens faster.
-const TatamiScheduleView = React.lazy(() => import('./components/TatamiScheduleView').then((m) => ({ default: m.TatamiScheduleView })));
 const ParticipantsManager = React.lazy(() => import('./components/ParticipantsManager').then((m) => ({ default: m.ParticipantsManager })));
-const AdminPanel = React.lazy(() => import('./components/AdminPanel').then((m) => ({ default: m.AdminPanel })));
-const TournamentBracketScoreboardModule = React.lazy(() => import('./components/TournamentBracketScoreboardModule').then((m) => ({ default: m.TournamentBracketScoreboardModule })));
-const RefereeProtocolModule = React.lazy(() => import('./components/RefereeProtocolModule').then((m) => ({ default: m.RefereeProtocolModule })));
-const LocalLanTournamentHub = React.lazy(() => import('./components/LocalLanTournamentHub').then((m) => ({ default: m.LocalLanTournamentHub })));
-const TournamentDetailsView = React.lazy(() => import('./components/TournamentDetailsView').then((m) => ({ default: m.TournamentDetailsView })));
 const TournamentInfoDetailView = React.lazy(() => import('./components/TournamentInfoDetailView').then((m) => ({ default: m.TournamentInfoDetailView })));
 const TournamentDivisionsPricingView = React.lazy(() => import('./components/TournamentDivisionsPricingView').then((m) => ({ default: m.TournamentDivisionsPricingView })));
-const RefereeElectronicVotingAndVrModule = React.lazy(() => import('./components/RefereeElectronicVotingAndVrModule').then((m) => ({ default: m.RefereeElectronicVotingAndVrModule })));
-const DoctorTimeMedicalModule = React.lazy(() => import('./components/DoctorTimeMedicalModule').then((m) => ({ default: m.DoctorTimeMedicalModule })));
 
 const ScreensQrPanel = React.lazy(() => import('./components/ScreensQrPanel').then((m) => ({ default: m.ScreensQrPanel })));
 
@@ -158,6 +150,23 @@ function AppContent() {
     );
     setTimeout(() => setGlobalSystemToast(null), 4000);
   };
+
+  // Old screens were merged into new ones: keep old links and bookmarks working
+  React.useEffect(() => {
+    const moved: Record<string, string> = {
+      bracket: 'event_setup',
+      schedule: 'scoreboard',
+      referee_vr: 'scoreboard',
+      protocols: 'exports',
+      doctor: 'participants',
+      tournament_details: 'event_info',
+      engine: 'event_setup',
+      categories: 'event_setup',
+      accounting: 'acquiring',
+      video_analytics: 'tournaments'
+    };
+    if (moved[activeTab]) setActiveTab(moved[activeTab]);
+  }, [activeTab]);
 
   // One clock for every device (bout timers are timestamps)
   React.useEffect(() => startServerClock(), []);
@@ -383,6 +392,14 @@ function AppContent() {
   };
   // Bouts are saved one by one (PUT /api/bouts) so several tatami can work at the same time.
   const [bouts, setBoutsState, boutSync] = useServerSyncedState<Bout[]>('bouts', [], { ...sharedStateOptions, autoSave: false });
+  // Tatami of the selected tournament (at least the ones bouts are already assigned to)
+  const tatamiNumbers = React.useMemo(() => {
+    const ev = selectedEvent as EventItem & { tatamiCount?: number };
+    const planned = Math.min(12, Math.max(1, Number(ev.tatamiCount || ev.ringsCount) || 4));
+    const used = bouts.reduce((m, b) => Math.max(m, b.tatamiNumber || 0), 0);
+    return Array.from({ length: Math.max(planned, Math.min(used, 12)) }, (_, i) => i + 1);
+  }, [selectedEvent, bouts]);
+
   const boutsRef = React.useRef(bouts);
   boutsRef.current = bouts;
   const saveBouts = React.useCallback(async (changed: Bout[], replaceAll: boolean) => {
@@ -441,7 +458,7 @@ function AppContent() {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState<boolean>(false);
 
   // Live Notifications & Operational Alert Dispatcher State
-  const [notifications, setNotifications] = useState<AppNotification[]>(SAMPLE_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState<boolean>(false);
   const [isSoundAlertsEnabled, setIsSoundAlertsEnabled] = useState<boolean>(true);
   const [incomingLiveToast, setIncomingLiveToast] = useState<AppNotification | null>(null);
@@ -527,31 +544,9 @@ function AppContent() {
     };
   }, [evaluateAllEventsExpiration]);
 
-  const handleMarkAsRead = (id: string) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
-  };
 
-  const handleMarkAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-  };
 
-  const handleClearAllNotifications = () => {
-    setNotifications([]);
-  };
 
-  const handleDispatchNotification = (notif: Omit<AppNotification, 'id' | 'timestamp' | 'isRead'>) => {
-    const newNotif: AppNotification = {
-      ...notif,
-      id: `notif-${Date.now()}`,
-      timestamp: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-      isRead: false
-    };
-    setNotifications((prev) => [newNotif, ...prev]);
-    if (newNotif.severity === 'critical' || newNotif.severity === 'urgent') {
-      setIncomingLiveToast(newNotif);
-      setTimeout(() => setIncomingLiveToast(null), 9000);
-    }
-  };
 
   const handleUpdateParticipantFee = (participantId: string, status: 'paid' | 'pending' | 'exempt' | 'refunded') => {
     setParticipants((prev) =>
@@ -568,7 +563,6 @@ function AppContent() {
       case 'event_medals': return `${selectedEvent.title} — Медали`;
       case 'event_live_scoring': return `${selectedEvent.title} — Live Scoring`;
       case 'event_results': return `${selectedEvent.title} — Результаты`;
-      case 'tournament_details': return language === 'ru' ? 'Детали соревнования' : 'Tournament Details';
       case 'studios': return language === 'ru' ? 'Клубы' : 'Clubs';
       case 'virtual_studios': return language === 'ru' ? 'Сейчас на татами' : 'Live now';
       case 'about': return language === 'ru' ? 'О платформе Tatami.kg' : language === 'ky' ? 'Tatami.kg жөнүндө' : 'About Tatami.kg';
@@ -576,14 +570,9 @@ function AppContent() {
       case 'coach': return language === 'ru' ? 'Мои заявки и оплата' : 'My entries & fees';
       case 'rankings': return language === 'ru' ? 'Рейтинги' : 'Rankings';
       case 'acquiring': return language === 'ru' ? 'Взносы' : 'Entry fees';
-      case 'scoreboard': return language === 'ru' ? 'Онлайн-табло татами' : 'Live Tatami Scoreboard';
-      case 'referee_vr': return language === 'ru' ? 'Судейство: Электронные флаги и видеоповтор (VR)' : 'Referee Console: Flags & Video Review (VR)';
-      case 'doctor': return language === 'ru' ? 'Медицинский контроль (Doctor 80s Time)' : 'Medical Commission (Doctor 80s Time)';
-      case 'protocols': return language === 'ru' ? 'Судейские протоколы ГСК' : 'Certified Scorecards';
+      case 'scoreboard': return language === 'ru' ? 'Татами' : 'Tatami';
       case 'exports': return language === 'ru' ? 'Документы и печать' : 'Documents & Printing';
-      case 'bracket': return language === 'ru' ? 'Турнирные сетки плей-офф' : 'Playoff Brackets';
-      case 'schedule': return language === 'ru' ? 'Расписание татами 1-4' : 'Tatami 1-4 Schedule';
-      case 'lan': return language === 'ru' ? 'Локальная сеть (LAN Hub)' : 'Local Venue LAN Hub';
+      case 'lan': return language === 'ru' ? 'Работа без интернета' : 'Offline mode';
       case 'participants': return language === 'ru' ? 'База участников' : 'Athlete Database';
       case 'admin': return language === 'ru' ? 'Панель администратора' : 'Admin Panel';
       case 'registration': return language === 'ru' ? 'Электронная регистрация' : 'Online Registration';
@@ -804,80 +793,14 @@ function AppContent() {
     return () => window.removeEventListener('hashchange', syncFromLocation);
   }, [tournaments]);
 
-  // Synchronized protocol updating and persisting
-  const handleUpdateProtocol = (updatedProtocol: RefereeProtocol) => {
-    setProtocols((prev) => 
-      prev.some((p) => p.id === updatedProtocol.id)
-        ? prev.map((p) => (p.id === updatedProtocol.id ? updatedProtocol : p))
-        : [updatedProtocol, ...prev]
-    );
-  };
 
   // 1-Click Database Reset Handler (Preserving Database Schema)
-  const handleResetTournamentData = (options: ResetOptions) => {
-    if (options.restoreDefaultDemo) {
-      // Demo data must never overwrite real entries and results.
-      setGlobalSystemToast('Восстановление демо-данных отключено. Для полной очистки используйте «Подготовку к запуску».');
-      setTimeout(() => setGlobalSystemToast(null), 5000);
-      return;
-    }
-
-    if (options.clearRefereeProtocols) {
-      setProtocols([]);
-    }
-
-    if (options.clearPlayoffBrackets) {
-      setBouts([]);
-    } else if (options.resetBoutScores) {
-      setBouts((prev) =>
-        prev.map((b) => ({
-          ...b,
-          akaScore: 0,
-          aoScore: 0,
-          akaSenshu: false,
-          aoSenshu: false,
-          akaPenaltiesC1: 0,
-          aoPenaltiesC1: 0,
-          akaPenaltiesC2: 0,
-          aoPenaltiesC2: 0,
-          akaWazaAri: 0,
-          aoWazaAri: 0,
-          akaIppon: 0,
-          aoIppon: 0,
-          akaSkifPenalties: 0,
-          aoSkifPenalties: 0,
-          akaJogai: 0,
-          aoJogai: 0,
-          winnerId: undefined,
-          winReason: undefined,
-          status: 'scheduled',
-          refereeProtocolId: undefined,
-          timerSecondsRemaining: 120,
-          events: []
-        }))
-      );
-    }
-
-    if (options.resetWeighInStatus) {
-      setParticipants((prev) =>
-        prev.map((p) => ({
-          ...p,
-          isWeighedIn: false,
-          actualWeightKg: null,
-          status: 'registered'
-        }))
-      );
-    }
-
-    setGlobalSystemToast('Успешно: База данных очищена в 1 клик. Структура таблиц и список участников сохранены.');
-    setTimeout(() => setGlobalSystemToast(null), 5000);
-  };
 
   // Automatic playoff bracket progression when a bout finishes
   /** Draw for one organizer category: bracket from its active entries on the chosen tatami. */
   const handleDrawCategory = (def: EventCategory, tatamiNumber: number) => {
     const entries = activeEntries(participants, def.id);
-    const tatami = SAMPLE_TATAMIS.find((t) => t.number === tatamiNumber) || SAMPLE_TATAMIS[0];
+    const tatami = SAMPLE_TATAMIS.find((t) => t.number === tatamiNumber) || ({ ...SAMPLE_TATAMIS[0], id: `tatami-${tatamiNumber}`, number: tatamiNumber, name: `Татами ${tatamiNumber}` } as typeof SAMPLE_TATAMIS[0]);
     const generatorCategory = {
       id: def.id,
       tournamentId: def.tournamentId,
@@ -917,34 +840,10 @@ function AppContent() {
     );
   };
 
-  const handleBatchUpdateParticipants = (updatedList: Participant[]) => {
-    setParticipants(updatedList);
-  };
 
-  const handleBatchRegisterAthletes = (newAthletes: Participant[]) => {
-    setParticipants((prev) => [...newAthletes, ...prev]);
-    setGlobalSystemToast(`✓ В базу данных добавлено ${newAthletes.length} спортсменов команды «${newAthletes[0]?.clubName || ''}»!`);
-    setTimeout(() => setGlobalSystemToast(null), 6000);
-  };
 
-  const handleAddParticipant = (newParticipant: Participant) => {
-    setParticipants((prev) => [newParticipant, ...prev]);
-  };
 
-  const handleGenerateBracket = (newBouts: Bout[], categoryId: string) => {
-    setBouts((prev) => {
-      const remainingBouts = prev.filter((b) => b.categoryId !== categoryId);
-      return [...newBouts, ...remainingBouts];
-    });
-  };
 
-  const handleGenerateBracketsForCategories = (newBouts: Bout[]) => {
-    setBouts((prev) => {
-      const newCatIds = new Set(newBouts.map((b) => b.categoryId));
-      const remaining = prev.filter((b) => !newCatIds.has(b.categoryId));
-      return [...newBouts, ...remaining];
-    });
-  };
 
   // Full backup of the server data (admin only): tournaments, entries, bouts, categories, accounts without passwords.
   const handleExportSql = () => {
@@ -952,94 +851,8 @@ function AppContent() {
   };
 
 
-  // Smart WKF Draw Execution across categories with club/city/country separation
-  const handleExecuteSmartWkfDraw = () => {
-    const allGeneratedBouts: Bout[] = [];
-    SAMPLE_TOURNAMENT_CATEGORIES.forEach((cat) => {
-      const catAthletes = participants.filter((p) => p.categoryId === cat.id || (!p.categoryId && cat.id === 'tc1'));
-      if (catAthletes.length >= 2) {
-        const { bouts: catBouts } = generateProtectedWkfCategoryBouts(cat, catAthletes, SAMPLE_TATAMIS, { durationSeconds: durationForCategory(cat) });
-        allGeneratedBouts.push(...catBouts);
-      }
-    });
 
-    if (allGeneratedBouts.length > 0) {
-      setBouts(allGeneratedBouts);
-      setSelectedConsoleBoutId(allGeneratedBouts[0].id);
-      // Automatically close online registration and switch to offline LAN mode
-      setRegistrationConfig((prev) => ({
-        ...prev,
-        isRegistrationOpen: false,
-        offlineModeActive: true
-      }));
-      setGlobalSystemToast('✓ Умная жеребьевка успешно выполнена! Онлайн-регистрация закрыта. Бои распределены по Татами 1–4, клубы и города разведены.');
-      setTimeout(() => setGlobalSystemToast(null), 6000);
-      setActiveTab('bracket');
-    } else {
-      setGlobalSystemToast('Внимание: недостаточно участников для жеребьевки (нужно минимум 2 спортсмена в категории).');
-      setTimeout(() => setGlobalSystemToast(null), 4000);
-    }
-  };
 
-  // Export full local tournament bundle to JSON file for flash drive transfer
-  const handleExportLocalBundle = () => {
-    const bundle = {
-      version: '2026.1',
-      exportedAt: new Date().toISOString(),
-      registrationConfig,
-      tournamentRules,
-      participants,
-      bouts,
-      protocols,
-      clubs: SAMPLE_CLUBS,
-      tatamis: SAMPLE_TATAMIS,
-      categories: SAMPLE_TOURNAMENT_CATEGORIES
-    };
-    const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `karate_tournament_local_bundle_${Date.now()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    setGlobalSystemToast('Успешно: Полный локальный пакет турнира (JSON) сохранен на диск для переноса на флешке.');
-    setTimeout(() => setGlobalSystemToast(null), 5000);
-  };
-
-  // Import local tournament bundle from JSON
-  const handleImportLocalBundle = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const content = e.target?.result as string;
-        const bundle = JSON.parse(content);
-        if (bundle.participants && Array.isArray(bundle.participants)) {
-          setParticipants(bundle.participants);
-        }
-        if (bundle.bouts && Array.isArray(bundle.bouts)) {
-          setBouts(bundle.bouts);
-          if (bundle.bouts.length > 0) setSelectedConsoleBoutId(bundle.bouts[0].id);
-        }
-        if (bundle.protocols && Array.isArray(bundle.protocols)) {
-          setProtocols(bundle.protocols);
-        }
-        if (bundle.registrationConfig) {
-          setRegistrationConfig(bundle.registrationConfig);
-        }
-        if (bundle.tournamentRules) {
-          setTournamentRules(bundle.tournamentRules);
-        }
-        setGlobalSystemToast('Успешно: Локальный пакет турнира импортирован. Данные соревнований синхронизированы!');
-        setTimeout(() => setGlobalSystemToast(null), 5000);
-      } catch (err) {
-        setGlobalSystemToast('Ошибка: Не удалось прочитать локальный файл пакета турнира.');
-        setTimeout(() => setGlobalSystemToast(null), 5000);
-      }
-    };
-    reader.readAsText(file);
-  };
 
   // Standalone Fullscreen Online Registration Page
   // ---------------------------------------------------------------------------
@@ -1055,7 +868,7 @@ function AppContent() {
 
   if (screenMode) {
     if (screenMode.kind === 'tatami') return <TatamiDisplay tatamiNumber={screenMode.tatami} bouts={bouts} rules={tournamentRules} />;
-    if (screenMode.kind === 'calls') return <CallRoomDisplay bouts={bouts} tatamiNumbers={SAMPLE_TATAMIS.map((t) => t.number)} />;
+    if (screenMode.kind === 'calls') return <CallRoomDisplay bouts={bouts} tatamiNumbers={tatamiNumbers} />;
     return (
       <>
         <TatamiControl tatamiNumber={screenMode.tatami} bouts={bouts} rules={tournamentRules} deviceOk={deviceOk} onChange={handleUpdateBout} />
@@ -1117,29 +930,6 @@ function AppContent() {
 
           {/* Right: Clean Header Bar (Alerts, Training & Unified Profile Menu with Role, Theme & Language) */}
           <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 font-sans">
-            {/* Notifications: only for signed-in users */}
-            {currentUser && (
-            <button
-              type="button"
-              onClick={() => {
-                setIsProfileMenuOpen(false);
-                setIsNotificationCenterOpen(true);
-              }}
-              className="relative flex items-center gap-1.5 text-xs text-slate-700 hover:text-slate-900 font-sans cursor-pointer transition-colors py-1.5 sm:py-1 px-2.5 rounded-xl border border-slate-200/80 bg-white/80 hover:bg-slate-200/60 min-h-[36px] sm:min-h-0"
-              title={tr(
-                'Центр уведомлений и напоминаний по срокам событий',
-                'Билдирүүлөр жана мелдеш мөөнөттөрү боюнча эскертмелер борбору',
-                'Notification Center & Event Date Reminders'
-              )}
-            >
-              <Bell className="w-4 h-4 text-slate-600 shrink-0" />
-              {notifications.filter((n) => !n.isRead).length > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full bg-rose-600 text-white text-[10px] font-bold font-mono leading-tight">
-                  {notifications.filter((n) => !n.isRead).length}
-                </span>
-              )}
-            </button>
-            )}
 
             {/* ========================================================
                 UNIFIED PROFILE & SETTINGS MENU (Role RBAC, Theme, Language & Account)
@@ -1558,13 +1348,6 @@ function AppContent() {
                 )}
                 <button
                   type="button"
-                  onClick={() => setIsNotificationCenterOpen(true)}
-                  className="px-2.5 py-1 rounded-lg bg-slate-200/70 dark:bg-slate-800 hover:opacity-90 text-slate-700 dark:text-slate-300 font-medium transition-colors cursor-pointer"
-                >
-                  {tr('Журнал уведомлений', 'Билдирүүлөр журналы', 'Notifications Log')}
-                </button>
-                <button
-                  type="button"
                   onClick={() => setDismissedExpiredBanner(true)}
                   className="px-2 py-1 rounded-lg text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer"
                   title={tr('Скрыть напоминание (событие останется в архиве)', 'Эскертмени жашыруу (мелдеш архивде калат)', 'Dismiss reminder (event stays in archive)')}
@@ -1712,21 +1495,6 @@ function AppContent() {
           )}
 
           {/* 2. Детали конкретного турнира */}
-          {activeTab === 'tournament_details' && (
-            <TournamentDetailsView
-              tournament={selectedTournament}
-              categories={SAMPLE_TOURNAMENT_CATEGORIES}
-              tatamis={SAMPLE_TATAMIS}
-              onBackToTournaments={() => navigateWithHash('tournaments')}
-              onStartRegistration={(t) => {
-                setSelectedTournament(t);
-                if (t.rulesType) setTournamentRules(t.rulesType);
-                navigateWithHash('registration');
-              }}
-              onNavigateToScoreboard={() => navigateWithHash('scoreboard')}
-              onNavigateToBracket={() => navigateWithHash('bracket')}
-            />
-          )}
 
           {/* 3. Студии и Клубы (#studios) */}
           {activeTab === 'studios' && <ClubsPanel tournaments={tournaments} bouts={bouts} participants={participants} />}
@@ -1752,77 +1520,22 @@ function AppContent() {
 
 
           {activeTab === 'scoreboard' && (
-            <TournamentBracketScoreboardModule
-              tatamis={SAMPLE_TATAMIS}
+            <TatamiOverview
+              tournaments={tournaments}
+              initialTournamentId={selectedEvent.id}
               bouts={bouts}
-              participants={participants}
-              tournamentCategories={SAMPLE_TOURNAMENT_CATEGORIES}
-              clubs={SAMPLE_CLUBS}
-              initialBoutId={selectedConsoleBoutId}
-              initialSubTab="multi_tatami"
-              tournamentRules={tournamentRules}
-              currentUserRole={currentUserRole}
-              protocols={protocols}
-              onRulesChange={setTournamentRules}
-              onUpdateBout={handleUpdateBout}
-              onBatchUpdateBouts={(newBouts) => setBouts(newBouts)}
-              onSaveProtocol={handleUpdateProtocol}
-              onNavigateToProtocols={(boutId) => {
-                if (boutId) setSelectedConsoleBoutId(boutId);
-                setActiveTab('protocols');
-              }}
-            />
-          )}
-
-          {activeTab === 'referee_vr' && (
-            <RefereeElectronicVotingAndVrModule
-              bouts={bouts}
-              activeBoutId={selectedConsoleBoutId}
-              participants={participants}
-              currentUserRole={currentUserRole}
-              tournamentRules={tournamentRules}
-              onUpdateBout={handleUpdateBout}
-              onSaveProtocol={handleUpdateProtocol}
-              onNavigateToScoreboard={(bId) => {
-                setSelectedConsoleBoutId(bId);
-                setActiveTab('scoreboard');
-              }}
-            />
-          )}
-
-          {/* 5.1 Медицинский контроль и Doctor 80s Time */}
-          {activeTab === 'doctor' && (
-            <DoctorTimeMedicalModule
-              tatamis={SAMPLE_TATAMIS}
-              bouts={bouts}
-              participants={participants}
-              currentUserRole={currentUserRole}
-              language={language}
-              onUpdateBout={handleUpdateBout}
-              onUpdateParticipant={handleUpdateParticipant}
-              onNavigateToScoreboard={(bId) => {
-                setSelectedConsoleBoutId(bId);
-                setActiveTab('scoreboard');
+              tatamiNumbers={tatamiNumbers}
+              canScore={['admin', 'chief_referee', 'tatami_referee', 'scorekeeper'].includes(effectiveRole)}
+              onOpenConsole={(b) => {
+                setSelectedConsoleBoutId(b.id);
+                setActiveScoreboardBout(b);
               }}
             />
           )}
 
 
-          {activeTab === 'protocols' && (
-            <RefereeProtocolModule
-              protocols={protocols}
-              bouts={bouts}
-              participants={participants}
-              tatamis={SAMPLE_TATAMIS}
-              tournamentRules={tournamentRules}
-              onUpdateProtocol={handleUpdateProtocol}
-              onUpdateBout={handleUpdateBout}
-              onNavigateToScoreboard={(bId) => {
-                setSelectedConsoleBoutId(bId);
-                setActiveTab('scoreboard');
-              }}
-            />
-          )}
+
+
 
           {activeTab === 'acquiring' && effectiveRole === 'admin' && (
             <FeesPanel
@@ -1852,17 +1565,10 @@ function AppContent() {
           )}
 
           {activeTab === 'admin' && effectiveRole === 'admin' && (
-            <AdminPanel
-              clubs={SAMPLE_CLUBS}
-              ageCategories={SAMPLE_AGE_CATEGORIES}
-              weightCategories={SAMPLE_WEIGHT_CATEGORIES}
-              tournamentCategories={SAMPLE_TOURNAMENT_CATEGORIES}
-              tatamis={SAMPLE_TATAMIS}
-              participants={participants}
-              bouts={bouts}
+            <TournamentEventsManager
+              tournaments={tournaments}
               currentUserRole={currentUserRole}
               onRoleChange={requestRoleChange}
-              tournaments={tournaments}
               selectedTournament={selectedTournament}
               onSelectTournament={(t) => {
                 setSelectedTournament(t);
@@ -1871,23 +1577,10 @@ function AppContent() {
               onAddTournament={handleAddTournament}
               onUpdateTournament={handleUpdateTournament}
               onDeleteTournament={handleDeleteTournament}
-              onOpenResetDialog={() => setIsResetModalOpen(true)}
-              onAddParticipant={handleAddParticipant}
-              onGenerateBracket={handleGenerateBracket}
-              onNavigateTab={setActiveTab}
+              onNavigateToDetails={(t) => handleSelectTournamentAction(t as EventItem, 'info')}
             />
           )}
 
-          {activeTab === 'schedule' && (
-            <TatamiScheduleView
-              tatamis={SAMPLE_TATAMIS}
-              bouts={bouts}
-              onOpenScoreboard={(b) => {
-                setSelectedConsoleBoutId(b.id);
-                setActiveScoreboardBout(b);
-              }}
-            />
-          )}
 
           {activeTab === 'registration' && currentUser && (
             <EntryForm
@@ -1907,56 +1600,16 @@ function AppContent() {
               onChangeCategories={setEventCategories}
               participants={participants}
               bouts={bouts}
-              tatamiNumbers={SAMPLE_TATAMIS.map((t) => t.number)}
+              tatamiNumbers={tatamiNumbers}
               onDraw={handleDrawCategory}
               onWithdraw={handleWithdrawEntry}
             />
           )}
 
-          {activeTab === 'screens' && <ScreensQrPanel tatamiNumbers={SAMPLE_TATAMIS.map((t) => t.number)} />}
+          {activeTab === 'screens' && <ScreensQrPanel tatamiNumbers={tatamiNumbers} />}
 
-          {activeTab === 'lan' && (
-            <LocalLanTournamentHub
-              registrationConfig={registrationConfig}
-              onUpdateRegistrationConfig={setRegistrationConfig}
-              tatamis={SAMPLE_TATAMIS}
-              bouts={bouts}
-              participants={participants}
-              categories={SAMPLE_TOURNAMENT_CATEGORIES}
-              onOpenScoreboardForTatami={(tatamiId) => {
-                const tatamiBout = bouts.find((b) => b.tatamiId === tatamiId);
-                if (tatamiBout) setSelectedConsoleBoutId(tatamiBout.id);
-                setActiveTab('scoreboard');
-              }}
-              onExecuteSmartWkfDraw={handleExecuteSmartWkfDraw}
-              onExportLocalBundle={handleExportLocalBundle}
-              onImportLocalBundle={handleImportLocalBundle}
-              onExportSql={handleExportSql}
-            />
-          )}
+          {activeTab === 'lan' && <OfflinePanel onOpenScreens={() => navigateWithHash('screens')} />}
 
-          {activeTab === 'bracket' && (
-            <TournamentBracketScoreboardModule
-              tatamis={SAMPLE_TATAMIS}
-              bouts={bouts}
-              participants={participants}
-              tournamentCategories={SAMPLE_TOURNAMENT_CATEGORIES}
-              clubs={SAMPLE_CLUBS}
-              initialBoutId={selectedConsoleBoutId}
-              initialSubTab="bracket"
-              tournamentRules={tournamentRules}
-              currentUserRole={currentUserRole}
-              protocols={protocols}
-              onRulesChange={setTournamentRules}
-              onUpdateBout={handleUpdateBout}
-              onBatchUpdateBouts={(newBouts) => setBouts(newBouts)}
-              onSaveProtocol={handleUpdateProtocol}
-              onNavigateToProtocols={(boutId) => {
-                if (boutId) setSelectedConsoleBoutId(boutId);
-                setActiveTab('protocols');
-              }}
-            />
-          )}
 
           {activeTab === 'participants' && (
             <ParticipantsManager
@@ -2154,13 +1807,6 @@ function AppContent() {
         />
       )}
 
-      {/* 1-Click Database Reset & Cleanup Modal */}
-      <ResetTournamentDataModal
-        isOpen={isResetModalOpen}
-        currentUserRole={currentUserRole}
-        onClose={() => setIsResetModalOpen(false)}
-        onConfirmReset={handleResetTournamentData}
-      />
 
       {/* Supreme AI Assistant: Sensei AI powered by Gemini 3.8 Flash */}
       <SenseiAiChatbot
@@ -2170,23 +1816,6 @@ function AppContent() {
         tatamiCount={SAMPLE_TATAMIS.length}
       />
 
-      {/* Live Operational Notification Center Modal & Dispatcher */}
-      <NotificationCenterModal
-        isOpen={isNotificationCenterOpen}
-        onClose={() => setIsNotificationCenterOpen(false)}
-        notifications={notifications}
-        onMarkAsRead={handleMarkAsRead}
-        onMarkAllAsRead={handleMarkAllAsRead}
-        onClearAll={handleClearAllNotifications}
-        onDispatchNotification={handleDispatchNotification}
-        onNavigateTab={(tab, extraId) => {
-          if (extraId) setSelectedConsoleBoutId(extraId);
-          setActiveTab(tab);
-        }}
-        currentUserRole={currentUserRole}
-        isSoundEnabled={isSoundAlertsEnabled}
-        onToggleSound={() => setIsSoundAlertsEnabled(!isSoundAlertsEnabled)}
-      />
 
       {/* Sign-in modal */}
       <AuthModal
@@ -2303,7 +1932,7 @@ function AppContent() {
           type="button"
           onClick={() => navigateWithHash(canAccess('scoreboard', effectiveRole) ? 'scoreboard' : 'event_live_scoring')}
           className={`flex flex-col items-center justify-center gap-1 h-full rounded-xl transition-colors cursor-pointer ${
-            activeTab === 'scoreboard' || activeTab === 'tatami' || activeTab === 'event_live_scoring'
+            activeTab === 'scoreboard' || activeTab === 'event_live_scoring'
               ? 'text-sky-500 font-semibold'
               : 'hover:text-sky-500'
           }`}
@@ -2316,9 +1945,9 @@ function AppContent() {
 
         <button
           type="button"
-          onClick={() => navigateWithHash(canAccess('bracket', effectiveRole) ? 'bracket' : 'event_brackets')}
+          onClick={() => navigateWithHash(canAccess('event_setup', effectiveRole) ? 'event_setup' : 'event_brackets')}
           className={`flex flex-col items-center justify-center gap-1 h-full rounded-xl transition-colors cursor-pointer ${
-            activeTab === 'bracket' || activeTab === 'event_brackets'
+            activeTab === 'event_setup' || activeTab === 'event_brackets'
               ? 'text-sky-500 font-semibold'
               : 'hover:text-sky-500'
           }`}
