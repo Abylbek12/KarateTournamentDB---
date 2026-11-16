@@ -1014,7 +1014,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                   type="text"
                   value={rulesLabel}
                   onChange={(e) => setRulesLabel(e.target.value)}
-                  placeholder={tr('Или своими словами: напр. «Правила ФКР 2026»', 'Же өз сөзүңүз менен', 'Or in your own words')}
+                  placeholder={tr('Или впишите свои правила: напр. «Правила ФКР 2026»', 'Же өз сөзүңүз менен', 'Or in your own words')}
                   className="mt-2 w-full h-11 bg-[var(--app-surface)] border border-[var(--app-border)] rounded-xl px-3.5 text-[15px] text-[var(--app-text-primary)] placeholder:text-[var(--app-text-muted)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)] transition"
                 />
                 <p className="mt-1 text-[10px] text-slate-500">

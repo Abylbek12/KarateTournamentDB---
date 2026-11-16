@@ -140,7 +140,7 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
                 <option value="kata">Ката</option>
                 <option value="team_kumite">Командное кумитэ</option>
                 <option value="team_kata">Командное ката</option>
-                <option value="other">Другое — своими словами…</option>
+                <option value="other">Другое</option>
               </select>
             </label>
             {custom.discipline === 'other' && (
