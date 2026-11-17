@@ -439,7 +439,7 @@ export const LiveVideo: React.FC<{
     setFull(false);
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   };
-  const fit = full ? fitVideoGrid(shown.length, box.w, box.h, 8, many ? 40 : 0) : null;
+  const fit = full ? fitVideoGrid(shown.length, box.w, box.h, 8, 40) : null;
 
   if (shown.length === 0) return null;
 
@@ -519,7 +519,8 @@ export const LiveVideo: React.FC<{
           if (!id) return null;
           return (
             <div key={n} className={many ? 'rounded-xl overflow-hidden border border-[var(--app-border)]' : ''}>
-              {many && (
+              {/* Title bar with the «Sound» button — also for a single tatami (phones hide YouTube's own sound button) */}
+              {(
                 <div className="flex items-center gap-2 px-2.5 h-10 bg-[var(--app-surface-subtle)]">
                   <span className="flex-1 min-w-0 truncate whitespace-nowrap text-sm font-semibold text-[var(--app-text-primary)]">{label(n)}</span>
                   <button
@@ -532,9 +533,11 @@ export const LiveVideo: React.FC<{
                     {soundOn.includes(n) ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
                     {soundOn.includes(n) ? t(language, 'Звук включён', 'Үн күйүк', 'Sound on') : t(language, 'Звук', 'Үн', 'Sound')}
                   </button>
-                  <button onClick={() => pick(n)} className="text-xs text-[var(--accent)] hover:underline cursor-pointer" title={t(language, 'Смотреть крупно', 'Чоң көрүү', 'Watch large')}>
-                    <Maximize2 className="w-4 h-4" />
-                  </button>
+                  {many && (
+                    <button onClick={() => pick(n)} className="text-xs text-[var(--accent)] hover:underline cursor-pointer" title={t(language, 'Смотреть крупно', 'Чоң көрүү', 'Watch large')}>
+                      <Maximize2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               )}
               <div className="relative w-full bg-black" style={{ aspectRatio: '16 / 9' }}>
