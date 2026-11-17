@@ -1,5 +1,5 @@
 // Automated checks for categories and eligibility. Run: npm test
-import { ageOn, categoryFits, categoryName, buildWkfSet, weighInFits, findCategoryForWeight } from '../src/utils/eventCategories';
+import { ageOn, categoryFits, categoryName, buildWkfSet, weighInFits, findCategoryForWeight, beltName } from '../src/utils/eventCategories';
 import type { EventCategory } from '../src/types/schema';
 
 let failures = 0;
@@ -25,6 +25,15 @@ check('fit: girl rejected from boys category', !categoryFits(c57, { birthDate: '
 check('fit: 52.0 kg belongs to −52, not −57', !categoryFits(c57, { birthDate: '2011-03-01', gender: 'male', weightKg: 52 }, '2026-11-28').ok);
 check('weigh-in: 57.4 kg does not fit −57', !weighInFits(c57, 57.4));
 check('weigh-in: suggests −63 for 57.4 kg', categoryName(findCategoryForWeight(set, c57, 57.4)!).endsWith('−63 кг'));
+
+// Пояс «Другое»: не блокирует заявку в категории с минимальным поясом, показывается с текстом спортсмена
+const brownOnly = { ...c57, minBelt: 'brown_3kyu' } as EventCategory;
+const kid = { birthDate: '2011-03-01', gender: 'male' as const, weightKg: 55 };
+check('belt: white belt is below brown minimum', !categoryFits(brownOnly, { ...kid, beltRank: 'white_10kyu' }, '2026-11-28').ok);
+check('belt: «Другое» is not rejected for belt reasons', categoryFits(brownOnly, { ...kid, beltRank: 'other' }, '2026-11-28').ok);
+check('belt: «Другое» shows custom text', beltName({ beltRank: 'other', beltOther: ' Красный ' }) === 'Другое: Красный');
+check('belt: «Другое» without text', beltName({ beltRank: 'other' }) === 'Другое');
+check('belt: ordinary belt label', beltName({ beltRank: 'brown_1kyu' }) === 'Коричневый (1 кю)');
 
 console.log(failures ? `\n${failures} check(s) failed` : '\nAll category checks passed');
 process.exit(failures ? 1 : 0);

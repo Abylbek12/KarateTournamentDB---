@@ -35,7 +35,8 @@ export type BeltRank =
   | 'brown_1kyu'
   | 'black_1dan'
   | 'black_2dan'
-  | 'black_3dan_plus';
+  | 'black_3dan_plus'
+  | 'other'; // свой вариант: текст в Participant.beltOther
 
 export type ParticipantStatus = 
   | 'registered'
@@ -248,6 +249,7 @@ export interface Participant {
   gender: Gender;
   birthDate: string;
   beltRank: BeltRank;
+  beltOther?: string; // что вписал спортсмен, если выбрал пояс «Другое»
   declaredWeightKg: number;
   actualWeightKg: number | null;
   isWeighedIn: boolean;

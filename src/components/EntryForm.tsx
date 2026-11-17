@@ -1,7 +1,7 @@
 import React from 'react';
 import { UserPlus, Trash2, Users, CheckCircle2, AlertTriangle, ClipboardList, X } from 'lucide-react';
 import type { AuthenticatedUserProfile, BeltRank, EventCategory, Gender, Participant, Tournament } from '../types/schema';
-import { BELT_LABELS, BELT_ORDER, categoryFits, categoryName, isTeamCategory } from '../utils/eventCategories';
+import { BELT_LABELS, BELT_CHOICES, categoryFits, categoryName, isTeamCategory } from '../utils/eventCategories';
 import { COUNTRIES, flagEmoji, countryByNoc } from '../utils/countries';
 import { transliterate } from '../utils/names';
 
@@ -22,6 +22,7 @@ interface AthleteDraft {
   gender: Gender;
   weightKg: string;
   beltRank: BeltRank;
+  beltOther: string;
   categoryIds: string[];
   lastNameLatin: string;
   firstNameLatin: string;
@@ -35,6 +36,7 @@ const blankAthlete = (): AthleteDraft => ({
   gender: 'male',
   weightKg: '',
   beltRank: 'white_10kyu',
+  beltOther: '',
   categoryIds: [],
   lastNameLatin: '',
   firstNameLatin: ''
@@ -95,6 +97,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
           gender: a.gender,
           declaredWeightKg: a.weightKg ? Number(a.weightKg) : 0,
           beltRank: a.beltRank,
+          beltOther: a.beltRank === 'other' ? a.beltOther.trim() : undefined,
           lastNameLatin: a.lastNameLatin || transliterate(a.lastName),
           firstNameLatin: a.firstNameLatin || transliterate(a.firstName),
           clubName: club,
@@ -248,12 +251,22 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
               <div className="lg:col-span-2">
                 <label className={label} htmlFor={`a-belt-${a.key}`}>Пояс</label>
                 <select id={`a-belt-${a.key}`} value={a.beltRank} onChange={(e) => update(a.key, { beltRank: e.target.value as BeltRank, categoryIds: [] })} className={field}>
-                  {BELT_ORDER.map((b) => (
+                  {BELT_CHOICES.map((b) => (
                     <option key={b} value={b}>
                       {BELT_LABELS[b]}
                     </option>
                   ))}
                 </select>
+                {a.beltRank === 'other' && (
+                  <input
+                    aria-label="Укажите ваш пояс"
+                    value={a.beltOther}
+                    maxLength={40}
+                    placeholder="Укажите ваш пояс"
+                    onChange={(e) => update(a.key, { beltOther: e.target.value })}
+                    className={`${field} mt-2`}
+                  />
+                )}
               </div>
               <div className="lg:col-span-3">
                 <label className={label} htmlFor={`a-lastlat-${a.key}`}>Фамилия латиницей (как в паспорте)</label>

@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { Participant, Club, BeltRank, EventCategory, Tournament } from '../types/schema';
 import { belongsToEvent } from '../data/sampleTournamentData';
-import { categoryName, weighInFits, findCategoryForWeight } from '../utils/eventCategories';
+import { categoryName, weighInFits, findCategoryForWeight, beltName } from '../utils/eventCategories';
 import { SAMPLE_PARTICIPANTS, SAMPLE_CLUBS } from '../data/sampleTournamentData';
 
 interface ParticipantsManagerProps {
@@ -251,7 +251,7 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
                     {/* Belt */}
                     <td className="px-5 py-4 tabular-nums">
                       <span className="px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-300 text-[11px]">
-                        {beltLabels[p.beltRank] || p.beltRank}
+                        {p.beltRank === 'other' ? beltName(p) : beltLabels[p.beltRank] || p.beltRank}
                       </span>
                     </td>
 

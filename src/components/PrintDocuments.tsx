@@ -4,7 +4,7 @@ import type { Bout, EventCategory, Participant, Tournament } from '../types/sche
 import { belongsToEvent } from '../data/sampleTournamentData';
 import { ELIMINATION_ORDER, computeStandings, repechageHalf, repechageStep, stageLabel } from '../utils/bracketProgression';
 import * as E from '../utils/boutEngine';
-import { categoryName, activeEntries, BELT_LABELS, ageOn } from '../utils/eventCategories';
+import { categoryName, activeEntries, beltName, ageOn } from '../utils/eventCategories';
 import { displayName, displayClub, localizeCategoryName, nameModeFor, participantCountry, participantFlag, participantNoc, type NameMode } from '../utils/names';
 import { countryName, flagEmoji } from '../utils/countries';
 import { BrandMark } from './BrandLogo';
@@ -341,7 +341,7 @@ export const PrintDocuments: React.FC<PrintDocumentsProps> = ({ request, tournam
                 <td>{p.birthDate ? `${p.birthDate.slice(0, 4)} (${ageOn(p.birthDate, event.startDate)})` : ''}</td>
                 <td>{club(p)}</td>
                 <td>{noc(p)}</td>
-                <td style={{ fontSize: 10 }}>{BELT_LABELS[p.beltRank] || ''}</td>
+                <td style={{ fontSize: 10 }}>{beltName(p)}</td>
                 <td>{p.actualWeightKg ?? (p.declaredWeightKg || '')}</td>
                 <td>{p.isWeighedIn ? (p.isMedicalCleared ? '✓' : '✗') : ''}</td>
               </tr>

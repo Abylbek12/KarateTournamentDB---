@@ -15,8 +15,18 @@ export const BELT_ORDER: BeltRank[] = [
 export const BELT_LABELS: Record<BeltRank, string> = {
   white_10kyu: 'Белый (10 кю)', yellow_8kyu: 'Жёлтый (8 кю)', orange_7kyu: 'Оранжевый (7 кю)', green_6kyu: 'Зелёный (6 кю)',
   blue_4kyu: 'Синий (4 кю)', brown_3kyu: 'Коричневый (3 кю)', brown_1kyu: 'Коричневый (1 кю)', black_1dan: 'Чёрный (1 дан)',
-  black_2dan: 'Чёрный (2 дан)', black_3dan_plus: 'Чёрный (3 дан и выше)'
+  black_2dan: 'Чёрный (2 дан)', black_3dan_plus: 'Чёрный (3 дан и выше)', other: 'Другое'
 };
+
+/** Пояса для выпадающего списка: все по порядку, «Другое» — последним. */
+export const BELT_CHOICES: BeltRank[] = [...BELT_ORDER, 'other'];
+
+/** Пояс для показа людям: «Другое: <что вписал спортсмен>». */
+export function beltName(p: { beltRank?: BeltRank | string; beltOther?: string }): string {
+  if (!p.beltRank) return '';
+  if (p.beltRank === 'other') return p.beltOther?.trim() ? `Другое: ${p.beltOther.trim()}` : 'Другое';
+  return BELT_LABELS[p.beltRank as BeltRank] || String(p.beltRank);
+}
 
 export const DISCIPLINE_LABELS: Record<EventCategory['discipline'], string> = {
   kumite: 'Кумитэ', kata: 'Ката', team_kumite: 'Командное кумитэ', team_kata: 'Командное ката', other: 'Другие дисциплины'
@@ -91,7 +101,8 @@ export function categoryFits(
     if (!w) reasons.push('нужен вес');
     else if ((c.weightMin != null && w <= c.weightMin) || (c.weightMax != null && w > c.weightMax)) reasons.push(`вес ${w} кг (нужно ${weightLabel(c)})`);
   }
-  if (c.minBelt && a.beltRank && BELT_ORDER.indexOf(a.beltRank) < BELT_ORDER.indexOf(c.minBelt)) reasons.push(`пояс ниже ${BELT_LABELS[c.minBelt].toLowerCase()}`);
+  // «Другое» нельзя сравнить по порядку поясов: такую заявку проверяет организатор вручную
+  if (c.minBelt && a.beltRank && a.beltRank !== 'other' && BELT_ORDER.indexOf(a.beltRank) <BELT_ORDER.indexOf(c.minBelt)) reasons.push(`пояс ниже ${BELT_LABELS[c.minBelt].toLowerCase()}`);
   return { ok: reasons.length === 0, reasons };
 }
 

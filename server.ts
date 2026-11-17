@@ -1046,6 +1046,7 @@ app.post('/api/entries', (req: Request, res: Response) => {
       gender: ['male', 'female', 'mixed'].includes(e.gender) ? e.gender : cat.gender,
       birthDate: isTeam ? '' : String(e.birthDate),
       beltRank: String(e.beltRank || 'white_10kyu'),
+      beltOther: e.beltRank === 'other' ? String(e.beltOther || '').trim().slice(0, 40) || undefined : undefined,
       declaredWeightKg: Number(e.declaredWeightKg) || 0,
       actualWeightKg: null,
       isWeighedIn: false,
