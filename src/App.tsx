@@ -72,7 +72,7 @@ import { Bout, Participant, TournamentRules, RefereeProtocol, UserRole, EventCat
 import { AppProvider, useApp } from './context/AppContext';
 import { useGlobalDomTranslator, trLang } from './utils/globalDomTranslator';
 import { useServerSyncedState } from './utils/useServerSyncedState';
-import { canAccess, ROLE_LABELS, type AccessRole } from './utils/access';
+import { canAccess, ROLE_LABELS, roleLabel, type AccessRole } from './utils/access';
 import { applyBoutResult } from './utils/bracketProgression';
 import { AccessGate } from './components/AccessGate';
 import { BrandMark, BrandWordmark } from './components/BrandLogo';
@@ -959,43 +959,24 @@ function AppContent() {
                   setIsProfileMenuOpen(!isProfileMenuOpen);
                   setIsTrainingMenuOpen(false);
                 }}
-                className="flex items-center gap-2 bg-white hover:bg-slate-50 px-2.5 py-1.5 sm:py-1 rounded-full border border-slate-200/90 shadow-2xs transition-colors cursor-pointer min-h-[36px] sm:min-h-0"
+                className="flex items-center gap-1 bg-white hover:bg-slate-50 px-2.5 py-1.5 sm:py-1 rounded-full border border-slate-200/90 shadow-2xs transition-colors cursor-pointer min-h-[36px] sm:min-h-0"
                 title={tr(
                   'Меню профиля: роль доступа (RBAC), тема оформления, язык и аккаунт',
                   'Профиль менюсу: кирүү ролу (RBAC), тема, тил жана аккаунт',
                   'Profile Menu: RBAC role, color theme, language & account'
                 )}
               >
-                {currentUser?.avatarUrl ? (
-                  <img src={currentUser.avatarUrl} alt="" className="w-5 h-5 rounded-full object-cover ring-1 ring-teal-500" />
-                ) : (
-                  <div
-                    className={`w-5 h-5 rounded-full text-white font-bold text-[10px] flex items-center justify-center shrink-0 ${
-                      currentUserRole === 'admin' ? 'bg-rose-600' : 'bg-sky-600'
-                    }`}
-                  >
-                    {currentUser?.fullName
-                      ? currentUser.fullName.charAt(0).toUpperCase()
-                      : currentUserRole === 'admin'
-                      ? 'A'
-                      : 'U'}
-                  </div>
-                )}
-
-                <span className="text-xs font-semibold text-slate-800 max-w-[110px] truncate">
-                  {currentUser?.fullName || tr('Войти', 'Кирүү', 'Sign in')}
-                </span>
-
+                {/* One short label only: the role (or "Sign in" for guests). Name and email live inside the menu. */}
                 <span
-                  className={`${effectiveRole === 'guest' ? 'hidden' : 'hidden sm:inline-flex'} text-[10px] font-semibold px-1.5 py-0.2 rounded-full border items-center gap-0.5 ${
+                  className={`text-xs font-semibold max-w-[140px] truncate ${
                     effectiveRole === 'admin'
-                      ? 'bg-rose-500/10 text-rose-600 border-rose-500/30'
+                      ? 'text-rose-600'
                       : effectiveRole === 'guest'
-                        ? 'bg-slate-500/10 text-slate-600 border-slate-500/30'
-                        : 'bg-sky-500/10 text-sky-600 border-sky-500/30'
+                        ? 'text-slate-800'
+                        : 'text-sky-700'
                   }`}
                 >
-                  {ROLE_LABELS[effectiveRole]}
+                  {effectiveRole === 'guest' ? tr('Войти', 'Кирүү', 'Sign in') : roleLabel(effectiveRole, language)}
                 </span>
 
                 <ChevronDown

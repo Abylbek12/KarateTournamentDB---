@@ -59,3 +59,32 @@ export const ROLE_LABELS: Record<AccessRole, string> = {
   medical_officer: 'Врач',
   admin: 'Администратор'
 };
+
+/** Role name in the interface language (ru / ky / en). */
+const ROLE_LABELS_KY: Record<AccessRole, string> = {
+  guest: 'Конок',
+  athlete: 'Спортчу',
+  club_coach: 'Машыктыруучу / клуб',
+  tatami_referee: 'Татами калысы',
+  scorekeeper: 'Катчы',
+  chief_referee: 'Башкы калыс',
+  medical_officer: 'Дарыгер',
+  admin: 'Администратор'
+};
+
+const ROLE_LABELS_EN: Record<AccessRole, string> = {
+  guest: 'Guest',
+  athlete: 'Athlete',
+  club_coach: 'Coach / club',
+  tatami_referee: 'Tatami referee',
+  scorekeeper: 'Scorekeeper',
+  chief_referee: 'Chief referee',
+  medical_officer: 'Medical officer',
+  admin: 'Administrator'
+};
+
+export function roleLabel(role: AccessRole, language: string): string {
+  if (language === 'ky') return ROLE_LABELS_KY[role];
+  if (language === 'en') return ROLE_LABELS_EN[role];
+  return ROLE_LABELS[role];
+}
