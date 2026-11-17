@@ -20,6 +20,8 @@ export const UsersRolesPanel: React.FC<{ currentUserId?: string }> = ({ currentU
   const [error, setError] = React.useState<string | null>(null);
   const [notice, setNotice] = React.useState<string | null>(null);
   const [query, setQuery] = React.useState('');
+  const [pending, setPending] = React.useState<{ user: UserRow; role: AccessRole } | null>(null);
+  const [saving, setSaving] = React.useState(false);
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -40,23 +42,36 @@ export const UsersRolesPanel: React.FC<{ currentUserId?: string }> = ({ currentU
     load();
   }, [load]);
 
-  const changeRole = async (user: UserRow, role: AccessRole) => {
-    if (role === user.role) return;
-    if (role === 'admin' && !window.confirm(`Сделать ${user.fullName} администратором? Он получит полный доступ к сайту.`)) return;
+  // The select only asks; the role changes after «Да, изменить» in the dialog below.
+  const askRole = (user: UserRow, role: AccessRole) => {
+    if (role !== user.role) setPending({ user, role });
+  };
+
+  const changeRole = async () => {
+    if (!pending) return;
+    const { user, role } = pending;
+    setSaving(true);
     setError(null);
-    const res = await fetch(`/api/admin/users/${encodeURIComponent(user.id)}/role`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role })
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      setError(data.error || 'Не удалось изменить роль');
-      return;
+    try {
+      const res = await fetch(`/api/admin/users/${encodeURIComponent(user.id)}/role`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || 'Не удалось изменить роль');
+        return;
+      }
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, role } : u)));
+      setNotice(`${user.fullName}: роль «${ROLE_LABELS[role]}»`);
+      setTimeout(() => setNotice(null), 3000);
+    } catch {
+      setError('Нет связи с сервером.');
+    } finally {
+      setSaving(false);
+      setPending(null);
     }
-    setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, role } : u)));
-    setNotice(`${user.fullName}: роль «${ROLE_LABELS[role]}»`);
-    setTimeout(() => setNotice(null), 3000);
   };
 
   const q = query.trim().toLowerCase();
@@ -119,7 +134,7 @@ export const UsersRolesPanel: React.FC<{ currentUserId?: string }> = ({ currentU
                 <td className="px-3 py-2">
                   <select
                     value={u.role}
-                    onChange={(e) => changeRole(u, e.target.value as AccessRole)}
+                    onChange={(e) => askRole(u, e.target.value as AccessRole)}
                     className="rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-text-primary)] px-2 py-1 text-sm cursor-pointer"
                   >
                     {ASSIGNABLE.map((r) => (
@@ -141,6 +156,34 @@ export const UsersRolesPanel: React.FC<{ currentUserId?: string }> = ({ currentU
           </tbody>
         </table>
       </div>
+      {pending && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={() => !saving && setPending(null)}>
+          <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-2xl bg-[var(--app-surface)] border border-[var(--app-border)] shadow-2xl p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-[var(--app-text-primary)]">Изменить роль?</h3>
+            <p className="text-[15px] text-[var(--app-text-secondary)]">
+              Изменить роль пользователя <b className="text-[var(--app-text-primary)]">{pending.user.fullName}</b> с «{ROLE_LABELS[pending.user.role]}» на «{ROLE_LABELS[pending.role]}»?
+            </p>
+            {pending.role === 'admin' && (
+              <p className="text-sm rounded-xl px-3 py-2 bg-[var(--danger-soft)] border border-[var(--danger-border)] text-[var(--app-text-primary)]">
+                Администратор получит полный доступ к сайту: сможет удалять турниры, менять роли и все данные.
+              </p>
+            )}
+            {pending.user.id === currentUserId && pending.user.role === 'admin' && (
+              <p className="text-sm rounded-xl px-3 py-2 bg-[var(--danger-soft)] border border-[var(--danger-border)] text-[var(--app-text-primary)]">
+                Это ваш аккаунт. После изменения вы потеряете права администратора.
+              </p>
+            )}
+            <div className="flex justify-end gap-2 pt-1">
+              <button onClick={() => setPending(null)} disabled={saving} className="h-10 px-5 rounded-lg border border-[var(--app-border)] text-sm font-medium text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)] cursor-pointer">
+                Нет
+              </button>
+              <button onClick={changeRole} disabled={saving} autoFocus className="h-10 px-5 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white text-sm font-semibold disabled:opacity-50 cursor-pointer">
+                {saving ? 'Сохраняю…' : 'Да, изменить'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };
