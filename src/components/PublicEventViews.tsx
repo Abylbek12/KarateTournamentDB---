@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Trophy, Radio, Medal, Printer, Youtube, ExternalLink, Volume2, VolumeX, Maximize2 } from 'lucide-react';
+import { ArrowLeft, Trophy, Radio, Medal, Printer, Youtube, ExternalLink, Volume2, VolumeX, Maximize2, Maximize, Minimize } from 'lucide-react';
 import { printUrl } from './PrintDocuments';
 import type { Bout, Participant, TournamentCategory, EventCategory } from '../types/schema';
 import { categoryName, activeEntries, DISCIPLINE_LABELS } from '../utils/eventCategories';
@@ -11,7 +11,7 @@ import { clockNow } from '../utils/serverClock';
 import { displayName, displayClub, localizeCategoryName, nameModeFor, participantFlag, participantNoc, participantCountry, type NameMode } from '../utils/names';
 import { countryName, flagEmoji } from '../utils/countries';
 import { currentBoutOf, upcomingOf } from './TatamiScreens';
-import { streamTatamis, youtubeVideoId, youtubeEmbedUrl, youtubeCommand } from '../utils/youtube';
+import { streamTatamis, youtubeVideoId, youtubeEmbedUrl, youtubeCommand, fitVideoGrid } from '../utils/youtube';
 
 type Lang = 'ru' | 'ky' | 'en';
 
@@ -378,7 +378,7 @@ export const PublicResultsView: React.FC<BaseProps & { mode: 'results' | 'medals
 export type VideoChoice = number | 'all';
 
 /** Grid columns for N videos on screen at once. */
-const gridCols = (n: number) => (n <= 1 ? '' : n === 2 ? 'sm:grid-cols-2' : n <= 4 ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3');
+const gridCols = (n: number) => (n <= 1 ? '' : n <= 4 ? 'sm:grid-cols-2' : n <= 9 ? 'sm:grid-cols-2 lg:grid-cols-3' : 'sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4');
 
 /**
  * YouTube video of the tatami (links are set by the organizer in «Screens, QR codes & video»).
@@ -396,8 +396,52 @@ export const LiveVideo: React.FC<{
   // Tatami whose sound is on — the viewer decides, any number at once
   const [soundOn, setSoundOn] = React.useState<number[]>([]);
   const shown = selected === 'all' ? tatamis : tatamis.includes(selected) ? [selected] : tatamis.slice(0, 1);
-  if (shown.length === 0) return null;
   const many = shown.length > 1;
+
+  // «Full screen»: the video block covers the whole screen and the tiles are sized so all tatami fit without scrolling
+  const sectionRef = React.useRef<HTMLElement | null>(null);
+  const gridRef = React.useRef<HTMLDivElement | null>(null);
+  const [full, setFull] = React.useState(false);
+  const [box, setBox] = React.useState({ w: 0, h: 0 });
+  React.useEffect(() => {
+    if (!full) return;
+    const measure = () => {
+      const el = gridRef.current;
+      if (el) setBox({ w: el.clientWidth - 16, h: el.clientHeight - 16 });
+    };
+    measure();
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
+    if (ro && gridRef.current) ro.observe(gridRef.current);
+    window.addEventListener('resize', measure);
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setFull(false);
+    window.addEventListener('keydown', onKey);
+    // Leaving the browser's full screen (Esc, gesture) also leaves our mode
+    const onFs = () => {
+      if (!document.fullscreenElement) setFull(false);
+    };
+    document.addEventListener('fullscreenchange', onFs);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('keydown', onKey);
+      document.removeEventListener('fullscreenchange', onFs);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [full]);
+  const enterFull = () => {
+    setFull(true);
+    // Real full screen where the browser allows it (computers, Android); iPhone keeps the page-wide view
+    sectionRef.current?.requestFullscreen?.().catch(() => {});
+  };
+  const exitFull = () => {
+    setFull(false);
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  };
+  const fit = full ? fitVideoGrid(shown.length, box.w, box.h, 8, many ? 40 : 0) : null;
+
+  if (shown.length === 0) return null;
 
   // Each tatami's sound is switched on/off on its own; the others are not touched
   const toggleSound = (n: number) => {
@@ -424,8 +468,16 @@ export const LiveVideo: React.FC<{
   const label = (n: number) => `${t(language, 'Татами', 'Татами', 'Tatami')} ${n}`;
 
   return (
-    <section id={anchorId} className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] overflow-hidden scroll-mt-20">
-      <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 border-b border-[var(--app-border)]">
+    <section
+      id={anchorId}
+      ref={sectionRef}
+      className={
+        full
+          ? 'fixed inset-0 z-[200] flex flex-col bg-[var(--app-bg,#0b0f17)] overflow-hidden'
+          : 'rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] overflow-hidden scroll-mt-20'
+      }
+    >
+      <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 border-b border-[var(--app-border)] bg-[var(--app-surface)]">
         <span className="inline-flex items-center gap-1.5 font-bold text-[var(--app-text-primary)]">
           <Youtube className="w-5 h-5 text-red-600" /> {t(language, 'Видео', 'Видео', 'Video')}
         </span>
@@ -444,25 +496,36 @@ export const LiveVideo: React.FC<{
         ) : (
           <span className="text-sm text-[var(--app-text-secondary)]">{label(tatamis[0])}</span>
         )}
+        <button
+          onClick={full ? exitFull : enterFull}
+          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-sm font-semibold border border-[var(--app-border)] text-[var(--app-text-primary)] hover:border-[var(--accent)] cursor-pointer"
+        >
+          {full ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+          {full ? t(language, 'Выйти', 'Чыгуу', 'Exit') : t(language, 'На весь экран', 'Толук экран', 'Full screen')}
+        </button>
       </div>
-      {many && (
+      {many && !full && (
         <p className="px-4 pt-2 text-xs text-[var(--app-text-muted)]">
           {t(language, 'Видео начинаются без звука. Нажмите «Звук» на тех татами, которые хотите слушать — можно на одном, на нескольких или на всех. Повторное нажатие выключает звук.', 'Видеолор үнсүз башталат. Уккуңуз келген татамилерде «Үн» баскычын басыңыз — бирөөндө, бир нечесинде же баарында. Кайра басуу үндү өчүрөт.', 'Videos start muted. Tap “Sound” on the tatami you want to hear — one, several or all. Tap again to mute.')}
         </p>
       )}
-      <div className={`grid gap-2 ${many ? 'p-2' : ''} ${gridCols(shown.length)}`}>
+      <div
+        ref={gridRef}
+        className={full ? 'flex-1 min-h-0 grid gap-2 p-2 content-center justify-center' : `grid gap-2 ${many ? 'p-2' : ''} ${gridCols(shown.length)}`}
+        style={fit && fit.tileWidth > 0 ? { gridTemplateColumns: `repeat(${fit.cols}, ${fit.tileWidth}px)` } : undefined}
+      >
         {shown.map((n) => {
           const id = youtubeVideoId(streams[String(n)]);
           if (!id) return null;
           return (
             <div key={n} className={many ? 'rounded-xl overflow-hidden border border-[var(--app-border)]' : ''}>
               {many && (
-                <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[var(--app-surface-subtle)]">
-                  <span className="flex-1 text-sm font-semibold text-[var(--app-text-primary)]">{label(n)}</span>
+                <div className="flex items-center gap-2 px-2.5 h-10 bg-[var(--app-surface-subtle)]">
+                  <span className="flex-1 min-w-0 truncate whitespace-nowrap text-sm font-semibold text-[var(--app-text-primary)]">{label(n)}</span>
                   <button
                     onClick={() => toggleSound(n)}
                     aria-pressed={soundOn.includes(n)}
-                    className={`inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-xs font-semibold border cursor-pointer ${
+                    className={`shrink-0 inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-xs font-semibold border cursor-pointer whitespace-nowrap ${
                       soundOn.includes(n) ? 'bg-red-600 border-red-600 text-white' : 'border-[var(--app-border)] text-[var(--app-text-secondary)] hover:border-red-500'
                     }`}
                   >
@@ -492,7 +555,7 @@ export const LiveVideo: React.FC<{
           );
         })}
       </div>
-      {!many && (
+      {!many && !full && (
         <a
           href={streams[String(shown[0])]}
           target="_blank"

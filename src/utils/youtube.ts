@@ -70,3 +70,20 @@ export function streamTatamis(streams: Record<string, string> | undefined): numb
     .filter((n) => Number.isInteger(n) && youtubeVideoId(streams![String(n)]))
     .sort((a, b) => a - b);
 }
+
+/**
+ * Full-screen layout: how many columns make the videos as large as possible
+ * while all of them fit on the screen without scrolling (16:9 video + a title bar per tile).
+ */
+export function fitVideoGrid(count: number, width: number, height: number, gap = 8, tileBar = 0): { cols: number; tileWidth: number } {
+  let best = { cols: 1, tileWidth: 0 };
+  if (count <= 0 || width <= 0 || height <= 0) return best;
+  for (let cols = 1; cols <= count; cols++) {
+    const rows = Math.ceil(count / cols);
+    const byWidth = (width - gap * (cols - 1)) / cols;
+    const byHeight = (((height - gap * (rows - 1)) / rows) - tileBar) * (16 / 9);
+    const tileWidth = Math.floor(Math.min(byWidth, byHeight));
+    if (tileWidth > best.tileWidth) best = { cols, tileWidth };
+  }
+  return best;
+}

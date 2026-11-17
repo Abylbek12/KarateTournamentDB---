@@ -1363,7 +1363,12 @@ function AppContent() {
         )}
 
         {/* Full-width Stretched Content Area */}
-        <main className="flex-1 w-full min-w-0 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-4 space-y-4">
+        <main
+          className={`flex-1 w-full min-w-0 mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-4 space-y-4 ${
+            // Video pages use the whole width so several tatami fit side by side
+            activeTab === 'virtual_studios' || activeTab === 'event_live_scoring' ? 'max-w-none' : 'max-w-7xl'
+          }`}
+        >
           <React.Suspense fallback={<ScreenLoader />}>
           {!canAccess(activeTab, effectiveRole) ? (
             <AccessGate
