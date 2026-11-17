@@ -5,6 +5,8 @@ import { computeStandings } from '../utils/bracketProgression';
 import { displayName, participantFlag, participantNoc } from '../utils/names';
 import { useApp } from '../context/AppContext';
 import { belongsToEvent } from '../data/sampleTournamentData';
+import { streamTatamis } from '../utils/youtube';
+import { LiveVideo } from './PublicEventViews';
 
 /**
  * Public rankings and club directory, computed from real results on the site
@@ -230,6 +232,37 @@ export const ClubsPanel: React.FC<CommunityProps> = ({ tournaments, bouts, parti
 };
 
 /** Tournaments with bouts going on now — links to their Live page. */
+/** One tournament in «Live now»: YouTube video (if the organizer added links) and which tatami have bouts. */
+const LiveNowCard: React.FC<{ ev: Tournament; live: Bout[]; tatamis: number[]; videoTatamis: number[]; lang: Lang; onOpen: () => void }> = ({ ev, live, tatamis, videoTatamis, lang, onOpen }) => {
+  const [selected, setSelected] = React.useState(videoTatamis[0]);
+  const shown = videoTatamis.includes(selected) ? selected : videoTatamis[0];
+  return (
+    <div className={`rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] overflow-hidden ${videoTatamis.length > 0 ? 'sm:col-span-2' : ''}`}>
+      <div className="p-4">
+        <div className="font-semibold text-[var(--app-text-primary)]">{ev.title}</div>
+        <div className="text-sm text-[var(--app-text-muted)]">{ev.city} · {ev.startDate}</div>
+        <div className="mt-2 text-sm text-[var(--app-text-secondary)]">
+          {live.length > 0
+            ? `${t(lang, 'Идут бои на татами', 'Татамиде беттештер', 'Bouts on tatami')}: ${tatamis.join(', ')}`
+            : videoTatamis.length > 0
+              ? `${t(lang, 'Видеотрансляция: татами', 'Видео түз эфир: татами', 'Live video: tatami')} ${videoTatamis.join(', ')}`
+              : t(lang, 'Турнир идёт сегодня', 'Мелдеш бүгүн өтүүдө', 'Tournament day')}
+        </div>
+      </div>
+      {videoTatamis.length > 0 && shown && (
+        <div className="px-4">
+          <LiveVideo streams={ev.liveStreams || {}} tatamis={videoTatamis} selected={shown} onSelect={setSelected} language={lang} anchorId={`live-video-${ev.id}`} />
+        </div>
+      )}
+      <button onClick={onOpen} className="w-full text-left px-4 py-3 text-sm font-semibold text-[var(--accent)] hover:bg-[var(--app-surface-subtle)] cursor-pointer">
+        {live.length > 0 || videoTatamis.length === 0
+          ? t(lang, 'Открыть Live: счёт и время →', 'Live ачуу: эсеп жана убакыт →', 'Open Live: score & clock →')
+          : t(lang, 'Открыть страницу турнира →', 'Мелдештин барагын ачуу →', 'Open tournament page →')}
+      </button>
+    </div>
+  );
+};
+
 export const LiveNowPanel: React.FC<CommunityProps & { onOpen: (t: Tournament) => void }> = ({ tournaments, bouts, onOpen }) => {
   const { language } = useApp();
   const lang = (language || 'ru') as Lang;
@@ -238,12 +271,14 @@ export const LiveNowPanel: React.FC<CommunityProps & { onOpen: (t: Tournament) =
     .map((ev) => {
       const evBouts = bouts.filter((b) => belongsToEvent(b.tournamentId, ev.id));
       const live = evBouts.filter((b) => b.status === 'in_progress');
-      const tatamis = Array.from(new Set(live.map((b) => b.tatamiNumber).filter(Boolean))).sort();
+      const tatamis = Array.from(new Set(live.map((b) => b.tatamiNumber).filter((n): n is number => !!n))).sort((a, b) => a - b);
       const ongoing = ev.startDate <= today && (ev.endDate || ev.startDate) >= today;
-      return { ev, live, tatamis, ongoing, hasBouts: evBouts.length > 0 };
+      // A YouTube link is enough: the video shows even before categories, entries and the draw
+      const videoTatamis = streamTatamis(ev.liveStreams);
+      return { ev, live, tatamis, videoTatamis, ongoing, hasBouts: evBouts.length > 0 };
     })
-    .filter((r) => r.live.length > 0 || (r.ongoing && r.hasBouts));
-
+    .filter((r) => r.videoTatamis.length > 0 || r.live.length > 0 || (r.ongoing && r.hasBouts))
+    .sort((a, b) => b.videoTatamis.length - a.videoTatamis.length);
   return (
     <div className="theme-keep space-y-5 pb-8">
       <div>
@@ -251,7 +286,7 @@ export const LiveNowPanel: React.FC<CommunityProps & { onOpen: (t: Tournament) =
           <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse" /> {t(lang, 'Сейчас на татами', 'Азыр татамиде', 'Live now')}
         </h1>
         <p className="text-[15px] text-[var(--app-text-secondary)] mt-1">
-          {t(lang, 'Турниры, где сейчас идут поединки: счёт, время и следующий бой на каждом татами.', 'Азыр беттештер өтүп жаткан мелдештер: ар бир татамидеги эсеп, убакыт жана кийинки беттеш.', 'Tournaments with bouts going on now: score, clock and next bout on every tatami.')}
+          {t(lang, 'Видеотрансляции и турниры, где сейчас идут поединки: видео, счёт, время и следующий бой на каждом татами.', 'Видео түз эфирлер жана азыр беттештер өтүп жаткан мелдештер: видео, эсеп, убакыт жана ар бир татамидеги кийинки беттеш.', 'Live videos and tournaments with bouts going on now: video, score, clock and next bout on every tatami.')}
         </p>
       </div>
       {rows.length === 0 ? (
@@ -260,17 +295,8 @@ export const LiveNowPanel: React.FC<CommunityProps & { onOpen: (t: Tournament) =
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
-          {rows.map(({ ev, live, tatamis }) => (
-            <button key={ev.id} onClick={() => onOpen(ev)} className="text-left rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 hover:border-[var(--accent)] cursor-pointer">
-              <div className="font-semibold text-[var(--app-text-primary)]">{ev.title}</div>
-              <div className="text-sm text-[var(--app-text-muted)]">{ev.city} · {ev.startDate}</div>
-              <div className="mt-2 text-sm text-[var(--app-text-secondary)]">
-                {live.length > 0
-                  ? `${t(lang, 'Идут бои на татами', 'Татамиде беттештер', 'Bouts on tatami')}: ${tatamis.join(', ')}`
-                  : t(lang, 'Турнир идёт сегодня', 'Мелдеш бүгүн өтүүдө', 'Tournament day')}
-              </div>
-              <div className="mt-3 text-sm font-semibold text-[var(--accent)]">{t(lang, 'Открыть Live →', 'Live ачуу →', 'Open Live →')}</div>
-            </button>
+          {rows.map(({ ev, live, tatamis, videoTatamis }) => (
+            <LiveNowCard key={ev.id} ev={ev} live={live} tatamis={tatamis} videoTatamis={videoTatamis} lang={lang} onOpen={() => onOpen(ev)} />
           ))}
         </div>
       )}

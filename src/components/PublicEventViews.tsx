@@ -376,11 +376,11 @@ export const PublicResultsView: React.FC<BaseProps & { mode: 'results' | 'medals
 
 /** Public live page: every tatami of the event with the bout on it, updated instantly. */
 /** YouTube video of the selected tatami (links are set by the organizer in «Screens, QR codes & video»). */
-const LiveVideo: React.FC<{ streams: Record<string, string>; tatamis: number[]; selected: number; onSelect: (n: number) => void; language: Lang }> = ({ streams, tatamis, selected, onSelect, language }) => {
+export const LiveVideo: React.FC<{ streams: Record<string, string>; tatamis: number[]; selected: number; onSelect: (n: number) => void; language: Lang; anchorId?: string }> = ({ streams, tatamis, selected, onSelect, language, anchorId = 'live-video' }) => {
   const id = youtubeVideoId(streams[String(selected)]);
   if (!id) return null;
   return (
-    <section id="live-video" className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] overflow-hidden scroll-mt-20">
+    <section id={anchorId} className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] overflow-hidden scroll-mt-20">
       <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 border-b border-[var(--app-border)]">
         <span className="inline-flex items-center gap-1.5 font-bold text-[var(--app-text-primary)]">
           <Youtube className="w-5 h-5 text-red-600" /> {t(language, 'Видео', 'Видео', 'Video')}

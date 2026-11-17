@@ -1,5 +1,8 @@
 import React from 'react';
-import { MonitorPlay, Tv, ListOrdered, Gamepad2 } from 'lucide-react';
+import { MonitorPlay, Tv, ListOrdered, Gamepad2, Youtube } from 'lucide-react';
+import { useApp } from '../context/AppContext';
+import { trLang } from '../utils/globalDomTranslator';
+import { streamTatamis } from '../utils/youtube';
 import type { Bout, Participant, Tournament } from '../types/schema';
 import * as E from '../utils/boutEngine';
 import { clockNow } from '../utils/serverClock';
@@ -16,6 +19,8 @@ interface TatamiOverviewProps {
   /** Officials who may score open the console; others (e.g. the doctor) only watch. */
   canScore: boolean;
   onOpenConsole: (bout: Bout) => void;
+  /** Opens «Live now», where viewers watch the YouTube video. */
+  onOpenLiveNow?: () => void;
 }
 
 const card = 'rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]';
@@ -23,7 +28,8 @@ const btn = 'inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-
 const name = (p?: Participant) => (p ? `${participantFlag(p)} ${displayName(p, 'local')}` : '—');
 
 /** Officials: what is on every tatami now, who is next, and quick links to consoles and screens. */
-export const TatamiOverview: React.FC<TatamiOverviewProps> = ({ tournaments, initialTournamentId, bouts, tatamiNumbers, canScore, onOpenConsole }) => {
+export const TatamiOverview: React.FC<TatamiOverviewProps> = ({ tournaments, initialTournamentId, bouts, tatamiNumbers, canScore, onOpenConsole, onOpenLiveNow }) => {
+  const { language } = useApp();
   const [tid, setTid] = React.useState(initialTournamentId || tournaments[0]?.id || '');
   const [now, setNow] = React.useState(clockNow());
   React.useEffect(() => {
@@ -54,6 +60,25 @@ export const TatamiOverview: React.FC<TatamiOverviewProps> = ({ tournaments, ini
       <div className="text-sm text-[var(--app-text-muted)]">
         Поединков: {eventBouts.length} · завершено: {finished}
       </div>
+
+      {streamTatamis(tournaments.find((x) => x.id === tid)?.liveStreams).length > 0 && (
+        <div className={`${card} p-3 flex flex-wrap items-center gap-3`}>
+          <Youtube className="w-5 h-5 text-red-600 shrink-0" />
+          <span className="flex-1 min-w-[200px] text-sm text-[var(--app-text-secondary)]">
+            {trLang(
+              language,
+              `Видео с YouTube уже показывается зрителям (татами ${streamTatamis(tournaments.find((x) => x.id === tid)?.liveStreams).join(', ')}) — даже без поединков.`,
+              `YouTube видео көрүүчүлөргө көрсөтүлүүдө (татами ${streamTatamis(tournaments.find((x) => x.id === tid)?.liveStreams).join(', ')}) — беттештер жок болсо да.`,
+              `The YouTube video is already shown to viewers (tatami ${streamTatamis(tournaments.find((x) => x.id === tid)?.liveStreams).join(', ')}) — even without bouts.`
+            )}
+          </span>
+          {onOpenLiveNow && (
+            <button onClick={onOpenLiveNow} className={btn}>
+              {trLang(language, 'Открыть «Идут бои»', '«Беттештер жүрүүдө» ачуу', 'Open “Live now”')}
+            </button>
+          )}
+        </div>
+      )}
 
       {eventBouts.length === 0 ? (
         <div className={`${card} border-dashed p-10 text-center text-sm text-[var(--app-text-muted)]`}>

@@ -122,7 +122,14 @@ function AppContent() {
 
   const tr = (ru: string, ky: string, en: string) => trLang(language, ru, ky, en);
 
-  const [activeTab, setActiveTab] = useState<string>('tournaments');
+  // Start on the screen from the link (#live_scoring;id=...), so the address is not rewritten before tournaments load
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    try {
+      return tabFromHash(window.location.hash)?.tab || 'tournaments';
+    } catch {
+      return 'tournaments';
+    }
+  });
   useGlobalDomTranslator(language, activeTab);
   const [tournaments, setTournaments] = useState<EventItem[]>([]);
   const [selectedTournament, setSelectedTournament] = useState<Tournament>(DEMO_EVENTS[0]);
@@ -191,7 +198,9 @@ function AppContent() {
         if (data.events && Array.isArray(data.events)) {
           setTournaments(data.events);
           if (data.events.length > 0) {
-            setSelectedEvent((cur) => data.events.find((e: EventItem) => e.id === cur.id) || data.events[0]);
+            // A tournament named in the link wins over the default one
+            const linked = tabFromHash(window.location.hash)?.eventId;
+            setSelectedEvent((cur) => data.events.find((e: EventItem) => e.id === (linked || cur.id)) || data.events.find((e: EventItem) => e.id === cur.id) || data.events[0]);
           }
         }
       })
@@ -1532,6 +1541,7 @@ function AppContent() {
               bouts={bouts}
               tatamiNumbers={tatamiNumbers}
               canScore={['admin', 'chief_referee', 'tatami_referee', 'scorekeeper'].includes(effectiveRole)}
+              onOpenLiveNow={() => navigateWithHash('virtual_studios')}
               onOpenConsole={(b) => {
                 setSelectedConsoleBoutId(b.id);
                 setActiveScoreboardBout(b);
