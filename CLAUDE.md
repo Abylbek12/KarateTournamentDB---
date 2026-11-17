@@ -25,7 +25,7 @@
 npm install
 npm run dev          # http://localhost:3000 (сервер + Vite в одном процессе)
 npm run lint         # проверка типов: tsc --noEmit
-npm test             # test:draw + test:bouts + test:categories + test:intl
+npm test             # test:draw + test:bouts + test:categories + test:intl + test:youtube
 npm run build        # vite build + сборка API в api/_server.mjs
 npm start            # боевой режим (после build)
 ```
@@ -106,5 +106,8 @@ Vercel сам обновляет сайт при каждом пуше в `main`
 Позже 17.11.2026: кнопка профиля в шапке показывает только роль и стрелку (без кружка и имени — они внутри меню);
 роли переводятся через `roleLabel(role, language)` в `src/utils/access.ts`. Уязвимость `picomatch` (через Vite) пока без исправления —
 `npm audit fix --force` не запускать (откатывает Vite 8 → 6); обновить, когда выйдет новая версия picomatch.
+Видео с YouTube по татами: поле турнира `liveStreams` ({"1": ссылка}), сервер оставляет только ссылки YouTube (`src/utils/youtube.ts`,
+тест `scripts/test-youtube.ts`). Ссылки вводит админ в «Экраны, QR-коды и видео», зрители смотрят на вкладке турнира Live.
+Дальше можно: кнопка «Видеоповтор (VR)» в пульте секретаря с отметкой в протоколе.
 Перед этим последний коммит был «Проверка на телефоне и компьютере: исправления». Обновляй этот раздел в конце сессии
 (одной-двумя строками: что сделано, что дальше).

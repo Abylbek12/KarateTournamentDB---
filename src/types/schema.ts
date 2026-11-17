@@ -165,6 +165,8 @@ export interface Tournament {
   sportType?: string;
   league?: string;
   scheduleSummary?: TournamentScheduleItem[];
+  /** YouTube live broadcast per tatami: { "1": "https://www.youtube.com/watch?v=..." }. */
+  liveStreams?: Record<string, string>;
 }
 
 export interface Club {

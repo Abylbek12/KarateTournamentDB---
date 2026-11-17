@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Trophy, Radio, Medal, Printer } from 'lucide-react';
+import { ArrowLeft, Trophy, Radio, Medal, Printer, Youtube, ExternalLink } from 'lucide-react';
 import { printUrl } from './PrintDocuments';
 import type { Bout, Participant, TournamentCategory, EventCategory } from '../types/schema';
 import { categoryName, activeEntries, DISCIPLINE_LABELS } from '../utils/eventCategories';
@@ -11,6 +11,7 @@ import { clockNow } from '../utils/serverClock';
 import { displayName, displayClub, localizeCategoryName, nameModeFor, participantFlag, participantNoc, participantCountry, type NameMode } from '../utils/names';
 import { countryName, flagEmoji } from '../utils/countries';
 import { currentBoutOf, upcomingOf } from './TatamiScreens';
+import { streamTatamis, youtubeVideoId, youtubeEmbedUrl } from '../utils/youtube';
 
 type Lang = 'ru' | 'ky' | 'en';
 
@@ -374,11 +375,76 @@ export const PublicResultsView: React.FC<BaseProps & { mode: 'results' | 'medals
 };
 
 /** Public live page: every tatami of the event with the bout on it, updated instantly. */
+/** YouTube video of the selected tatami (links are set by the organizer in «Screens, QR codes & video»). */
+const LiveVideo: React.FC<{ streams: Record<string, string>; tatamis: number[]; selected: number; onSelect: (n: number) => void; language: Lang }> = ({ streams, tatamis, selected, onSelect, language }) => {
+  const id = youtubeVideoId(streams[String(selected)]);
+  if (!id) return null;
+  return (
+    <section id="live-video" className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] overflow-hidden scroll-mt-20">
+      <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 border-b border-[var(--app-border)]">
+        <span className="inline-flex items-center gap-1.5 font-bold text-[var(--app-text-primary)]">
+          <Youtube className="w-5 h-5 text-red-600" /> {t(language, 'Видео', 'Видео', 'Video')}
+        </span>
+        <span className="flex-1" />
+        {tatamis.length > 1 && (
+          <div className="flex flex-wrap gap-1.5" role="tablist">
+            {tatamis.map((n) => (
+              <button
+                key={n}
+                role="tab"
+                aria-selected={n === selected}
+                onClick={() => onSelect(n)}
+                className={`h-8 px-3 rounded-full text-sm font-semibold border cursor-pointer ${
+                  n === selected
+                    ? 'bg-[var(--accent)] border-[var(--accent)] text-white'
+                    : 'border-[var(--app-border)] text-[var(--app-text-secondary)] hover:border-[var(--accent)]'
+                }`}
+              >
+                {t(language, 'Татами', 'Татами', 'Tatami')} {n}
+              </button>
+            ))}
+          </div>
+        )}
+        {tatamis.length === 1 && (
+          <span className="text-sm text-[var(--app-text-secondary)]">{t(language, 'Татами', 'Татами', 'Tatami')} {selected}</span>
+        )}
+      </div>
+      <div className="relative w-full bg-black" style={{ aspectRatio: '16 / 9' }}>
+        <iframe
+          key={id}
+          src={youtubeEmbedUrl(id)}
+          title={`${t(language, 'Татами', 'Татами', 'Tatami')} ${selected} — YouTube`}
+          className="absolute inset-0 w-full h-full"
+          allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+          allowFullScreen
+          referrerPolicy="strict-origin-when-cross-origin"
+        />
+      </div>
+      <a
+        href={streams[String(selected)]}
+        target="_blank"
+        rel="noreferrer"
+        className="flex items-center gap-1.5 px-4 py-2.5 text-sm text-[var(--accent)] hover:bg-[var(--app-surface-subtle)]"
+      >
+        <ExternalLink className="w-4 h-4" /> {t(language, 'Открыть на YouTube', 'YouTube\'да ачуу', 'Open on YouTube')}
+      </a>
+    </section>
+  );
+};
+
 export const PublicLiveView: React.FC<BaseProps> = (props) => {
   const { event, bouts, language } = props;
   const eventBouts = bouts.filter((b) => belongsToEvent(b.tournamentId, event.id));
   useEventNameMode(eventBouts, language);
   const tatamis = Array.from(new Set(eventBouts.map((b) => b.tatamiNumber).filter((n): n is number => !!n))).sort((a, b) => a - b);
+  const streams = event.liveStreams || {};
+  const videoTatamis = streamTatamis(streams);
+  const [videoTatami, setVideoTatami] = React.useState<number | null>(null);
+  const shownVideo = videoTatami && videoTatamis.includes(videoTatami) ? videoTatami : videoTatamis[0];
+  const watchTatami = (n: number) => {
+    setVideoTatami(n);
+    document.getElementById('live-video')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
   const anyRunning = eventBouts.some((b) => E.isRunning(b));
   const [now, setNow] = React.useState(clockNow());
   React.useEffect(() => {
@@ -390,8 +456,9 @@ export const PublicLiveView: React.FC<BaseProps> = (props) => {
   return (
     <div className="theme-keep space-y-5 pb-8">
       <EventHeader {...props} active="live_scoring" />
+      {shownVideo && <LiveVideo streams={streams} tatamis={videoTatamis} selected={shownVideo} onSelect={setVideoTatami} language={language} />}
       {tatamis.length === 0 ? (
-        <EmptyState language={language} text={['Трансляция ещё не началась', 'Түз эфир али башталган жок', 'Live scoring has not started yet']} />
+        videoTatamis.length > 0 ? null : <EmptyState language={language} text={['Трансляция ещё не началась', 'Түз эфир али башталган жок', 'Live scoring has not started yet']} />
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {tatamis.map((tn) => {
@@ -423,6 +490,14 @@ export const PublicLiveView: React.FC<BaseProps> = (props) => {
                     <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600">
                       <Radio className="w-3.5 h-3.5" /> LIVE
                     </span>
+                  )}
+                  {videoTatamis.includes(tn) && (
+                    <button
+                      onClick={() => watchTatami(tn)}
+                      className="inline-flex items-center gap-1 h-7 px-2 rounded-full border border-[var(--app-border)] text-xs font-semibold text-[var(--app-text-secondary)] hover:border-red-500 hover:text-red-600 cursor-pointer"
+                    >
+                      <Youtube className="w-3.5 h-3.5 text-red-600" /> {t(language, 'Видео', 'Видео', 'Video')}
+                    </button>
                   )}
                   <span className="flex-1" />
                   {b && <span className="text-2xl font-black tabular-nums text-[var(--app-text-primary)]">{E.formatClock(E.remainingSeconds(b, now))}</span>}

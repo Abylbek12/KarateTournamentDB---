@@ -1618,7 +1618,22 @@ function AppContent() {
             />
           )}
 
-          {activeTab === 'screens' && <ScreensQrPanel tatamiNumbers={tatamiNumbers} />}
+          {activeTab === 'screens' && (
+            <ScreensQrPanel
+              tatamiNumbers={tatamiNumbers}
+              event={selectedEvent}
+              tournaments={tournaments}
+              onSelectEvent={(id) => {
+                const ev = tournaments.find((x) => x.id === id);
+                if (ev) setSelectedEvent(ev);
+              }}
+              onEventUpdated={(ev) => {
+                const merged = { ...selectedEvent, liveStreams: ev.liveStreams } as EventItem;
+                setTournaments((prev) => prev.map((x) => (x.id === merged.id ? { ...x, liveStreams: merged.liveStreams } : x)));
+                setSelectedEvent(merged);
+              }}
+            />
+          )}
 
           {activeTab === 'lan' && <OfflinePanel onOpenScreens={() => navigateWithHash('screens')} />}
 

@@ -77,6 +77,7 @@ app.get('/api/state/:key', async (req: Request, res: Response, next) => {
 app.use(databaseMiddleware(() => ensureAdminAccount(true)));
 
 import { DEMO_EVENTS } from './src/data/eventsData';
+import { sanitizeLiveStreams } from './src/utils/youtube';
 import { SAMPLE_BOUTS, SAMPLE_PARTICIPANTS } from './src/data/sampleTournamentData';
 
 const hasAiKey = () => !!process.env.ANTHROPIC_API_KEY?.trim();
@@ -251,7 +252,8 @@ app.post('/api/events', (req: Request, res: Response) => {
     dateLabel: newEvent.dateLabel || `${newEvent.startDate || ''} - ${newEvent.endDate || ''}`,
     availableActions: newEvent.availableActions || ['info', 'categories_prices', 'brackets', 'results', 'medals', 'live_scoring'],
     athleteCount: newEvent.athleteCount || 0,
-    clubCount: newEvent.clubCount || 0
+    clubCount: newEvent.clubCount || 0,
+    liveStreams: sanitizeLiveStreams(newEvent.liveStreams)
   };
 
   db.events = [preparedEvent, ...eventsList().filter((e) => e.id !== id)];
@@ -294,7 +296,9 @@ app.put('/api/events/:id', (req: Request, res: Response) => {
     imageUrl: resolvedImageUrl,
     image_url: resolvedImageUrl || null,
     locationLabel: updateData.locationLabel || (updateData.city ? `${updateData.country || existing.country}, ${updateData.city}` : existing.locationLabel),
-    dateLabel: updateData.dateLabel || (updateData.startDate ? `${updateData.startDate} - ${updateData.endDate || updateData.startDate}` : existing.dateLabel)
+    dateLabel: updateData.dateLabel || (updateData.startDate ? `${updateData.startDate} - ${updateData.endDate || updateData.startDate}` : existing.dateLabel),
+    // Only valid YouTube links per tatami are kept
+    liveStreams: sanitizeLiveStreams(updateData.liveStreams !== undefined ? updateData.liveStreams : existing.liveStreams)
   };
 
   eventsList()[index] = updatedEvent;
