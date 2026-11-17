@@ -97,7 +97,9 @@ const overlayBlacks = parsed
   .filter((t) => t.kind === 'bg' && !t.hover && t.op < 100 && (t.family === 'black' || (NEUTRAL.includes(t.family) && t.shade >= 900)))
   .map((t) => `:is(.absolute, .fixed).${esc(t.tok)}`);
 
-const LIGHT_TEXT_LIMIT = [KEEP, selList(strongDarkBg), ...overlayBlacks].filter(Boolean).join(', ');
+// Brand-blue fills (buttons, active tabs) always keep their white text.
+const ACCENT_FILLS = ['.bg-\\[var\\(--accent\\)\\]', '.bg-\\[var\\(--accent-strong\\)\\]'];
+const LIGHT_TEXT_LIMIT = [KEEP, selList(strongDarkBg), ...ACCENT_FILLS, ...overlayBlacks].filter(Boolean).join(', ');
 const DARK_TEXT_LIMIT = [KEEP, selList(strongLightBg)].filter(Boolean).join(', ');
 
 // Each group is emitted inside @scope(root) to (limit): rules apply under the theme root

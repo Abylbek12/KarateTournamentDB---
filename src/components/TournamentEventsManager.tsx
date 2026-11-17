@@ -21,7 +21,9 @@ import {
   RotateCcw,
   ShieldCheck,
   Lock,
-  Users
+  Users,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import { Tournament, TournamentRules, TournamentStatus, UserRole } from '../types/schema';
 import { useApp } from '../context/AppContext';
@@ -116,6 +118,8 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
 
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [registryViewTab, setRegistryViewTab] = useState<'active' | 'archive'>('active');
+  // The list is closed at first so the admin page stays short; «Все турниры» opens and closes it
+  const [showTournamentList, setShowTournamentList] = useState(false);
   const [tournamentPendingDelete, setTournamentPendingDelete] = useState<Tournament | null>(null);
 
   React.useEffect(() => {
@@ -614,7 +618,10 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
 
   const activeTournaments = tournaments.filter((t) => !isTournamentArchived(t));
   const archivedTournaments = tournaments.filter((t) => isTournamentArchived(t));
-  const displayedTournaments = registryViewTab === 'archive' ? archivedTournaments : activeTournaments;
+  // Current: the nearest tournament first. Archive: the most recent first.
+  const byStart = (a: Tournament, b: Tournament) => (a.startDate || '').localeCompare(b.startDate || '');
+  const displayedTournaments =
+    registryViewTab === 'archive' ? [...archivedTournaments].sort((a, b) => byStart(b, a)) : [...activeTournaments].sort(byStart);
 
   const getStatusBadge = (st: TournamentStatus) => {
     switch (st) {
@@ -1192,251 +1199,180 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
         </div>
       )}
 
-      {/* Tournaments Registry Grid with Active / Archive Tabs */}
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <h3 className="text-lg font-bold text-[var(--app-text-primary)] flex items-center gap-2">
-            <Layers className="w-5 h-5 text-[var(--accent)]" />
-            <span>
-              {tr('Все турниры', 'Бардык мелдештер', 'All tournaments')} <span className="text-[var(--app-text-muted)] font-semibold">{tournaments.length}</span>
-            </span>
-          </h3>
+      {/* Tournaments list: «Все турниры» opens and closes it; compact cards, three per row on wide screens */}
+      <div className="rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-sm p-4 sm:p-5 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => setShowTournamentList((v) => !v)}
+            aria-expanded={showTournamentList}
+            className={`inline-flex items-center gap-2 h-10 pl-3 pr-3.5 rounded-full border text-[15px] font-bold cursor-pointer transition ${
+              showTournamentList
+                ? 'bg-[var(--accent)] border-[var(--accent)] text-white'
+                : 'bg-[var(--app-surface)] border-[var(--app-border)] text-[var(--app-text-primary)] hover:border-[var(--accent)]'
+            }`}
+          >
+            <Layers className="w-4 h-4" />
+            {tr('Все турниры', 'Бардык мелдештер', 'All tournaments')}
+            <span className={`tabular-nums ${showTournamentList ? 'text-white/80' : 'text-[var(--app-text-muted)]'}`}>{tournaments.length}</span>
+            {showTournamentList ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4 opacity-60" />}
+          </button>
 
-          {/* Active vs Archive Tabs */}
-          <div className="inline-flex items-center p-1 rounded-xl bg-slate-900 border border-slate-800 gap-1">
-            <button
-              type="button"
-              onClick={() => setRegistryViewTab('active')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                registryViewTab === 'active'
-                  ? 'bg-rose-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Trophy className="w-3.5 h-3.5" />
-              <span>{tr('Актуальные турниры', 'Актуалдуу мелдештер', 'Active Tournaments')}</span>
-              <span className="px-1.5 py-0.2 rounded-full bg-black/25 text-[10px]">
-                {activeTournaments.length}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setRegistryViewTab('archive')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                registryViewTab === 'archive'
-                  ? 'bg-amber-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Archive className="w-3.5 h-3.5" />
-              <span>{tr('Архив турниров', 'Мелдештер архиви', 'Archive')}</span>
-              <span className="px-1.5 py-0.2 rounded-full bg-black/25 text-[10px]">
-                {archivedTournaments.length}
-              </span>
-            </button>
-          </div>
+          {showTournamentList && (
+            <div className="inline-flex items-center p-1 rounded-full bg-[var(--app-surface-subtle)] border border-[var(--app-border)] gap-1">
+              {(
+                [
+                  ['active', tr('Актуальные', 'Актуалдуу', 'Current'), activeTournaments.length, Trophy],
+                  ['archive', tr('Архив', 'Архив', 'Archive'), archivedTournaments.length, Archive]
+                ] as const
+              ).map(([id, label, count, Icon]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setRegistryViewTab(id)}
+                  className={`h-8 px-3 rounded-full text-[13px] font-semibold flex items-center gap-1.5 cursor-pointer transition ${
+                    registryViewTab === id
+                      ? 'bg-[var(--app-surface)] text-[var(--app-text-primary)] shadow-sm'
+                      : 'text-[var(--app-text-muted)] hover:text-[var(--app-text-primary)]'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {label}
+                  <span className="tabular-nums text-[var(--app-text-muted)]">{count}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        {displayedTournaments.length === 0 ? (
-          <div className="p-8 rounded-2xl bg-slate-900/70 border border-slate-800 text-center space-y-2">
-            <Archive className="w-8 h-8 text-slate-500 mx-auto" />
-            <div className="text-sm font-bold text-slate-300">
+        {!showTournamentList ? (
+          <p className="text-sm text-[var(--app-text-muted)]">
+            {tr('Нажмите «Все турниры», чтобы открыть список. Нажмите ещё раз, чтобы закрыть.', 'Тизмени ачуу үчүн «Бардык мелдештер» басыңыз. Жабуу үчүн дагы бир жолу басыңыз.', 'Tap «All tournaments» to open the list, tap again to close it.')}
+          </p>
+        ) : displayedTournaments.length === 0 ? (
+          <div className="p-6 rounded-2xl border border-dashed border-[var(--app-border)] text-center">
+            <Archive className="w-6 h-6 text-[var(--app-text-muted)] mx-auto" />
+            <div className="mt-2 text-sm font-semibold text-[var(--app-text-primary)]">
               {registryViewTab === 'archive'
-                ? tr('В архиве пока нет завершённых турниров', 'Архивде азырынча аяктаган мелдештер жок', 'No concluded tournaments in archive yet')
-                : tr('Нет активных турниров', 'Активдүү мелдештер жок', 'No active tournaments')}
+                ? tr('В архиве пока нет турниров', 'Архивде азырынча мелдештер жок', 'No tournaments in the archive yet')
+                : tr('Нет актуальных турниров', 'Актуалдуу мелдештер жок', 'No current tournaments')}
             </div>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-[var(--app-text-muted)] mt-1">
               {registryViewTab === 'archive'
-                ? tr('Все турниры с истекшей датой окончания автоматически переносятся в этот раздел.', 'Аяктоо датасы өткөн бардык мелдештер автоматтык түрдө ушул бөлүмгө которулат.', 'All tournaments past their end date are automatically moved to this section.')
-                : tr('Переключитесь во вкладку «Архив турниров» или создайте новое событие.', '«Мелдештер архиви» өтмөгүнө өтүңүз же жаңы мелдеш түзүңүз.', 'Switch to the "Archive" tab or create a new tournament.')}
+                ? tr('Сюда сами переходят турниры, дата окончания которых прошла.', 'Аяктоо датасы өткөн мелдештер бул жерге өзү которулат.', 'Tournaments move here after their end date.')
+                : tr('Создайте турнир кнопкой «Создать турнир» выше.', 'Жогорудагы «Мелдеш түзүү» баскычы менен мелдеш түзүңүз.', 'Create one with the «Create tournament» button above.')}
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {displayedTournaments.map((t) => {
               const isSelected = selectedTournament?.id === t.id;
               const isExpired = isTournamentDateExpired(t.endDate);
               const isArchived = isTournamentArchived(t);
+              const linkBtn = 'text-xs font-medium text-[var(--app-text-secondary)] hover:text-[var(--accent)] cursor-pointer inline-flex items-center gap-1';
 
               return (
                 <div
                   key={t.id}
-                  className={`p-4 sm:p-5 rounded-2xl border transition-all flex flex-col justify-between space-y-3 sm:space-y-4 ${
-                    isSelected
-                      ? 'bg-gradient-to-b from-slate-900 to-slate-900 border-rose-500/80 shadow-xl shadow-rose-950/20'
-                      : 'bg-slate-900/90 border-slate-800 hover:border-slate-700 shadow-md'
+                  className={`min-w-0 p-3.5 rounded-2xl border flex flex-col gap-2.5 transition ${
+                    isSelected ? 'border-[var(--accent)] ring-2 ring-[var(--accent-soft)] bg-[var(--app-surface)]' : 'border-[var(--app-border)] bg-[var(--app-surface-subtle)] hover:border-[var(--accent)]'
                   }`}
                 >
-                  <div className="space-y-3">
-                    {/* Card Header */}
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1 flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          {getRulesBadge(t.rulesType)}
-                          {getStatusBadge(isArchived ? 'completed' : t.status)}
-                          {isArchived && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-950/90 border border-amber-600/70 text-amber-300 flex items-center gap-1">
-                              <Archive className="w-3 h-3 text-amber-400" />
-                              <span>
-                                {isExpired
-                                  ? tr('В архиве (срок истёк)', 'Архивде (мөөнөтү өттү)', 'Archived (Past End Date)')
-                                  : tr('В архиве', 'Архивде', 'Archived')}
-                              </span>
-                            </span>
-                          )}
-                          {isSelected && (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 border border-rose-700 text-rose-300">
-                              {tr('★ Выбран', '★ Тандалган', '★ Selected')}
-                            </span>
-                          )}
-                        </div>
-                        <h4 className="text-base font-bold text-white group-hover:text-rose-300 transition-colors">
-                          {t.title}
-                        </h4>
-                        <p className="text-xs text-slate-400">
-                          {t.organization || 'WKF Federation'}
-                        </p>
+                  <div className="flex items-start gap-2.5">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {getRulesBadge(t.rulesType)}
+                        {getStatusBadge(isArchived ? 'completed' : t.status)}
+                        {isSelected && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--accent)] text-white">{tr('★ Выбран', '★ Тандалган', '★ Selected')}</span>
+                        )}
                       </div>
-                      {t.imageUrl && (
-                        <img
-                          src={t.imageUrl}
-                          alt={t.title}
-                          className="w-14 h-14 rounded-xl object-cover border border-slate-700 shrink-0 bg-slate-950"
-                        />
-                      )}
+                      <h4 className="mt-1.5 text-[15px] leading-snug font-bold text-[var(--app-text-primary)] line-clamp-2" title={t.title}>
+                        {t.title}
+                      </h4>
                     </div>
+                    {t.imageUrl && <img src={t.imageUrl} alt="" className="w-11 h-11 rounded-xl object-cover border border-[var(--app-border)] shrink-0" />}
+                  </div>
 
-                    {/* Dates & Location */}
-                    <div className="grid grid-cols-2 gap-2 text-xs pt-1 text-slate-300">
-                      <div className="flex items-center gap-1.5 text-slate-400">
-                        <Calendar className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                        <span>{t.startDate} — {t.endDate}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-slate-400">
-                        <MapPin className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                        <span className="truncate">{t.city}, {t.country}</span>
-                      </div>
+                  <div className="space-y-1 text-xs text-[var(--app-text-muted)]">
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 shrink-0" />
+                      <span className="tabular-nums">{t.startDate === t.endDate ? t.startDate : `${t.startDate} — ${t.endDate}`}</span>
                     </div>
-
-                    {/* Venue */}
-                    <div className="text-xs text-slate-400 flex items-center gap-1.5">
-                      <Building2 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                      <span className="text-slate-300">{t.venueName}</span>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <MapPin className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">{[t.city, t.venueName].filter(Boolean).join(' · ')}</span>
                     </div>
-
-                    {/* Quick stats */}
-                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-800/80 text-[11px]">
-                      <div className="text-slate-400">
-                        {tr('Атлетов:', 'Спортчулар:', 'Athletes:')} <strong className="text-white">{t.athleteCount || 0}</strong>
-                      </div>
-                      <div className="text-slate-400">
-                        {tr('Клубов:', 'Клубдар:', 'Clubs:')} <strong className="text-white">{t.clubCount || 0}</strong>
-                      </div>
-                      <div className="text-slate-400">
-                        {tr('Татами:', 'Татами:', 'Tatami:')} <strong className="text-rose-400">{t.tatamiCount || 4}</strong>
-                      </div>
+                    <div className="flex items-center gap-1.5">
+                      <Building2 className="w-3.5 h-3.5 shrink-0" />
+                      <span>
+                        {tr('Татами', 'Татами', 'Tatami')} {t.tatamiCount || 4} · {tr('атлетов', 'спортчу', 'athletes')} {t.athleteCount || 0}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Card Actions Footer */}
-                  <div className="pt-3 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
+                  <div className="mt-auto pt-2.5 border-t border-[var(--app-border)] space-y-2">
+                    <div className="flex gap-1.5">
                       {onSelectTournament && !isSelected && (
                         <button
                           type="button"
                           onClick={() => onSelectTournament(t)}
-                          className="px-3 py-1.5 rounded-lg bg-rose-600/90 hover:bg-rose-500 text-white text-xs font-bold transition-colors cursor-pointer"
+                          className="flex-1 h-8 px-3 rounded-full bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold cursor-pointer"
                         >
-                          {tr('Выбрать активным', 'Активдүү кылуу', 'Set Active')}
+                          {tr('Выбрать', 'Тандоо', 'Select')}
                         </button>
                       )}
-
-                      {onNavigateToDetails && (
-                        <button
-                          type="button"
-                          onClick={() => onNavigateToDetails(t)}
-                          className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors flex items-center gap-1 cursor-pointer"
-                        >
-                          <span>{tr('Витрина', 'Витрина', 'Showcase')}</span>
-                          <ExternalLink className="w-3 h-3 text-slate-400" />
-                        </button>
-                      )}
-                    </div>
-
-                    {isAdmin ? (
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {/* Manual Move to Archive / Restore Button (Administrator Only) */}
-                        {!isArchived ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              onUpdateTournament({ ...t, status: 'completed' });
-                              showNotification(
-                                tr(
-                                  `Турнир «${t.title}» перемещён во вкладку «Архив турниров» (вместо удаления).`,
-                                  `«${t.title}» мелдеши өчүрүүнүн ордуна «Мелдештер архиви» өтмөгүнө которулду.`,
-                                  `Tournament "${t.title}" moved to the "Archive" tab (instead of deletion).`
-                                )
-                              );
-                            }}
-                            className="px-2.5 py-1.5 rounded-lg bg-amber-950/60 hover:bg-amber-900/80 border border-amber-600/50 text-amber-300 text-xs transition-colors flex items-center gap-1 cursor-pointer"
-                            title={tr('Перенести турнир в Архив без удаления', 'Мелдешти өчүрбөстөн Архивге которуу', 'Move tournament to Archive without deleting')}
-                          >
-                            <Archive className="w-3.5 h-3.5 text-amber-400" />
-                            <span>{tr('В архив', 'Архивге', 'Archive')}</span>
-                          </button>
-                        ) : (
-                          !isExpired && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                onUpdateTournament({ ...t, status: 'registration_open' });
-                                showNotification(
-                                  tr(
-                                    `Турнир «${t.title}» возвращён в список актуальных событий.`,
-                                    `«${t.title}» мелдеши актуалдуу окуялардын тизмесине кайтарылды.`,
-                                    `Tournament "${t.title}" restored to active events.`
-                                  )
-                                );
-                              }}
-                              className="px-2.5 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-600/50 text-emerald-300 text-xs transition-colors flex items-center gap-1 cursor-pointer"
-                              title={tr('Вернуть в актуальные турниры', 'Актуалдуу мелдештерге кайтаруу', 'Restore to active tournaments')}
-                            >
-                              <RotateCcw className="w-3.5 h-3.5 text-emerald-400" />
-                              <span>{tr('Из архива', 'Архивден', 'Restore')}</span>
-                            </button>
-                          )
-                        )}
-
+                      {isAdmin && (
                         <button
                           type="button"
                           onClick={() => handleStartEdit(t)}
-                          className="px-2.5 py-1.5 rounded-lg bg-sky-700 hover:bg-sky-600 text-white text-xs font-semibold transition-colors flex items-center gap-1 cursor-pointer"
-                          title={tr('Редактировать турнир', 'Мелдешти түзөтүү', 'Edit tournament')}
+                          className="flex-1 h-8 px-3 rounded-full bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white text-xs font-semibold cursor-pointer inline-flex items-center justify-center gap-1"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
-                          <span>{tr('Изменить', 'Өзгөртүү', 'Edit')}</span>
+                          {tr('Изменить', 'Өзгөртүү', 'Edit')}
                         </button>
-
-                        {onDeleteTournament && (
-                          <button
-                            type="button"
-                            onClick={() => handleRequestDelete(t)}
-                            className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-950 hover:text-rose-300 hover:border-rose-700 border border-slate-700/80 text-slate-300 text-xs transition-colors flex items-center gap-1 cursor-pointer"
-                            title={tr('Удалить турнир (откроется подтверждение Да/Нет)', 'Мелдешти өчүрүү (Ооба/Жок тастыктоосу ачылат)', 'Delete tournament (opens Yes/No confirmation)')}
-                          >
-                            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-                            <span>{tr('Удалить', 'Өчүрүү', 'Delete')}</span>
-                          </button>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 text-[11px] flex items-center gap-1">
-                        <Lock className="w-3 h-3 text-slate-500" />
-                        <span>{tr('Только просмотр (RBAC)', 'Көрүү гана (RBAC)', 'View Only (RBAC)')}</span>
-                      </span>
-                    )}
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      {onNavigateToDetails && (
+                        <button type="button" onClick={() => onNavigateToDetails(t)} className={linkBtn}>
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          {tr('Открыть', 'Ачуу', 'Open')}
+                        </button>
+                      )}
+                      {isAdmin && !isArchived && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onUpdateTournament({ ...t, status: 'completed' });
+                            showNotification(tr(`Турнир «${t.title}» перенесён в архив.`, `«${t.title}» мелдеши архивге которулду.`, `Tournament "${t.title}" moved to the archive.`));
+                          }}
+                          className={linkBtn}
+                        >
+                          <Archive className="w-3.5 h-3.5" />
+                          {tr('В архив', 'Архивге', 'Archive')}
+                        </button>
+                      )}
+                      {isAdmin && isArchived && !isExpired && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onUpdateTournament({ ...t, status: 'registration_open' });
+                            showNotification(tr(`Турнир «${t.title}» возвращён в актуальные.`, `«${t.title}» мелдеши актуалдууларга кайтарылды.`, `Tournament "${t.title}" restored.`));
+                          }}
+                          className={linkBtn}
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          {tr('Из архива', 'Архивден', 'Restore')}
+                        </button>
+                      )}
+                      {isAdmin && onDeleteTournament && (
+                        <button type="button" onClick={() => handleRequestDelete(t)} className={`${linkBtn} hover:!text-red-600 ml-auto`}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                          {tr('Удалить', 'Өчүрүү', 'Delete')}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

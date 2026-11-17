@@ -154,7 +154,7 @@ export const FeesPanel: React.FC<FeesProps> = ({ tournaments, initialTournamentI
             Отмечайте оплату взносов по заявкам. Онлайн-оплата картой на сайте не подключена: взносы принимаются по вашим реквизитам или на мандатной комиссии.
           </p>
         </div>
-        <select value={tid} onChange={(e) => setTid(e.target.value)} className={`${field} min-w-[240px]`}>
+        <select value={tid} onChange={(e) => setTid(e.target.value)} className={`${field} w-full sm:w-auto sm:min-w-[240px] max-w-full`}>
           {tournaments.map((t) => (
             <option key={t.id} value={t.id}>{t.title}</option>
           ))}

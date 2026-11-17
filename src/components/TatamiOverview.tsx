@@ -44,7 +44,7 @@ export const TatamiOverview: React.FC<TatamiOverviewProps> = ({ tournaments, ini
             Что идёт на каждом татами и кто следующий. Пульт можно открыть здесь или на отдельном устройстве по QR-коду («Экраны и QR-коды»).
           </p>
         </div>
-        <select value={tid} onChange={(e) => setTid(e.target.value)} className="h-10 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-text-primary)] px-2.5 text-sm min-w-[240px]">
+        <select value={tid} onChange={(e) => setTid(e.target.value)} className="h-10 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-text-primary)] px-2.5 text-sm w-full sm:w-auto sm:min-w-[240px] max-w-full">
           {tournaments.map((t) => (
             <option key={t.id} value={t.id}>{t.title}</option>
           ))}

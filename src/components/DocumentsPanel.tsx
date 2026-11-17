@@ -47,9 +47,9 @@ export const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ tournaments, ini
             Официальные документы турнира на листах A4. Откройте документ и нажмите «Печать / сохранить PDF» — в окне печати выберите принтер или «Сохранить как PDF».
           </p>
         </div>
-        <label className="text-sm text-[var(--app-text-secondary)] flex flex-col gap-1">
+        <label className="text-sm text-[var(--app-text-secondary)] flex flex-col gap-1 min-w-0 max-w-full">
           Турнир
-          <select value={tid} onChange={(e) => setTid(e.target.value)} className={`${field} min-w-[240px]`}>
+          <select value={tid} onChange={(e) => setTid(e.target.value)} className={`${field} w-full sm:w-auto sm:min-w-[240px] max-w-full`}>
             {tournaments.map((t) => (
               <option key={t.id} value={t.id}>{t.title}</option>
             ))}
