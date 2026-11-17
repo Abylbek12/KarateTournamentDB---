@@ -1820,7 +1820,7 @@ function AppContent() {
           onClick={() => setGlobalPendingDeleteTournament(null)}
         >
           <div
-            className="w-full max-w-md rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl p-6 space-y-5"
+            className="w-full max-w-md max-h-[90dvh] overflow-y-auto rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl p-6 space-y-5"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"

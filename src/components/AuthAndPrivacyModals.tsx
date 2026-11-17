@@ -336,12 +336,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/65 backdrop-blur-xs animate-fadeIn font-sans">
+    <div className="fixed inset-0 z-50 flex justify-center items-start overflow-y-auto overscroll-contain px-3 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-4 bg-slate-900/65 backdrop-blur-xs animate-fadeIn font-sans">
       {/* Click outside to close backdrop */}
-      <div className="absolute inset-0" onClick={onClose} />
+      <div className="fixed inset-0" onClick={onClose} />
 
       {/* Main Wide Card (Exact screenshot 2-column layout) */}
-      <div className="relative z-10 w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-slate-200/90 overflow-hidden p-6 sm:p-10 md:p-12 transition-all">
+      <div className="relative z-10 my-auto w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-slate-200/90 overflow-hidden p-5 sm:p-10 md:p-12 transition-all">
         {/* Subtle Close Button in Top-Right */}
         <button
           onClick={onClose}
