@@ -107,9 +107,9 @@ export const RankingsPanel: React.FC<CommunityProps> = ({ tournaments, bouts, pa
         <p className="text-[15px] text-[var(--app-text-secondary)] mt-1">
           {t(
             lang,
-            'Медальный рейтинг по результатам турниров, проведённых на Tatami.kg: сначала золото, затем серебро и бронза.',
-            'Tatami.kg аркылуу өткөн мелдештердин жыйынтыгы боюнча медалдык рейтинг: адегенде алтын, андан кийин күмүш жана коло.',
-            'Medal ranking from tournaments run on Tatami.kg: gold first, then silver and bronze.'
+            'Медальный рейтинг по результатам турниров, проведённых на Apsatarov: сначала золото, затем серебро и бронза.',
+            'Apsatarov аркылуу өткөн мелдештердин жыйынтыгы боюнча медалдык рейтинг: адегенде алтын, андан кийин күмүш жана коло.',
+            'Medal ranking from tournaments run on Apsatarov: gold first, then silver and bronze.'
           )}
         </p>
       </div>
@@ -198,7 +198,7 @@ export const ClubsPanel: React.FC<CommunityProps> = ({ tournaments, bouts, parti
           <Building2 className="w-6 h-6 text-[var(--accent)]" /> {t(lang, 'Клубы', 'Клубдар', 'Clubs')}
         </h1>
         <p className="text-[15px] text-[var(--app-text-secondary)] mt-1">
-          {t(lang, 'Клубы, которые подавали заявки на турниры Tatami.kg.', 'Tatami.kg мелдештерине өтүнмө берген клубдар.', 'Clubs that have entered tournaments on Tatami.kg.')}
+          {t(lang, 'Клубы, которые подавали заявки на турниры Apsatarov.', 'Apsatarov мелдештерине өтүнмө берген клубдар.', 'Clubs that have entered tournaments on Apsatarov.')}
         </p>
       </div>
       <label className="relative block max-w-md">

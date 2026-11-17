@@ -120,8 +120,8 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
 
   React.useEffect(() => {
     const handleOpenArchive = () => setRegistryViewTab('archive');
-    window.addEventListener('tatami-open-archive-tab', handleOpenArchive);
-    return () => window.removeEventListener('tatami-open-archive-tab', handleOpenArchive);
+    window.addEventListener('apsatarov-open-archive-tab', handleOpenArchive);
+    return () => window.removeEventListener('apsatarov-open-archive-tab', handleOpenArchive);
   }, []);
 
   const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
@@ -581,7 +581,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
     }
 
     // Trigger global date check listener immediately
-    window.dispatchEvent(new CustomEvent('tatami-check-expired-events'));
+    window.dispatchEvent(new CustomEvent('apsatarov-check-expired-events'));
     resetForm();
     setIsFormOpen(false);
   };

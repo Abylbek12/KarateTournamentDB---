@@ -11,16 +11,16 @@ export const AboutUsView: React.FC<{ language: 'ru' | 'en' | 'ky' }> = ({ langua
       <div className="bg-white p-8 sm:p-12 rounded-2xl border border-slate-200/90 shadow-2xs">
         <div className="max-w-3xl space-y-4">
           <span className="px-3 py-1 rounded-md bg-sky-50 text-sky-700 border border-sky-200 text-xs font-bold uppercase">
-            TATAMI.KG
+            APSATAROV
           </span>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 leading-tight">
-            {tr('О платформе Tatami.kg', 'Tatami.kg платформасы жөнүндө', 'About Tatami.kg')}
+            {tr('О платформе Apsatarov', 'Apsatarov платформасы жөнүндө', 'About Apsatarov')}
           </h1>
           <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
             {tr(
-              'Tatami.kg — профессиональная цифровая операционная система для управления соревнованиями по спортивным единоборствам и традиционным боевым искусствам. Платформа объединяет онлайн-заявки, электронное табло и судейство, сетки олимпийской системы, учёт взносов и официальные протоколы для печати.',
-              'Tatami.kg — спорттук жекпе-жек жана салттуу согуш өнөрлөрү боюнча мелдештерди башкаруу үчүн кесиптик санариптик операциялык система. Платформа онлайн өтүнмөлөрдү, электрондук таблону жана калыстыкты, олимпиадалык системанын торчолорун, төлөмдөрдү эсепке алууну жана расмий протоколдорду бириктирет.',
-              'Tatami.kg is a dedicated digital management ecosystem for martial arts championships: online entries, electronic scoring, elimination brackets, entry fees and printable official protocols.'
+              'Apsatarov — профессиональная цифровая операционная система для управления соревнованиями по спортивным единоборствам и традиционным боевым искусствам. Платформа объединяет онлайн-заявки, электронное табло и судейство, сетки олимпийской системы, учёт взносов и официальные протоколы для печати.',
+              'Apsatarov — спорттук жекпе-жек жана салттуу согуш өнөрлөрү боюнча мелдештерди башкаруу үчүн кесиптик санариптик операциялык система. Платформа онлайн өтүнмөлөрдү, электрондук таблону жана калыстыкты, олимпиадалык системанын торчолорун, төлөмдөрдү эсепке алууну жана расмий протоколдорду бириктирет.',
+              'Apsatarov is a dedicated digital management ecosystem for martial arts championships: online entries, electronic scoring, elimination brackets, entry fees and printable official protocols.'
             )}
           </p>
         </div>

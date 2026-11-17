@@ -89,8 +89,8 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
       setShowPast(true);
       setTimeout(() => pastRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
     };
-    window.addEventListener('tatami-open-archive-tab', open);
-    return () => window.removeEventListener('tatami-open-archive-tab', open);
+    window.addEventListener('apsatarov-open-archive-tab', open);
+    return () => window.removeEventListener('apsatarov-open-archive-tab', open);
   }, []);
 
   const events: EventItem[] = useMemo(

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, RefreshCw, Search } from 'lucide-react';
+import { Users, RefreshCw, Search, ChevronDown, ChevronUp } from 'lucide-react';
 import { ROLE_LABELS, type AccessRole } from '../utils/access';
 
 interface UserRow {
@@ -40,7 +40,8 @@ export const UsersRolesPanel: React.FC<{ currentUserId?: string }> = ({ currentU
   const [query, setQuery] = React.useState('');
   const [pending, setPending] = React.useState<{ user: UserRow; role: AccessRole } | null>(null);
   const [saving, setSaving] = React.useState(false);
-  const [group, setGroup] = React.useState<Group>('athletes');
+  // No tab is open at first; a second click on the open tab closes the list again
+  const [group, setGroup] = React.useState<Group | null>(null);
   const [shown, setShown] = React.useState(PAGE);
   React.useEffect(() => setShown(PAGE), [group, query]);
 
@@ -98,8 +99,10 @@ export const UsersRolesPanel: React.FC<{ currentUserId?: string }> = ({ currentU
   const q = query.trim().toLowerCase();
   const matches = (u: UserRow) => !q || u.fullName.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || (u.clubName || '').toLowerCase().includes(q);
   // Newest registrations first, so the people who just signed up are at the top
+  // While searching with every tab closed, look through everybody
+  const shownGroup: Group | null = group ?? (q ? 'all' : null);
   const filtered = users
-    .filter((u) => inGroup(u, group) && matches(u))
+    .filter((u) => shownGroup !== null && inGroup(u, shownGroup) && matches(u))
     .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
   const visible = filtered.slice(0, shown);
   const countOf = (g: Group) => users.filter((u) => inGroup(u, g) && matches(u)).length;
@@ -144,7 +147,7 @@ export const UsersRolesPanel: React.FC<{ currentUserId?: string }> = ({ currentU
             key={g.id}
             role="tab"
             aria-selected={group === g.id}
-            onClick={() => setGroup(g.id)}
+            onClick={() => setGroup((cur) => (cur === g.id ? null : g.id))}
             className={`shrink-0 h-9 px-3.5 rounded-full text-sm font-medium border cursor-pointer transition ${
               group === g.id
                 ? 'bg-[var(--accent)] border-[var(--accent)] text-white'
@@ -152,6 +155,7 @@ export const UsersRolesPanel: React.FC<{ currentUserId?: string }> = ({ currentU
             }`}
           >
             {g.label} <span className={`ml-1 tabular-nums ${group === g.id ? 'text-white/80' : 'text-[var(--app-text-muted)]'}`}>{countOf(g.id)}</span>
+            {group === g.id ? <ChevronUp className="inline w-3.5 h-3.5 ml-1 -mt-0.5" /> : <ChevronDown className="inline w-3.5 h-3.5 ml-1 -mt-0.5 opacity-50" />}
           </button>
         ))}
       </div>
@@ -159,6 +163,10 @@ export const UsersRolesPanel: React.FC<{ currentUserId?: string }> = ({ currentU
       {error && <div className="mt-3 text-sm rounded-xl px-3 py-2 bg-[var(--danger-soft)] border border-[var(--danger-border)] text-[var(--app-text-primary)]">{error}</div>}
       {notice && <div className="mt-3 text-sm rounded-xl px-3 py-2 bg-[var(--accent-soft)] text-[var(--app-text-primary)]">✓ {notice}</div>}
 
+      {shownGroup === null ? (
+        <p className="mt-3 text-sm text-[var(--app-text-muted)]">Нажмите на вкладку, чтобы открыть список. Нажмите ещё раз, чтобы закрыть.</p>
+      ) : (
+      <>
       <div className="mt-3 overflow-x-auto rounded-xl border border-[var(--app-border)]">
         <table className="w-full text-sm">
           <thead className="bg-[var(--app-surface-subtle)] text-[var(--app-text-secondary)] text-xs">
@@ -204,11 +212,13 @@ export const UsersRolesPanel: React.FC<{ currentUserId?: string }> = ({ currentU
       </div>
       {filtered.length > visible.length && (
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <button onClick={() => setShown((n) => n + PAGE)} className="h-10 px-4 rounded-lg border border-[var(--app-border)] text-sm font-medium text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)] cursor-pointer">
+          <button onClick={() => setShown((n) => n + PAGE)} className="h-10 px-4 rounded-full border border-[var(--app-border)] text-sm font-medium text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)] cursor-pointer">
             Показать ещё {Math.min(PAGE, filtered.length - visible.length)}
           </button>
           <span className="text-sm text-[var(--app-text-muted)]">Показано {visible.length} из {filtered.length}. Для быстрого поиска впишите имя или email.</span>
         </div>
+      )}
+      </>
       )}
       {pending && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={() => !saving && setPending(null)}>

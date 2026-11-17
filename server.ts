@@ -85,7 +85,7 @@ const hasAiKey = () => !!process.env.ANTHROPIC_API_KEY?.trim();
 app.get('/api/health', (_req: Request, res: Response) => {
   res.json({
     status: 'ok',
-    service: 'Tatami.kg Server',
+    service: 'Apsatarov Server',
     aiEnabled: hasAiKey(),
     timestamp: new Date().toISOString(),
     serverTime: Date.now(),
@@ -440,7 +440,7 @@ app.get(['/auth/callback', '/auth/callback/'], (req: Request, res: Response) => 
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Tatami.kg Authentication Callback</title>
+        <title>Apsatarov Authentication Callback</title>
         <style>
           body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -483,7 +483,7 @@ app.get(['/auth/callback', '/auth/callback/'], (req: Request, res: Response) => 
         <div class="box">
           <div class="icon">✓</div>
           <h2 class="title">Авторизация подтверждена</h2>
-          <p class="subtitle">Передача профиля в систему Tatami.kg. Окно закроется автоматически...</p>
+          <p class="subtitle">Передача профиля в систему Apsatarov. Окно закроется автоматически...</p>
         </div>
         <script>
           try {
@@ -726,7 +726,7 @@ app.get('/api/admin/backup', (req: Request, res: Response) => {
   }
   const { sessions, ...data } = db; // active sign-ins are not part of a backup
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  res.setHeader('Content-Disposition', `attachment; filename="tatami-backup-${new Date().toISOString().slice(0, 10)}.json"`);
+  res.setHeader('Content-Disposition', `attachment; filename="apsatarov-backup-${new Date().toISOString().slice(0, 10)}.json"`);
   res.send(JSON.stringify(data, null, 2));
 });
 
@@ -808,7 +808,7 @@ app.post('/api/admin/restore', (req: Request, res: Response) => {
   }
   const backup = req.body?.backup;
   if (!backup || typeof backup !== 'object' || !Array.isArray(backup.accounts) || typeof backup.state !== 'object') {
-    res.status(400).json({ error: 'Это не резервная копия Tatami.kg.' });
+    res.status(400).json({ error: 'Это не резервная копия Apsatarov.' });
     return;
   }
   let saved: string;
@@ -1271,7 +1271,7 @@ function generateExpertFallbackResponse(prompt: string, context: Record<string, 
    - Если оба спортсмена набирают баллы одновременно (взаимная атака / *Aiuchi*), *Senshu* не присуждается ни одному из них.
    - Если обладатель *Senshu* получает предупреждение Категории 2 (*Hansoku Chui* или *Jogai* в последние 15 секунд поединка), статус *Senshu* аннулируется, и при равенстве счета победитель определяется решением судейской бригады (*Hantei*).
 
-*На Tatami.kg* табло автоматически отмечает Senshu у спортсмена, первым набравшего балл; судья может снять его вручную в пульте.`;
+*На Apsatarov* табло автоматически отмечает Senshu у спортсмена, первым набравшего балл; судья может снять его вручную в пульте.`;
   }
 
   if (q.includes('skif') || q.includes('shobu') || q.includes('сетокан') || q.includes('сётокан')) {
@@ -1285,7 +1285,7 @@ function generateExpertFallbackResponse(prompt: string, context: Record<string, 
 | **Контакт** | Строгий контроль (Skin-touch в юниорах/взрослых, запрет в кадетах) | Максимальная фокусировка удара, глубокий контроль дистанции |
 | **Судейская бригада** | Рефери на татами + 4 боковых судьи (флажки/джойстики) | 1 Рефери (Shushin) + 4 угловых судьи (Fukushin) с красным/белым флагами |
 
-*На Tatami.kg* правила WKF или SKIF выбираются в пульте боя до его начала.`;
+*На Apsatarov* правила WKF или SKIF выбираются в пульте боя до его начала.`;
   }
 
   if (q.includes('оценк') || q.includes('ippon') || q.includes('waza') || q.includes('yuko') || q.includes('баллы') || q.includes('иппон')) {
@@ -1306,7 +1306,7 @@ function generateExpertFallbackResponse(prompt: string, context: Record<string, 
   }
 
   if (q.includes('жеребьевк') || q.includes('сетк') || q.includes('разведен') || q.includes('клуб') || q.includes('draw')) {
-    return `### 🛡️ Алгоритм «Умной жеребьевки» Tatami.kg
+    return `### 🛡️ Алгоритм «Умной жеребьевки» Apsatarov
 
 В систему встроен алгоритм сеяния участников по стандартам WKF:
 1. **Разведение одноклубников**: спортсмены одного клуба разводятся по разным частям сетки, чтобы встретиться как можно позже.
@@ -1353,10 +1353,10 @@ app.post('/api/chat', aiLimiter, async (req: Request, res: Response) => {
       return;
     }
 
-    const system = `Ты — «Сенсей», ассистент сайта Tatami.kg (турниры по каратэ в Кыргызстане).
+    const system = `Ты — «Сенсей», ассистент сайта Apsatarov (турниры по каратэ в Кыргызстане).
 Отвечай на языке вопроса (русский, кыргызский или английский), коротко и по делу, простым языком; Markdown можно.
 Темы: правила WKF и SKIF (оценки Yuko/Waza-ari/Ippon, Senshu, предупреждения C1/C2, Хансоку, Кикен, Шиккаку, Хантей, судейство ката), подготовка к турниру и как пользоваться сайтом.
-Сайт Tatami.kg умеет: заявки («Подать заявку», тренер — сразу на всех учеников), «Мои заявки и оплата», категории и жеребьёвку с разведением одноклубников (организатор), пульт боя и табло по QR-коду, режим «Один экран» с клавишами, печать сеток, протоколов и дипломов в PDF, рейтинги и клубы по результатам. Онлайн-оплаты картой нет: взносы принимает организатор.
+Сайт Apsatarov умеет: заявки («Подать заявку», тренер — сразу на всех учеников), «Мои заявки и оплата», категории и жеребьёвку с разведением одноклубников (организатор), пульт боя и табло по QR-коду, режим «Один экран» с клавишами, печать сеток, протоколов и дипломов в PDF, рейтинги и клубы по результатам. Онлайн-оплаты картой нет: взносы принимает организатор.
 Не выдумывай функции сайта, цифры, даты и правила. Если не уверен — так и скажи и посоветуй уточнить у организатора или в действующем регламенте федерации.
 Текущий турнир на экране пользователя: ${String(context.tournamentTitle || 'не выбран').slice(0, 200)}.`;
 

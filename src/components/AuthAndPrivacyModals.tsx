@@ -1,4 +1,4 @@
-import { TatamiFullLogo } from './BrandLogo';
+import { BrandFullLogo } from './BrandLogo';
 import React, { useState, useEffect } from 'react';
 import { 
   X, 
@@ -355,10 +355,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12 min-h-[420px]">
           
           {/* ========================================================
-              LEFT COLUMN: Centered Tatami.kg Swirl Logo & Wordmark
+              LEFT COLUMN: Centered Apsatarov Swirl Logo & Wordmark
              ======================================================== */}
           <div className="flex-1 flex flex-col items-center justify-center py-6 md:py-0 w-full">
-            <TatamiFullLogo />
+            <BrandFullLogo />
 
             {/* Security Badge */}
             <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-[11px] tabular-nums border border-slate-200">
@@ -538,7 +538,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <div className="rounded-2xl bg-[#f0f5f9] border border-[#c5d8e8] p-5 sm:p-6 shadow-2xs">
                   <div className="text-center pb-2">
                     <h3 className="text-sm font-bold text-[#2c5270] font-sans">
-                      {language !== 'en' ? 'Регистрация на сайте Tatami.kg' : 'Create Tatami.kg Account'}
+                      {language !== 'en' ? 'Регистрация на сайте Apsatarov' : 'Create Apsatarov Account'}
                     </h3>
                   </div>
 
@@ -731,7 +731,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     Подтверждение профиля
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Учетные данные проверены. Пожалуйста, подтвердите данные вашего профиля для входа в систему Tatami.kg.
+                    Учетные данные проверены. Пожалуйста, подтвердите данные вашего профиля для входа в систему Apsatarov.
                   </p>
                 </div>
 
@@ -825,7 +825,7 @@ export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({
                 {language !== 'en' ? 'Политика конфиденциальности и защиты данных' : 'Privacy & Data Protection Policy'}
               </h3>
               <p className="text-[11px] text-slate-500">
-                {language !== 'en' ? 'Как Tatami.kg обращается с персональными данными' : 'How Tatami.kg handles personal data'}
+                {language !== 'en' ? 'Как Apsatarov обращается с персональными данными' : 'How Apsatarov handles personal data'}
               </p>
             </div>
           </div>
@@ -842,7 +842,7 @@ export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({
         <div className="flex-1 overflow-y-auto p-6 space-y-4 text-xs text-slate-600 leading-relaxed font-sans">
           <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-[11px] text-slate-600 space-y-1">
             <div className="text-slate-800 font-bold">Оператор обработки персональных данных:</div>
-            <div>Информационная система Tatami.kg (редакция от 1 января 2026 г.)</div>
+            <div>Информационная система Apsatarov (редакция от 1 января 2026 г.)</div>
           </div>
 
           <div className="space-y-1.5">

@@ -23,49 +23,49 @@ const EVENT_LOCALIZATIONS: Record<
   }
 > = {
   'kg-bishkek-cup-2026': {
-    ru: { title: "Кубок города Бишкек по каратэ WKF 2026", locationLabel: "Кыргызстан, г. Бишкек", description: "Пример турнира на сайте Tatami.kg." },
-    ky: { title: "Бишкек шаарынын каратэ WKF боюнча Кубогу 2026", locationLabel: "Кыргызстан, Бишкек ш.", description: "Tatami.kg сайтындагы мелдештин үлгүсү." },
-    en: { title: "Bishkek City Karate WKF Cup 2026", locationLabel: "Kyrgyzstan, Bishkek", description: "Example tournament on Tatami.kg." }
+    ru: { title: "Кубок города Бишкек по каратэ WKF 2026", locationLabel: "Кыргызстан, г. Бишкек", description: "Пример турнира на сайте Apsatarov." },
+    ky: { title: "Бишкек шаарынын каратэ WKF боюнча Кубогу 2026", locationLabel: "Кыргызстан, Бишкек ш.", description: "Apsatarov сайтындагы мелдештин үлгүсү." },
+    en: { title: "Bishkek City Karate WKF Cup 2026", locationLabel: "Kyrgyzstan, Bishkek", description: "Example tournament on Apsatarov." }
   },
   'kg-osh-open-2026': {
-    ru: { title: "Открытый турнир г. Ош среди детей и юношей", locationLabel: "Кыргызстан, Ошская обл., Ош", description: "Пример турнира на сайте Tatami.kg." },
-    ky: { title: "Ош шаарынын балдар жана өспүрүмдөр арасындагы ачык мелдеши", locationLabel: "Кыргызстан, Ош облусу, Ош", description: "Tatami.kg сайтындагы мелдештин үлгүсү." },
-    en: { title: "Osh Open Tournament for Children and Youth", locationLabel: "Kyrgyzstan, Osh Region, Osh", description: "Example tournament on Tatami.kg." }
+    ru: { title: "Открытый турнир г. Ош среди детей и юношей", locationLabel: "Кыргызстан, Ошская обл., Ош", description: "Пример турнира на сайте Apsatarov." },
+    ky: { title: "Ош шаарынын балдар жана өспүрүмдөр арасындагы ачык мелдеши", locationLabel: "Кыргызстан, Ош облусу, Ош", description: "Apsatarov сайтындагы мелдештин үлгүсү." },
+    en: { title: "Osh Open Tournament for Children and Youth", locationLabel: "Kyrgyzstan, Osh Region, Osh", description: "Example tournament on Apsatarov." }
   },
   'kg-national-championship-2026': {
-    ru: { title: "Чемпионат Кыргызской Республики по каратэ 2026", locationLabel: "Кыргызстан, г. Бишкек", description: "Пример турнира на сайте Tatami.kg." },
-    ky: { title: "Кыргыз Республикасынын каратэ боюнча чемпионаты 2026", locationLabel: "Кыргызстан, Бишкек ш.", description: "Tatami.kg сайтындагы мелдештин үлгүсү." },
-    en: { title: "Kyrgyz Republic Karate Championship 2026", locationLabel: "Kyrgyzstan, Bishkek", description: "Example tournament on Tatami.kg." }
+    ru: { title: "Чемпионат Кыргызской Республики по каратэ 2026", locationLabel: "Кыргызстан, г. Бишкек", description: "Пример турнира на сайте Apsatarov." },
+    ky: { title: "Кыргыз Республикасынын каратэ боюнча чемпионаты 2026", locationLabel: "Кыргызстан, Бишкек ш.", description: "Apsatarov сайтындагы мелдештин үлгүсү." },
+    en: { title: "Kyrgyz Republic Karate Championship 2026", locationLabel: "Kyrgyzstan, Bishkek", description: "Example tournament on Apsatarov." }
   },
   'kg-karakol-kata-2027': {
-    ru: { title: "Турнир по ката «Каракол 2027»", locationLabel: "Кыргызстан, Иссык-Кульская обл., Каракол", description: "Пример турнира на сайте Tatami.kg." },
-    ky: { title: "«Каракол 2027» ката мелдеши", locationLabel: "Кыргызстан, Ысык-Көл облусу, Каракол", description: "Tatami.kg сайтындагы мелдештин үлгүсү." },
-    en: { title: "Karakol 2027 Kata Tournament", locationLabel: "Kyrgyzstan, Issyk-Kul Region, Karakol", description: "Example tournament on Tatami.kg." }
+    ru: { title: "Турнир по ката «Каракол 2027»", locationLabel: "Кыргызстан, Иссык-Кульская обл., Каракол", description: "Пример турнира на сайте Apsatarov." },
+    ky: { title: "«Каракол 2027» ката мелдеши", locationLabel: "Кыргызстан, Ысык-Көл облусу, Каракол", description: "Apsatarov сайтындагы мелдештин үлгүсү." },
+    en: { title: "Karakol 2027 Kata Tournament", locationLabel: "Kyrgyzstan, Issyk-Kul Region, Karakol", description: "Example tournament on Apsatarov." }
   },
   'kg-jalal-abad-youth-2027': {
-    ru: { title: "Первенство Джалал-Абадской области среди юношей", locationLabel: "Кыргызстан, Джалал-Абадская обл.", description: "Пример турнира на сайте Tatami.kg." },
-    ky: { title: "Жалал-Абад облусунун өспүрүмдөр арасындагы биринчилиги", locationLabel: "Кыргызстан, Жалал-Абад облусу", description: "Tatami.kg сайтындагы мелдештин үлгүсү." },
-    en: { title: "Jalal-Abad Region Youth Championship", locationLabel: "Kyrgyzstan, Jalal-Abad Region", description: "Example tournament on Tatami.kg." }
+    ru: { title: "Первенство Джалал-Абадской области среди юношей", locationLabel: "Кыргызстан, Джалал-Абадская обл.", description: "Пример турнира на сайте Apsatarov." },
+    ky: { title: "Жалал-Абад облусунун өспүрүмдөр арасындагы биринчилиги", locationLabel: "Кыргызстан, Жалал-Абад облусу", description: "Apsatarov сайтындагы мелдештин үлгүсү." },
+    en: { title: "Jalal-Abad Region Youth Championship", locationLabel: "Kyrgyzstan, Jalal-Abad Region", description: "Example tournament on Apsatarov." }
   },
   'kg-talas-cup-2027': {
-    ru: { title: "Кубок Таласа по каратэ", locationLabel: "Кыргызстан, Таласская обл., Талас", description: "Пример турнира на сайте Tatami.kg." },
-    ky: { title: "Талас каратэ кубогу", locationLabel: "Кыргызстан, Талас облусу, Талас", description: "Tatami.kg сайтындагы мелдештин үлгүсү." },
-    en: { title: "Talas Karate Cup", locationLabel: "Kyrgyzstan, Talas Region, Talas", description: "Example tournament on Tatami.kg." }
+    ru: { title: "Кубок Таласа по каратэ", locationLabel: "Кыргызстан, Таласская обл., Талас", description: "Пример турнира на сайте Apsatarov." },
+    ky: { title: "Талас каратэ кубогу", locationLabel: "Кыргызстан, Талас облусу, Талас", description: "Apsatarov сайтындагы мелдештин үлгүсү." },
+    en: { title: "Talas Karate Cup", locationLabel: "Kyrgyzstan, Talas Region, Talas", description: "Example tournament on Apsatarov." }
   },
   'kg-issyk-kul-cup-2027': {
-    ru: { title: "Кубок Иссык-Куля по традиционному каратэ", locationLabel: "Кыргызстан, Иссык-Кульская обл., Чолпон-Ата", description: "Пример турнира на сайте Tatami.kg." },
-    ky: { title: "Салттуу каратэ боюнча Ысык-Көл кубогу", locationLabel: "Кыргызстан, Ысык-Көл облусу, Чолпон-Ата", description: "Tatami.kg сайтындагы мелдештин үлгүсү." },
-    en: { title: "Issyk-Kul Traditional Karate Cup", locationLabel: "Kyrgyzstan, Issyk-Kul Region, Cholpon-Ata", description: "Example tournament on Tatami.kg." }
+    ru: { title: "Кубок Иссык-Куля по традиционному каратэ", locationLabel: "Кыргызстан, Иссык-Кульская обл., Чолпон-Ата", description: "Пример турнира на сайте Apsatarov." },
+    ky: { title: "Салттуу каратэ боюнча Ысык-Көл кубогу", locationLabel: "Кыргызстан, Ысык-Көл облусу, Чолпон-Ата", description: "Apsatarov сайтындагы мелдештин үлгүсү." },
+    en: { title: "Issyk-Kul Traditional Karate Cup", locationLabel: "Kyrgyzstan, Issyk-Kul Region, Cholpon-Ata", description: "Example tournament on Apsatarov." }
   },
   'kg-naryn-cup-2026': {
-    ru: { title: "Кубок Нарына 2026", locationLabel: "Кыргызстан, Нарынская обл., Нарын", description: "Пример турнира на сайте Tatami.kg." },
-    ky: { title: "Нарын кубогу 2026", locationLabel: "Кыргызстан, Нарын облусу, Нарын", description: "Tatami.kg сайтындагы мелдештин үлгүсү." },
-    en: { title: "Naryn Cup 2026", locationLabel: "Kyrgyzstan, Naryn Region, Naryn", description: "Example tournament on Tatami.kg." }
+    ru: { title: "Кубок Нарына 2026", locationLabel: "Кыргызстан, Нарынская обл., Нарын", description: "Пример турнира на сайте Apsatarov." },
+    ky: { title: "Нарын кубогу 2026", locationLabel: "Кыргызстан, Нарын облусу, Нарын", description: "Apsatarov сайтындагы мелдештин үлгүсү." },
+    en: { title: "Naryn Cup 2026", locationLabel: "Kyrgyzstan, Naryn Region, Naryn", description: "Example tournament on Apsatarov." }
   },
   'kg-bishkek-juniors-2026': {
-    ru: { title: "Первенство Бишкека среди юниоров 2026", locationLabel: "Кыргызстан, г. Бишкек", description: "Пример турнира на сайте Tatami.kg." },
-    ky: { title: "Бишкек шаарынын юниорлор арасындагы биринчилиги 2026", locationLabel: "Кыргызстан, Бишкек ш.", description: "Tatami.kg сайтындагы мелдештин үлгүсү." },
-    en: { title: "Bishkek Junior Championship 2026", locationLabel: "Kyrgyzstan, Bishkek", description: "Example tournament on Tatami.kg." }
+    ru: { title: "Первенство Бишкека среди юниоров 2026", locationLabel: "Кыргызстан, г. Бишкек", description: "Пример турнира на сайте Apsatarov." },
+    ky: { title: "Бишкек шаарынын юниорлор арасындагы биринчилиги 2026", locationLabel: "Кыргызстан, Бишкек ш.", description: "Apsatarov сайтындагы мелдештин үлгүсү." },
+    en: { title: "Bishkek Junior Championship 2026", locationLabel: "Kyrgyzstan, Bishkek", description: "Example tournament on Apsatarov." }
   }
 };
 
@@ -148,7 +148,7 @@ const EXACT_DICTIONARY: Record<string, [string, string]> = {
   'Рейтинги': ['Рейтингдер', 'Rankings'],
   'О нас': ['Биз жөнүндө', 'About Us'],
   'О платформе': ['Платформа жөнүндө', 'About Platform'],
-  'О платформе Tatami.kg': ['Tatami.kg платформасы жөнүндө', 'About Tatami.kg Platform'],
+  'О платформе Apsatarov': ['Apsatarov платформасы жөнүндө', 'About Apsatarov Platform'],
   'Помощь': ['Жардам', 'Help'],
   'Помощь и FAQ': ['Жардам жана FAQ', 'Help & FAQ'],
   'Справка и О нас': ['Маалымат жана Биз жөнүндө', 'Help & About Us'],
@@ -323,11 +323,11 @@ const EXACT_DICTIONARY: Record<string, [string, string]> = {
   'Расписание:': ['Ырааттама:', 'Schedule:'],
   'Стоимость абонемента:': ['Абонемент баасы:', 'Monthly Tuition:'],
   'Подать заявку на пробную тренировку': ['Сыноо машыгуусуна өтүнмө берүү', 'Apply for a Trial Class'],
-  'Официальный рейтинг Tatami.kg': ['Tatami.kg расмий рейтинги', 'Official Tatami.kg Rankings'],
+  'Официальный рейтинг Apsatarov': ['Apsatarov расмий рейтинги', 'Official Apsatarov Rankings'],
   'Рейтинги спортсменов и клубов': ['Спортчулардын жана клубдардын рейтинги', 'Athletes & Clubs Leaderboard'],
-  'Начисление рейтинговых очков по результатам официальных соревнований WKF и лиги Tatami.kg': [
-    'WKF жана Tatami.kg лигасынын расмий мелдештеринин жыйынтыгы боюнча рейтингдик упайларды эсептөө',
-    'Official ranking points accrued from certified WKF and Tatami.kg League championships'
+  'Начисление рейтинговых очков по результатам официальных соревнований WKF и лиги Apsatarov': [
+    'WKF жана Apsatarov лигасынын расмий мелдештеринин жыйынтыгы боюнча рейтингдик упайларды эсептөө',
+    'Official ranking points accrued from certified WKF and Apsatarov League championships'
   ],
   'Спортсмены': ['Спортчулар', 'Athletes'],
   'Клубы и Студии': ['Клубдар жана Студиялар', 'Clubs & Studios'],
@@ -374,7 +374,7 @@ const EXACT_DICTIONARY: Record<string, [string, string]> = {
   'Экспорт протоколов': ['Протоколдорду экспорттоо', 'Official Exports'],
   'Локальный LAN-сервер': ['Локалдык LAN-сервер', 'Venue LAN Hub'],
   'База данных SQL': ['SQL маалымат базасы', 'PostgreSQL Schema'],
-  'Учебные материалы Tatami.kg': ['Tatami.kg окуу материалдары', 'Tatami.kg Training Guides'],
+  'Учебные материалы Apsatarov': ['Apsatarov окуу материалдары', 'Apsatarov Training Guides'],
   '📘 База знаний и FAQ': ['📘 Билим базасы жана FAQ', '📘 Knowledge Base & FAQ'],
   '🥋 Кабинет тренера и заявка команды': ['🥋 Машыктыруучу кабинети жана командалык өтүнмө', '🥋 Coach Portal & Team Entry'],
   '🚩 Судейский пульт и VR-повторы': ['🚩 Калыстар пульту жана VR-кайталоо', '🚩 Referee Console & VR Replay'],
@@ -390,9 +390,9 @@ const EXACT_DICTIONARY: Record<string, [string, string]> = {
   'Поддержка и Помощник': ['Колдоо жана Жардамчы', 'Support & AI Assistant'],
   'Чат-бот Sensei AI': ['Sensei AI чат-боту', 'Sensei AI Assistant'],
   'Стандарт 2026': ['Стандарт 2026', 'Standard 2026'],
-  '© 2026 Tatami.kg. Все права защищены. Международные стандарты протоколов.': [
-    '© 2026 Tatami.kg. Бардык укуктар корголгон. Эл аралык протокол стандарттары.',
-    '© 2026 Tatami.kg. All rights reserved. International protocol standards.'
+  '© 2026 Apsatarov. Все права защищены. Международные стандарты протоколов.': [
+    '© 2026 Apsatarov. Бардык укуктар корголгон. Эл аралык протокол стандарттары.',
+    '© 2026 Apsatarov. All rights reserved. International protocol standards.'
   ]
 };
 

@@ -39,7 +39,7 @@ export const OfflinePanel: React.FC<{ onOpenScreens: () => void }> = ({ onOpenSc
         <h2 className="font-semibold text-[var(--app-text-primary)]">Адрес этого сервера в локальной сети</h2>
         {!isLocal && (
           <p className="text-sm text-[var(--app-text-muted)]">
-            Сейчас сайт открыт через интернет. Адреса ниже пригодятся, только если запустить Tatami.kg на ноутбуке в зале.
+            Сейчас сайт открыт через интернет. Адреса ниже пригодятся, только если запустить Apsatarov на ноутбуке в зале.
           </p>
         )}
         {addresses === null ? (
@@ -64,7 +64,7 @@ export const OfflinePanel: React.FC<{ onOpenScreens: () => void }> = ({ onOpenSc
         <h2 className="font-semibold text-[var(--app-text-primary)]">Как провести турнир без интернета</h2>
         <div className={step}><span className={num}>1</span><p className="text-sm text-[var(--app-text-secondary)]">До турнира, пока есть интернет: соберите заявки и проведите жеребьёвку. Скачайте резервную копию (кнопка ниже).</p></div>
         <div className={step}><span className={num}>2</span><p className="text-sm text-[var(--app-text-secondary)]">В зале включите Wi-Fi роутер (интернет в нём не обязателен) и подключите к нему ноутбук-сервер, планшеты/телефоны секретарей и компьютеры у телевизоров.</p></div>
-        <div className={step}><span className={num}>3</span><p className="text-sm text-[var(--app-text-secondary)]">На ноутбуке запустите Tatami.kg (инструкция — файл DEPLOY_VERCEL.md в коде сайта), войдите администратором и в «Турниры и пользователи» нажмите «Восстановить из копии…». Адрес ноутбука появится выше, например <code>http://192.168.1.5:3000</code>.</p></div>
+        <div className={step}><span className={num}>3</span><p className="text-sm text-[var(--app-text-secondary)]">На ноутбуке запустите Apsatarov (инструкция — файл DEPLOY_VERCEL.md в коде сайта), войдите администратором и в «Турниры и пользователи» нажмите «Восстановить из копии…». Адрес ноутбука появится выше, например <code>http://192.168.1.5:3000</code>.</p></div>
         <div className={step}><span className={num}>4</span><p className="text-sm text-[var(--app-text-secondary)]">
           Откройте «Экраны и QR-коды»: секретари сканируют QR-код своего татами, а на телевизорах открывается табло. Все устройства должны быть в той же сети Wi-Fi.
         </p></div>

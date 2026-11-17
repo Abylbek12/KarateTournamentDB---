@@ -7,7 +7,7 @@ import * as E from '../utils/boutEngine';
 import { categoryName, activeEntries, BELT_LABELS, ageOn } from '../utils/eventCategories';
 import { displayName, displayClub, localizeCategoryName, nameModeFor, participantCountry, participantFlag, participantNoc, type NameMode } from '../utils/names';
 import { countryName, flagEmoji } from '../utils/countries';
-import { TatamiMark } from './BrandLogo';
+import { BrandMark } from './BrandLogo';
 
 export type PrintKind = 'bracket' | 'results' | 'medals' | 'entries' | 'bout' | 'diplomas';
 
@@ -98,14 +98,14 @@ export const PrintDocuments: React.FC<PrintDocumentsProps> = ({ request, tournam
   const selectedCats = categoryId ? [categoryId] : catIds;
 
   React.useEffect(() => {
-    document.title = `${tr(lang, 'Документы', 'Документтер', 'Documents')} · ${event?.title || 'Tatami.kg'}`;
+    document.title = `${tr(lang, 'Документы', 'Документтер', 'Documents')} · ${event?.title || 'Apsatarov'}`;
   }, [event, lang]);
 
   if (!event) return <div style={{ padding: 40, fontFamily: 'sans-serif' }}>{tr(lang, 'Турнир не найден', 'Мелдеш табылган жок', 'Tournament not found')}</div>;
 
   const Header: React.FC<{ title: string; subtitle?: string }> = ({ title, subtitle }) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, borderBottom: '2px solid #111', paddingBottom: 8, marginBottom: 12 }}>
-      <TatamiMark className="w-10 h-10" />
+      <BrandMark className="w-10 h-10" />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 11, color: '#555' }}>
           {event.title} · {event.city}{event.venueName ? `, ${event.venueName}` : ''} · {event.startDate}
@@ -115,7 +115,7 @@ export const PrintDocuments: React.FC<PrintDocumentsProps> = ({ request, tournam
         {subtitle && <div style={{ fontSize: 12, color: '#333' }}>{subtitle}</div>}
       </div>
       <div style={{ fontSize: 10, color: '#666', textAlign: 'right' }}>
-        Tatami.kg
+        Apsatarov
         <br />
         {new Date().toLocaleString(lang === 'en' ? 'en-GB' : 'ru-RU')}
       </div>
@@ -437,7 +437,7 @@ export const PrintDocuments: React.FC<PrintDocumentsProps> = ({ request, tournam
       return (
         <div className="print-sheet landscape print-break" key={`dip-${cid}-${i}`}>
           <div style={{ height: '100%', minHeight: '210mm', border: `10px double ${color(m.place)}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '16mm', gap: 10 }}>
-            <TatamiMark className="w-20 h-20" />
+            <BrandMark className="w-20 h-20" />
             <div style={{ fontSize: 44, fontWeight: 800, letterSpacing: 6, color: color(m.place) }}>{tr(lang, 'ДИПЛОМ', 'ДИПЛОМ', 'DIPLOMA')}</div>
             <div style={{ fontSize: 20 }}>{tr(lang, 'награждается', 'сыйланат', 'is awarded to')}</div>
             <div style={{ fontSize: 34, fontWeight: 700 }}>{name(p)}</div>

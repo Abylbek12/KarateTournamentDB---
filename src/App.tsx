@@ -75,7 +75,7 @@ import { useServerSyncedState } from './utils/useServerSyncedState';
 import { canAccess, ROLE_LABELS, type AccessRole } from './utils/access';
 import { applyBoutResult } from './utils/bracketProgression';
 import { AccessGate } from './components/AccessGate';
-import { TatamiMark, TatamiWordmark } from './components/BrandLogo';
+import { BrandMark, BrandWordmark } from './components/BrandLogo';
 import { UsersRolesPanel } from './components/UsersRolesPanel';
 import { InviteLinksPanel } from './components/InviteLinksPanel';
 import { PublicBracketsView, PublicResultsView, PublicLiveView, PublicCategoriesView } from './components/PublicEventViews';
@@ -556,10 +556,10 @@ function AppContent() {
       evaluateAllEventsExpiration();
       setDismissedExpiredBanner(false);
     };
-    window.addEventListener('tatami-check-expired-events', handleCustomCheck);
+    window.addEventListener('apsatarov-check-expired-events', handleCustomCheck);
     const intervalId = window.setInterval(evaluateAllEventsExpiration, 30000);
     return () => {
-      window.removeEventListener('tatami-check-expired-events', handleCustomCheck);
+      window.removeEventListener('apsatarov-check-expired-events', handleCustomCheck);
       window.clearInterval(intervalId);
     };
   }, [evaluateAllEventsExpiration]);
@@ -585,7 +585,7 @@ function AppContent() {
       case 'event_results': return `${selectedEvent.title} — Результаты`;
       case 'studios': return language === 'ru' ? 'Клубы' : 'Clubs';
       case 'virtual_studios': return language === 'ru' ? 'Сейчас на татами' : 'Live now';
-      case 'about': return language === 'ru' ? 'О платформе Tatami.kg' : language === 'ky' ? 'Tatami.kg жөнүндө' : 'About Tatami.kg';
+      case 'about': return language === 'ru' ? 'О платформе Apsatarov' : language === 'ky' ? 'Apsatarov жөнүндө' : 'About Apsatarov';
       case 'help': return language === 'ru' ? 'Помощь и FAQ' : language === 'ky' ? 'Жардам жана FAQ' : 'Help & FAQ';
       case 'coach': return language === 'ru' ? 'Мои заявки и оплата' : 'My entries & fees';
       case 'rankings': return language === 'ru' ? 'Рейтинги' : 'Rankings';
@@ -596,7 +596,7 @@ function AppContent() {
       case 'participants': return language === 'ru' ? 'База участников' : 'Athlete Database';
       case 'admin': return language === 'ru' ? 'Панель администратора' : 'Admin Panel';
       case 'registration': return language === 'ru' ? 'Электронная регистрация' : 'Online Registration';
-      default: return 'Tatami.kg';
+      default: return 'Apsatarov';
     }
   };
 
@@ -938,10 +938,10 @@ function AppContent() {
             <button
               onClick={() => setActiveTab('tournaments')}
               className="lg:hidden flex items-center gap-1.5 sm:gap-2 text-left group cursor-pointer focus:outline-none min-w-0"
-              title="Tatami.kg — на главную"
+              title="Apsatarov — на главную"
             >
-              <TatamiMark className="w-7 h-7 shrink-0" />
-              <TatamiWordmark className="text-lg sm:text-xl text-slate-800 group-hover:text-sky-600 transition-colors truncate" />
+              <BrandMark className="w-7 h-7 shrink-0" />
+              <BrandWordmark className="text-lg sm:text-xl text-slate-800 group-hover:text-sky-600 transition-colors truncate" />
             </button>
 
           </div>
@@ -1338,7 +1338,7 @@ function AppContent() {
                   onClick={() => {
                     navigateWithHash('admin');
                     setTimeout(() => {
-                      window.dispatchEvent(new CustomEvent('tatami-open-archive-tab'));
+                      window.dispatchEvent(new CustomEvent('apsatarov-open-archive-tab'));
                     }, 50);
                   }}
                   className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-700 dark:text-amber-200 font-medium flex items-center gap-1 transition-colors cursor-pointer"
@@ -1672,16 +1672,16 @@ function AppContent() {
         </main>
 
         {/* ========================================================
-            TATAMI.KG OFFICIAL FOOTER WITH PRIVACY POLICY & COMPACT BOT DOCK
+            APSATAROV OFFICIAL FOOTER WITH PRIVACY POLICY & COMPACT BOT DOCK
            ======================================================== */}
         <footer className="theme-keep mt-auto border-t border-[var(--app-border)] bg-[var(--app-surface)] pt-10 pb-24 lg:pb-10 px-5 sm:px-8 text-[var(--app-text-secondary)]">
           <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-8 mb-8">
             {/* Brand */}
             <div className="space-y-3">
               <a href="#home" onClick={(e) => { if (isPlainClick(e)) { e.preventDefault(); navigateWithHash('tournaments'); } }} className="flex items-center gap-2.5">
-                <TatamiMark className="w-9 h-9" />
+                <BrandMark className="w-9 h-9" />
                 <span className="text-xl font-extrabold tracking-tight text-[var(--app-text-primary)]">
-                  Tatami<span className="text-rose-500">.kg</span>
+                  Apsatarov
                 </span>
               </a>
               <p className="text-[15px] leading-relaxed text-[var(--app-text-secondary)] max-w-xs">
@@ -1747,7 +1747,7 @@ function AppContent() {
           </div>
 
           <div className="max-w-7xl mx-auto pt-6 border-t border-[var(--app-border)] flex flex-col sm:flex-row items-center justify-between gap-2 text-sm text-[var(--app-text-muted)]">
-            <span>© {new Date().getFullYear()} Tatami.kg</span>
+            <span>© {new Date().getFullYear()} Apsatarov</span>
             <span>{tr('Сделано для каратэ Кыргызстана', 'Кыргызстандын каратэси үчүн жасалган', 'Made for karate in Kyrgyzstan')}</span>
           </div>
         </footer>

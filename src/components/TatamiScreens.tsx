@@ -5,7 +5,7 @@ import * as E from '../utils/boutEngine';
 import { clockNow } from '../utils/serverClock';
 import { stageLabel } from '../utils/bracketProgression';
 import { BoutConsole } from './BoutConsole';
-import { TatamiMark } from './BrandLogo';
+import { BrandMark } from './BrandLogo';
 import { useApp } from '../context/AppContext';
 import { displayName, displayClub, localizeCategoryName, nameModeFor, participantFlag, participantNoc, type NameMode } from '../utils/names';
 
@@ -112,13 +112,13 @@ export const TatamiDisplay: React.FC<{
   const next = upcomingOf(bouts, tatamiNumber, bout?.id, 2);
 
   React.useEffect(() => {
-    document.title = `Татами ${tatamiNumber} · Tatami.kg`;
+    document.title = `Татами ${tatamiNumber} · Apsatarov`;
   }, [tatamiNumber]);
 
   if (!bout) {
     return (
       <div className="theme-keep fixed inset-0 bg-[#0b1220] text-white flex flex-col items-center justify-center gap-6">
-        <TatamiMark className="w-24 h-24" />
+        <BrandMark className="w-24 h-24" />
         <div className="text-[5vh] font-bold">{tr(lang, 'Татами', 'Татами', 'Tatami')} {tatamiNumber}</div>
         <div className="text-[2.5vh] opacity-70">{tr(lang, 'Поединков пока нет', 'Беттештер азырынча жок', 'No bouts yet')}</div>
       </div>
@@ -165,7 +165,7 @@ export const TatamiDisplay: React.FC<{
   return (
     <div className="theme-keep fixed inset-0 bg-[#0b1220] text-white flex flex-col select-none">
       <div className="flex items-center gap-[2vh] px-[3vh] py-[1.5vh] bg-black/40">
-        <TatamiMark className="w-[4vh] h-[4vh]" />
+        <BrandMark className="w-[4vh] h-[4vh]" />
         <div className="text-[2.6vh] font-bold">{tr(lang, 'Татами', 'Татами', 'Tatami')} {tatamiNumber}</div>
         <div className="text-[2.2vh] opacity-80 truncate flex-1">
           {cat(bout.categoryName)} · {stageLabel(bout.roundStage, lang)} · #{bout.boutNumber}
@@ -214,7 +214,7 @@ export const CallRoomDisplay: React.FC<{ bouts: Bout[]; tatamiNumbers: number[] 
   useWakeLock();
   const { lang, name, cat } = useScreenLocale(bouts);
   React.useEffect(() => {
-    document.title = 'Зона разминки · Tatami.kg';
+    document.title = 'Зона разминки · Apsatarov';
   }, []);
   return (
     <div className="theme-keep fixed inset-0 bg-[#0b1220] text-white flex flex-col">

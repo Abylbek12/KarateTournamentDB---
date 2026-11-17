@@ -31,7 +31,7 @@ import { canAccess, type AccessRole } from '../utils/access';
 import { TournamentRules, UserRole, Tournament } from '../types/schema';
 import { Language } from '../utils/translations';
 import { useApp } from '../context/AppContext';
-import { TatamiMark, TatamiWordmark } from './BrandLogo';
+import { BrandMark, BrandWordmark } from './BrandLogo';
 
 export type NavTabId =
   | 'tournaments'
@@ -206,8 +206,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           ) : (
             <>
               <button onClick={() => select('tournaments')} className="flex items-center gap-2 cursor-pointer min-w-0">
-                <TatamiMark className="w-7 h-7 shrink-0" />
-                <TatamiWordmark className="text-lg text-[var(--app-text-primary)]" />
+                <BrandMark className="w-7 h-7 shrink-0" />
+                <BrandWordmark className="text-lg text-[var(--app-text-primary)]" />
               </button>
               <button
                 onClick={() => setIsCollapsed(true)}

@@ -69,7 +69,7 @@ export const LaunchPanel: React.FC = () => {
       setRestoreFile({ name: f.name, data });
       setMessage(null);
     } catch {
-      setMessage({ ok: false, text: 'Это не резервная копия Tatami.kg.' });
+      setMessage({ ok: false, text: 'Это не резервная копия Apsatarov.' });
     }
     if (fileRef.current) fileRef.current.value = '';
   };
