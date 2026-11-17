@@ -33,7 +33,20 @@ export function youtubeVideoId(input: string | null | undefined): string | null 
 export const youtubeWatchUrl = (id: string) => `https://www.youtube.com/watch?v=${id}`;
 
 /** Player address for the embedded video (privacy-friendly domain, no cookies until play). */
-export const youtubeEmbedUrl = (id: string) => `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&playsinline=1&rel=0`;
+export const youtubeEmbedUrl = (id: string) => {
+  // enablejsapi lets the page switch sound on one tatami and off on the others
+  const origin = typeof window !== 'undefined' ? `&origin=${encodeURIComponent(window.location.origin)}` : '';
+  return `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&playsinline=1&rel=0&enablejsapi=1${origin}`;
+};
+
+/** Sends a command to an embedded YouTube player (mute, unMute, playVideo…). */
+export function youtubeCommand(frame: HTMLIFrameElement | null | undefined, func: string, args: unknown[] = []) {
+  try {
+    frame?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args }), '*');
+  } catch {
+    /* player not ready */
+  }
+}
 
 export const MAX_TATAMI = 12;
 

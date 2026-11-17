@@ -6,7 +6,7 @@ import { displayName, participantFlag, participantNoc } from '../utils/names';
 import { useApp } from '../context/AppContext';
 import { belongsToEvent } from '../data/sampleTournamentData';
 import { streamTatamis } from '../utils/youtube';
-import { LiveVideo } from './PublicEventViews';
+import { LiveVideo, type VideoChoice } from './PublicEventViews';
 
 /**
  * Public rankings and club directory, computed from real results on the site
@@ -234,8 +234,7 @@ export const ClubsPanel: React.FC<CommunityProps> = ({ tournaments, bouts, parti
 /** Tournaments with bouts going on now — links to their Live page. */
 /** One tournament in «Live now»: YouTube video (if the organizer added links) and which tatami have bouts. */
 const LiveNowCard: React.FC<{ ev: Tournament; live: Bout[]; tatamis: number[]; videoTatamis: number[]; lang: Lang; onOpen: () => void }> = ({ ev, live, tatamis, videoTatamis, lang, onOpen }) => {
-  const [selected, setSelected] = React.useState(videoTatamis[0]);
-  const shown = videoTatamis.includes(selected) ? selected : videoTatamis[0];
+  const [selected, setSelected] = React.useState<VideoChoice>('all');
   return (
     <div className={`rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] overflow-hidden ${videoTatamis.length > 0 ? 'sm:col-span-2' : ''}`}>
       <div className="p-4">
@@ -249,9 +248,9 @@ const LiveNowCard: React.FC<{ ev: Tournament; live: Bout[]; tatamis: number[]; v
               : t(lang, 'Турнир идёт сегодня', 'Мелдеш бүгүн өтүүдө', 'Tournament day')}
         </div>
       </div>
-      {videoTatamis.length > 0 && shown && (
+      {videoTatamis.length > 0 && (
         <div className="px-4">
-          <LiveVideo streams={ev.liveStreams || {}} tatamis={videoTatamis} selected={shown} onSelect={setSelected} language={lang} anchorId={`live-video-${ev.id}`} />
+          <LiveVideo streams={ev.liveStreams || {}} tatamis={videoTatamis} selected={selected} onSelect={setSelected} language={lang} anchorId={`live-video-${ev.id}`} />
         </div>
       )}
       <button onClick={onOpen} className="w-full text-left px-4 py-3 text-sm font-semibold text-[var(--accent)] hover:bg-[var(--app-surface-subtle)] cursor-pointer">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Trophy, Radio, Medal, Printer, Youtube, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Trophy, Radio, Medal, Printer, Youtube, ExternalLink, Volume2, VolumeX, Maximize2 } from 'lucide-react';
 import { printUrl } from './PrintDocuments';
 import type { Bout, Participant, TournamentCategory, EventCategory } from '../types/schema';
 import { categoryName, activeEntries, DISCIPLINE_LABELS } from '../utils/eventCategories';
@@ -11,7 +11,7 @@ import { clockNow } from '../utils/serverClock';
 import { displayName, displayClub, localizeCategoryName, nameModeFor, participantFlag, participantNoc, participantCountry, type NameMode } from '../utils/names';
 import { countryName, flagEmoji } from '../utils/countries';
 import { currentBoutOf, upcomingOf } from './TatamiScreens';
-import { streamTatamis, youtubeVideoId, youtubeEmbedUrl } from '../utils/youtube';
+import { streamTatamis, youtubeVideoId, youtubeEmbedUrl, youtubeCommand } from '../utils/youtube';
 
 type Lang = 'ru' | 'ky' | 'en';
 
@@ -375,10 +375,53 @@ export const PublicResultsView: React.FC<BaseProps & { mode: 'results' | 'medals
 };
 
 /** Public live page: every tatami of the event with the bout on it, updated instantly. */
-/** YouTube video of the selected tatami (links are set by the organizer in «Screens, QR codes & video»). */
-export const LiveVideo: React.FC<{ streams: Record<string, string>; tatamis: number[]; selected: number; onSelect: (n: number) => void; language: Lang; anchorId?: string }> = ({ streams, tatamis, selected, onSelect, language, anchorId = 'live-video' }) => {
-  const id = youtubeVideoId(streams[String(selected)]);
-  if (!id) return null;
+export type VideoChoice = number | 'all';
+
+/** Grid columns for N videos on screen at once. */
+const gridCols = (n: number) => (n <= 1 ? '' : n === 2 ? 'sm:grid-cols-2' : n <= 4 ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3');
+
+/**
+ * YouTube video of the tatami (links are set by the organizer in «Screens, QR codes & video»).
+ * «All tatami» shows every video at once, muted; the viewer turns the sound on for one tatami.
+ */
+export const LiveVideo: React.FC<{
+  streams: Record<string, string>;
+  tatamis: number[];
+  selected: VideoChoice;
+  onSelect: (v: VideoChoice) => void;
+  language: Lang;
+  anchorId?: string;
+}> = ({ streams, tatamis, selected, onSelect, language, anchorId = 'live-video' }) => {
+  const frames = React.useRef<Record<number, HTMLIFrameElement | null>>({});
+  const [soundOn, setSoundOn] = React.useState<number | null>(null);
+  const shown = selected === 'all' ? tatamis : tatamis.includes(selected) ? [selected] : tatamis.slice(0, 1);
+  if (shown.length === 0) return null;
+  const many = shown.length > 1;
+
+  const toggleSound = (n: number) => {
+    const next = soundOn === n ? null : n;
+    shown.forEach((tn) => {
+      const frame = frames.current[tn];
+      if (tn === next) {
+        youtubeCommand(frame, 'unMute');
+        youtubeCommand(frame, 'setVolume', [100]);
+        youtubeCommand(frame, 'playVideo');
+      } else {
+        youtubeCommand(frame, 'mute');
+      }
+    });
+    setSoundOn(next);
+  };
+  const pick = (v: VideoChoice) => {
+    setSoundOn(null);
+    onSelect(v);
+  };
+  const pill = (active: boolean) =>
+    `h-8 px-3 rounded-full text-sm font-semibold border cursor-pointer ${
+      active ? 'bg-[var(--accent)] border-[var(--accent)] text-white' : 'border-[var(--app-border)] text-[var(--app-text-secondary)] hover:border-[var(--accent)]'
+    }`;
+  const label = (n: number) => `${t(language, 'Татами', 'Татами', 'Tatami')} ${n}`;
+
   return (
     <section id={anchorId} className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] overflow-hidden scroll-mt-20">
       <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 border-b border-[var(--app-border)]">
@@ -386,48 +429,78 @@ export const LiveVideo: React.FC<{ streams: Record<string, string>; tatamis: num
           <Youtube className="w-5 h-5 text-red-600" /> {t(language, 'Видео', 'Видео', 'Video')}
         </span>
         <span className="flex-1" />
-        {tatamis.length > 1 && (
+        {tatamis.length > 1 ? (
           <div className="flex flex-wrap gap-1.5" role="tablist">
+            <button role="tab" aria-selected={selected === 'all'} onClick={() => pick('all')} className={pill(selected === 'all')}>
+              {t(language, 'Все татами', 'Бардык татами', 'All tatami')}
+            </button>
             {tatamis.map((n) => (
-              <button
-                key={n}
-                role="tab"
-                aria-selected={n === selected}
-                onClick={() => onSelect(n)}
-                className={`h-8 px-3 rounded-full text-sm font-semibold border cursor-pointer ${
-                  n === selected
-                    ? 'bg-[var(--accent)] border-[var(--accent)] text-white'
-                    : 'border-[var(--app-border)] text-[var(--app-text-secondary)] hover:border-[var(--accent)]'
-                }`}
-              >
-                {t(language, 'Татами', 'Татами', 'Tatami')} {n}
+              <button key={n} role="tab" aria-selected={selected === n} onClick={() => pick(n)} className={pill(selected === n)}>
+                {label(n)}
               </button>
             ))}
           </div>
-        )}
-        {tatamis.length === 1 && (
-          <span className="text-sm text-[var(--app-text-secondary)]">{t(language, 'Татами', 'Татами', 'Tatami')} {selected}</span>
+        ) : (
+          <span className="text-sm text-[var(--app-text-secondary)]">{label(tatamis[0])}</span>
         )}
       </div>
-      <div className="relative w-full bg-black" style={{ aspectRatio: '16 / 9' }}>
-        <iframe
-          key={id}
-          src={youtubeEmbedUrl(id)}
-          title={`${t(language, 'Татами', 'Татами', 'Tatami')} ${selected} — YouTube`}
-          className="absolute inset-0 w-full h-full"
-          allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-          allowFullScreen
-          referrerPolicy="strict-origin-when-cross-origin"
-        />
+      {many && (
+        <p className="px-4 pt-2 text-xs text-[var(--app-text-muted)]">
+          {t(language, 'Все видео идут без звука. Нажмите «Звук» на нужном татами — остальные останутся без звука.', 'Бардык видео үнсүз. Керектүү татамиде «Үн» баскычын басыңыз — калгандары үнсүз калат.', 'All videos are muted. Tap “Sound” on the tatami you want — the others stay muted.')}
+        </p>
+      )}
+      <div className={`grid gap-2 ${many ? 'p-2' : ''} ${gridCols(shown.length)}`}>
+        {shown.map((n) => {
+          const id = youtubeVideoId(streams[String(n)]);
+          if (!id) return null;
+          return (
+            <div key={n} className={many ? 'rounded-xl overflow-hidden border border-[var(--app-border)]' : ''}>
+              {many && (
+                <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[var(--app-surface-subtle)]">
+                  <span className="flex-1 text-sm font-semibold text-[var(--app-text-primary)]">{label(n)}</span>
+                  <button
+                    onClick={() => toggleSound(n)}
+                    aria-pressed={soundOn === n}
+                    className={`inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-xs font-semibold border cursor-pointer ${
+                      soundOn === n ? 'bg-red-600 border-red-600 text-white' : 'border-[var(--app-border)] text-[var(--app-text-secondary)] hover:border-red-500'
+                    }`}
+                  >
+                    {soundOn === n ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                    {soundOn === n ? t(language, 'Звук включён', 'Үн күйүк', 'Sound on') : t(language, 'Звук', 'Үн', 'Sound')}
+                  </button>
+                  <button onClick={() => pick(n)} className="text-xs text-[var(--accent)] hover:underline cursor-pointer" title={t(language, 'Смотреть крупно', 'Чоң көрүү', 'Watch large')}>
+                    <Maximize2 className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+              <div className="relative w-full bg-black" style={{ aspectRatio: '16 / 9' }}>
+                <iframe
+                  key={id}
+                  ref={(el) => {
+                    frames.current[n] = el;
+                  }}
+                  src={youtubeEmbedUrl(id)}
+                  title={`${label(n)} — YouTube`}
+                  className="absolute inset-0 w-full h-full"
+                  allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                  allowFullScreen
+                  referrerPolicy="strict-origin-when-cross-origin"
+                />
+              </div>
+            </div>
+          );
+        })}
       </div>
-      <a
-        href={streams[String(selected)]}
-        target="_blank"
-        rel="noreferrer"
-        className="flex items-center gap-1.5 px-4 py-2.5 text-sm text-[var(--accent)] hover:bg-[var(--app-surface-subtle)]"
-      >
-        <ExternalLink className="w-4 h-4" /> {t(language, 'Открыть на YouTube', 'YouTube\'да ачуу', 'Open on YouTube')}
-      </a>
+      {!many && (
+        <a
+          href={streams[String(shown[0])]}
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center gap-1.5 px-4 py-2.5 text-sm text-[var(--accent)] hover:bg-[var(--app-surface-subtle)]"
+        >
+          <ExternalLink className="w-4 h-4" /> {t(language, 'Открыть на YouTube', 'YouTube\'да ачуу', 'Open on YouTube')}
+        </a>
+      )}
     </section>
   );
 };
@@ -439,8 +512,8 @@ export const PublicLiveView: React.FC<BaseProps> = (props) => {
   const tatamis = Array.from(new Set(eventBouts.map((b) => b.tatamiNumber).filter((n): n is number => !!n))).sort((a, b) => a - b);
   const streams = event.liveStreams || {};
   const videoTatamis = streamTatamis(streams);
-  const [videoTatami, setVideoTatami] = React.useState<number | null>(null);
-  const shownVideo = videoTatami && videoTatamis.includes(videoTatami) ? videoTatami : videoTatamis[0];
+  // Several tatami with video: show them all at once by default
+  const [videoTatami, setVideoTatami] = React.useState<VideoChoice>('all');
   const watchTatami = (n: number) => {
     setVideoTatami(n);
     document.getElementById('live-video')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -456,7 +529,7 @@ export const PublicLiveView: React.FC<BaseProps> = (props) => {
   return (
     <div className="theme-keep space-y-5 pb-8">
       <EventHeader {...props} active="live_scoring" />
-      {shownVideo && <LiveVideo streams={streams} tatamis={videoTatamis} selected={shownVideo} onSelect={setVideoTatami} language={language} />}
+      {videoTatamis.length > 0 && <LiveVideo streams={streams} tatamis={videoTatamis} selected={videoTatami} onSelect={setVideoTatami} language={language} />}
       {tatamis.length === 0 ? (
         videoTatamis.length > 0 ? null : <EmptyState language={language} text={['Трансляция ещё не началась', 'Түз эфир али башталган жок', 'Live scoring has not started yet']} />
       ) : (
