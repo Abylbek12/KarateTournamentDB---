@@ -105,14 +105,14 @@ export const UsersRolesPanel: React.FC<{ currentUserId?: string }> = ({ currentU
   const countOf = (g: Group) => users.filter((u) => inGroup(u, g) && matches(u)).length;
 
   return (
-    <section className="theme-keep rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-sm">
+    <section className="theme-keep rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5 sm:p-6 shadow-sm">
       <div className="flex flex-wrap items-center gap-3 justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-[var(--accent-soft)] text-[var(--accent)] flex items-center justify-center">
+          <div className="w-11 h-11 shrink-0 rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)] flex items-center justify-center">
             <Users className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-[var(--app-text-primary)]">Пользователи и роли</h2>
+            <h2 className="text-lg font-bold text-[var(--app-text-primary)]">Пользователи и роли</h2>
             <p className="text-xs text-[var(--app-text-muted)]">
               Новые пользователи регистрируются как спортсмен или тренер. Судей, секретарей и врачей назначаете вы.
             </p>
@@ -196,15 +196,11 @@ export const UsersRolesPanel: React.FC<{ currentUserId?: string }> = ({ currentU
                 </td>
               </tr>
             ))}
-            {!loading && visible.length === 0 && (
-              <tr>
-                <td colSpan={3} className="px-3 py-6 text-center text-[var(--app-text-muted)]">
-                  Пользователи не найдены
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
+        {!loading && visible.length === 0 && (
+          <div className="px-3 py-6 text-center text-sm text-[var(--app-text-muted)] border-t border-[var(--app-border)]">Здесь пока никого нет</div>
+        )}
       </div>
       {filtered.length > visible.length && (
         <div className="mt-3 flex flex-wrap items-center gap-3">

@@ -1598,9 +1598,13 @@ function AppContent() {
               onCreateRequestHandled={() => setCreateTournamentRequest(null)}
             />
           )}
-          {activeTab === 'admin' && effectiveRole === 'admin' && <UsersRolesPanel currentUserId={currentUser?.id} />}
-          {activeTab === 'admin' && effectiveRole === 'admin' && <InviteLinksPanel />}
-          {activeTab === 'admin' && effectiveRole === 'admin' && <LaunchPanel />}
+          {activeTab === 'admin' && effectiveRole === 'admin' && (
+            <div className="max-w-4xl mx-auto w-full space-y-5">
+              <UsersRolesPanel currentUserId={currentUser?.id} />
+              <InviteLinksPanel />
+              <LaunchPanel />
+            </div>
+          )}
           {activeTab === 'admin' && effectiveRole !== 'admin' && currentUser && (
             <MyAccountPanel
               user={currentUser}
@@ -1729,7 +1733,7 @@ function AppContent() {
                   </a>
                 </li>
                 <li>
-                  <button onClick={() => setIsPrivacyModalOpen(true)} className="text-[var(--app-text-secondary)] hover:text-[var(--accent)] transition-colors cursor-pointer">
+                  <button onClick={() => setIsPrivacyModalOpen(true)} className="text-left text-[var(--app-text-secondary)] hover:text-[var(--accent)] transition-colors cursor-pointer">
                     {tr('Политика конфиденциальности', 'Купуялуулук саясаты', 'Privacy policy')}
                   </button>
                 </li>
