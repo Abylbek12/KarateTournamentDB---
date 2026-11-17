@@ -13,7 +13,6 @@ import {
   X, 
   ExternalLink,
   AlertCircle,
-  Upload,
   Image as ImageIcon,
   Sparkles,
   Bell,
@@ -79,7 +78,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
 
   // Open the creation form by default for Administrators so they can immediately create an event and upload an image
   // Open by default on big screens; on phones the list comes first (form opens with «+ Создать турнир»)
-  const [isFormOpen, setIsFormOpen] = useState(() => typeof window === 'undefined' || window.innerWidth >= 768);
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTournamentId, setEditingTournamentId] = useState<string | null>(null);
 
   // Form State
@@ -584,6 +583,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
     // Trigger global date check listener immediately
     window.dispatchEvent(new CustomEvent('tatami-check-expired-events'));
     resetForm();
+    setIsFormOpen(false);
   };
 
   const handleRequestDelete = (t: Tournament) => {
@@ -691,45 +691,21 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
       )}
 
       {/* Top Banner & Action */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-900 border border-slate-800 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={`px-2.5 py-0.5 rounded-md border text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${
-                isAdmin
-                  ? 'bg-rose-500/10 border-rose-500/30 text-rose-400'
-                  : 'bg-sky-500/10 border-sky-500/30 text-sky-400'
-              }`}
-            >
-              {isAdmin ? <ShieldCheck className="w-3 h-3 text-rose-400" /> : <Users className="w-3 h-3 text-sky-400" />}
-              <span>
-                {isAdmin
-                  ? tr('RBAC: Администратор (Полный доступ)', 'RBAC: Администратор (Толук укук)', 'RBAC: Administrator (Full Access)')
-                  : tr('RBAC: Участник / Учреждение (Ограниченный кабинет)', 'RBAC: Катышуучу / Мекеме (Чектелген кабинет)', 'RBAC: Participant / Institution (Limited Cabinet)')}
-              </span>
-            </span>
-            <span className="text-xs text-slate-400">
-              {tr('В реестре:', 'Реестрде:', 'In registry:')}{' '}
-              <strong className="text-white">{tournaments.length}</strong>
-            </span>
-          </div>
-          <h2 className="text-xl font-bold text-white mt-1">
+      <div className="p-5 sm:p-6 rounded-3xl bg-[var(--app-surface)] border border-[var(--app-border)] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="min-w-0">
+          <h2 className="text-xl sm:text-2xl font-bold text-[var(--app-text-primary)]">
             {isAdmin
-              ? tr('Создание и управление событиями', 'Мелдештерди түзүү жана башкаруу', 'Create & Manage Tournaments')
-              : tr('Реестр и Архив турниров (Кабинет участника)', 'Мелдештердин реестри жана Архив (Катышуучу кабинети)', 'Tournaments Registry & Archive (Participant Cabinet)')}
+              ? tr('Турниры и пользователи', 'Мелдештер жана колдонуучулар', 'Tournaments & users')
+              : tr('Турниры', 'Мелдештер', 'Tournaments')}
           </h2>
-          <p className="text-sm text-[var(--app-text-secondary)] mt-1">
+          <p className="text-sm text-[var(--app-text-muted)] mt-1">
             {isAdmin
               ? tr(
-                  'Создавайте новые соревнования, загружайте эмблему события (JPG/WebP до 2 МБ), управляйте архивом и удалением с подтверждением',
-                  'Жаңы мелдештерди түзүңүз, мелдештин сүрөтүн (JPG/WebP 2 МБ чейин) жүктөңүз, архивди жана тастыктоо менен өчүрүүнү башкарыңыз',
-                  'Create new tournaments, upload event images (JPG/WebP max 2 MB), and manage archiving and confirmed deletion'
+                  'Создавайте и меняйте турниры. Ниже — пользователи, ссылки для регистрации и резервная копия.',
+                  'Мелдештерди түзүп, өзгөртүңүз. Төмөндө — колдонуучулар, каттоо шилтемелери жана резервдик көчүрмө.',
+                  'Create and edit tournaments. Below: users, sign-up links and backup.'
                 )
-              : tr(
-                  'В режиме Участника/Учреждения создание, редактирование и удаление турниров заблокированы (RBAC). Доступен просмотр актуальных и архивных событий.',
-                  'Катышуучу/Мекеме режиминде мелдештерди түзүү, өзгөртүү жана өчүрүү кулпуланган (RBAC). Актуалдуу жана архивдик мелдештерди көрүү жеткиликтүү.',
-                  'In Participant/Institution mode, creating, editing, and deleting tournaments are locked (RBAC). You can browse active and archived events.'
-                )}
+              : tr('Актуальные и прошедшие турниры.', 'Актуалдуу жана өткөн мелдештер.', 'Current and past tournaments.')}
           </p>
         </div>
 
@@ -745,7 +721,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                   setIsFormOpen(true);
                 }
               }}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white text-xs font-bold transition-all shadow-lg shadow-rose-950/50 flex items-center gap-2 cursor-pointer shrink-0"
+              className="h-11 px-5 rounded-full bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer shrink-0"
             >
               {isFormOpen && !editingTournamentId ? (
                 <>
@@ -755,7 +731,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
               ) : (
                 <>
                   <Plus className="w-4 h-4" />
-                  <span>{tr('Создать новый турнир', 'Жаңы мелдеш түзүү', 'Create New Tournament')}</span>
+                  <span>{tr('Создать турнир', 'Мелдеш түзүү', 'Create tournament')}</span>
                 </>
               )}
             </button>
@@ -770,23 +746,19 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
 
       {/* Form: Create or Edit Tournament (Administrator Only) */}
       {isAdmin && isFormOpen && (
-        <div id="tournament-form" className="scroll-mt-20 max-w-4xl mx-auto p-5 sm:p-8 rounded-2xl bg-[var(--app-surface)] border border-[var(--app-border)] shadow-sm space-y-5 sm:space-y-6 animate-fadeIn">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[var(--app-border)]">
+        <div id="tournament-form" className="scroll-mt-20 max-w-4xl mx-auto p-5 sm:p-6 rounded-3xl bg-[var(--app-surface)] border border-[var(--app-border)] shadow-sm space-y-4 animate-fadeIn">
+          <div className="flex flex-col gap-2.5 pb-3 border-b border-[var(--app-border)]">
             <div>
               <h3 className="text-xl font-bold text-[var(--app-text-primary)] flex items-center gap-2">
-                <Edit3 className="w-4 h-4 text-rose-400" />
+                <Edit3 className="w-4 h-4 text-[var(--accent)]" />
                 <span>
                   {editingTournamentId
                     ? tr('Редактирование турнира', 'Мелдешти түзөтүү', 'Edit Tournament')
                     : tr('Создание нового турнира', 'Жаңы мелдеш түзүү', 'Create New Tournament')}
                 </span>
               </h3>
-              <p className="text-xs text-slate-400 mt-0.5">
-                {tr(
-                  'Заполните атрибуты события и загрузите изображение (JPG или WebP, до 2 МБ)',
-                  'Мелдештин талааларын толтуруп, сүрөтүн жүктөңүз (JPG же WebP, 2 МБ чейин)',
-                  'Fill in the event fields and upload an event image (JPG or WebP, max 2 MB)'
-                )}
+              <p className="text-sm text-[var(--app-text-muted)] mt-0.5">
+                {tr('Поля со звёздочкой обязательны', 'Жылдызчасы бар талаалар милдеттүү', 'Fields marked * are required')}
               </p>
             </div>
 
@@ -821,9 +793,9 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
             )}
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {/* Row 1: Title & Organization */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
               <div className="md:col-span-8">
                 <label className="block text-sm font-semibold text-[var(--app-text-primary)] mb-1.5">
                   {tr('Название соревнования', 'Мелдештин аталышы', 'Tournament Title')} <span className="text-rose-400">*</span>
@@ -834,7 +806,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                   placeholder={tr('напр. Открытый Кубок по каратэ WKF 2026', 'мис. Каратэ WKF боюнча Ачык Кубок 2026', 'e.g. Open WKF Karate Cup 2026')}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 font-medium"
+                  className="w-full h-11 bg-[var(--app-surface)] border border-[var(--app-border)] rounded-xl px-3.5 text-[15px] text-[var(--app-text-primary)] placeholder:text-[var(--app-text-muted)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)] transition"
                 />
               </div>
 
@@ -852,45 +824,8 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
               </div>
             </div>
 
-            {/* Row 2: Event Image Upload (Strictly JPG or WebP, Max 2 MB, saved to Database) */}
-            <div className="p-4 rounded-xl bg-slate-950/95 border border-rose-500/30 space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <label className="text-xs font-bold text-white flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4 text-rose-400" />
-                    <span>
-                      {tr(
-                        'Загрузка изображения события (сохраняется в БД `tournaments.image_url`)',
-                        'Мелдештин сүрөтүн жүктөө (`tournaments.image_url` маалымат базасына сакталат)',
-                        'Event Image Upload (persisted in DB `tournaments.image_url`)'
-                      )}
-                    </span>
-                  </label>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    {tr('Проверка формата:', 'Форматты текшерүү:', 'Format validation:')}{' '}
-                    <strong className="text-emerald-400">JPG (.jpg, .jpeg)</strong> / <strong className="text-emerald-400">WebP (.webp)</strong> ·{' '}
-                    {tr('Лимит размера:', 'Көлөм чеги:', 'Max file size:')}{' '}
-                    <strong className="text-amber-400">2 MB</strong>
-                  </p>
-                </div>
-
-                {imageUrl && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setImageUrl('');
-                      setImageFileInfo(null);
-                      setImageUploadError(null);
-                      if (fileInputRef.current) fileInputRef.current.value = '';
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-rose-950 text-slate-300 hover:text-rose-300 border border-slate-800 text-[11px] transition-colors cursor-pointer self-start sm:self-auto"
-                  >
-                    {tr('✕ Удалить изображение', '✕ Сүрөттү өчүрүү', '✕ Remove Image')}
-                  </button>
-                )}
-              </div>
-
-              {/* Hidden File Input Properly Linked via Ref & onChange */}
+            {/* Row 2: Event image — one compact row (JPG/WebP up to 2 MB) */}
+            <div>
               <input
                 ref={fileInputRef}
                 id="tournament-event-image-input"
@@ -899,102 +834,70 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                 onChange={handleEventImageUpload}
                 className="sr-only"
               />
-
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                {/* Interactive Dropzone + Explicit Trigger Button */}
-                <div className="md:col-span-8 space-y-2.5">
-                  <div
-                    onClick={(e) => handleTriggerFilePicker(e)}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setIsDragOver(true);
-                    }}
-                    onDragLeave={() => setIsDragOver(false)}
-                    onDrop={handleDropImage}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        handleTriggerFilePicker(e);
-                      }
-                    }}
-                    className={`flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3.5 rounded-xl border-2 border-dashed transition-all cursor-pointer ${
-                      isDragOver
-                        ? 'border-emerald-400 bg-emerald-950/30'
-                        : 'border-slate-700 hover:border-rose-500/80 bg-slate-900/70 hover:bg-slate-900'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-400">
-                        <Upload className="w-4 h-4" />
-                      </div>
-                      <div className="text-left">
-                        <div className="text-xs font-semibold text-white">
-                          {isUploadingImage
-                            ? tr('Проверка и загрузка файла на сервер...', 'Файл текшерилип, серверге жүктөлүүдө...', 'Validating & uploading file to server...')
-                            : tr('Нажмите здесь или перетащите файл (JPG / WebP)', 'Бул жерди басыңыз же файлды сүйрөп келиңиз (JPG / WebP)', 'Click here or drag & drop a file (JPG / WebP)')}
-                        </div>
-                        <div className="text-[11px] text-slate-400">
-                          {tr('Автоматическая проверка формата и ограничения 2 МБ', 'Форматты жана 2 МБ чегин автоматтык текшерүү', 'Automatic JPG/WebP format & 2 MB size check')}
-                        </div>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={(e) => handleTriggerFilePicker(e)}
-                      className="px-3.5 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-colors cursor-pointer shrink-0 shadow-sm"
-                    >
-                      {tr('Выбрать файл', 'Файл тандоо', 'Choose File')}
-                    </button>
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragOver(true);
+                }}
+                onDragLeave={() => setIsDragOver(false)}
+                onDrop={handleDropImage}
+                className={`flex items-center gap-3 rounded-2xl border border-dashed p-2.5 transition ${
+                  isDragOver ? 'border-[var(--accent)] bg-[var(--accent-soft)]' : 'border-[var(--app-border)] bg-[var(--app-surface-subtle)]'
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={(e) => handleTriggerFilePicker(e)}
+                  className="w-14 h-14 shrink-0 rounded-xl overflow-hidden bg-[var(--app-surface)] border border-[var(--app-border)] flex items-center justify-center text-[var(--app-text-muted)] cursor-pointer"
+                  aria-label={tr('Выбрать фото', 'Сүрөт тандоо', 'Choose image')}
+                >
+                  {imageUrl ? <img src={imageUrl} alt="" className="w-full h-full object-cover" /> : <ImageIcon className="w-5 h-5" />}
+                </button>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold text-[var(--app-text-primary)]">
+                    {isUploadingImage
+                      ? tr('Загружаю…', 'Жүктөлүүдө…', 'Uploading…')
+                      : imageUrl
+                        ? tr('Фото турнира добавлено', 'Мелдештин сүрөтү кошулду', 'Tournament image added')
+                        : tr('Фото турнира (необязательно)', 'Мелдештин сүрөтү (милдеттүү эмес)', 'Tournament image (optional)')}
                   </div>
-
-                  {/* Stored DB URL display */}
-                  {imageUrl && (
-                    <div className="flex items-center gap-2 text-[11px] bg-emerald-950/50 border border-emerald-700/60 text-emerald-300 px-3 py-2 rounded-lg">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span className="truncate">
-                        {tr('Сохранено в БД:', 'Базага сакталды:', 'Saved in DB:')} <strong>{imageUrl}</strong>
-                      </span>
-                      {imageFileInfo && (
-                        <span className="ml-auto shrink-0 px-2 py-0.5 rounded bg-emerald-900/80 text-emerald-200 text-[10px] font-bold">
-                          {imageFileInfo.format} · {imageFileInfo.sizeKb}
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Validation Error Message */}
-                  {imageUploadError && (
-                    <div className="flex items-center gap-2 text-xs bg-rose-950/90 border border-rose-500/80 text-rose-200 px-3 py-2 rounded-lg">
-                      <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-                      <span>{imageUploadError}</span>
-                    </div>
-                  )}
+                  <div className="text-xs text-[var(--app-text-muted)] truncate">
+                    {imageFileInfo ? `${imageFileInfo.format} · ${imageFileInfo.sizeKb}` : tr('JPG или WebP, до 2 МБ', 'JPG же WebP, 2 МБ чейин', 'JPG or WebP, up to 2 MB')}
+                  </div>
                 </div>
-
-                {/* Live Image Preview */}
-                <div className="md:col-span-4 flex flex-col items-center justify-center gap-1.5">
-                  {imageUrl ? (
-                    <div className="w-24 h-24 rounded-xl border-2 border-emerald-500/70 bg-slate-900 overflow-hidden shadow-lg relative">
-                      <img src={imageUrl} alt="Event preview" className="w-full h-full object-cover" />
-                    </div>
-                  ) : (
-                    <div
-                      onClick={handleTriggerFilePicker}
-                      className="w-24 h-24 rounded-xl border border-dashed border-slate-700 hover:border-rose-500 bg-slate-900/50 flex flex-col items-center justify-center text-slate-400 text-[10px] text-center p-2 cursor-pointer transition-colors"
-                    >
-                      <ImageIcon className="w-5 h-5 mb-1 text-slate-500" />
-                      <span>{tr('Превью JPG/WebP', 'JPG/WebP превью', 'JPG/WebP Preview')}</span>
-                    </div>
-                  )}
-                </div>
+                {imageUrl ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setImageUrl('');
+                      setImageFileInfo(null);
+                      setImageUploadError(null);
+                      if (fileInputRef.current) fileInputRef.current.value = '';
+                    }}
+                    className="h-9 px-3 rounded-full border border-[var(--app-border)] text-xs font-medium text-[var(--app-text-secondary)] hover:text-red-600 hover:border-red-300 cursor-pointer shrink-0"
+                  >
+                    {tr('Убрать', 'Алып салуу', 'Remove')}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(e) => handleTriggerFilePicker(e)}
+                    className="h-9 px-4 rounded-full bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white text-xs font-semibold cursor-pointer shrink-0"
+                  >
+                    {tr('Выбрать', 'Тандоо', 'Choose')}
+                  </button>
+                )}
               </div>
+              {imageUploadError && (
+                <div className="mt-2 flex items-center gap-2 text-sm text-red-600">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{imageUploadError}</span>
+                </div>
+              )}
             </div>
 
             {/* Row 3: Rules, Status, Tatami Count */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-sm font-semibold text-[var(--app-text-primary)] mb-1.5">
                   {tr('Правила и регламент', 'Эрежелер жана регламент', 'Rules & Regulations')} <span className="text-rose-400">*</span>
@@ -1014,12 +917,9 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                   type="text"
                   value={rulesLabel}
                   onChange={(e) => setRulesLabel(e.target.value)}
-                  placeholder={tr('Или впишите свои правила: напр. «Правила ФКР 2026»', 'Же өз сөзүңүз менен', 'Or in your own words')}
+                  placeholder={tr('Или свои правила, напр. ФКР 2026', 'Же өз эрежелериңиз', 'Or your own rules')}
                   className="mt-2 w-full h-11 bg-[var(--app-surface)] border border-[var(--app-border)] rounded-xl px-3.5 text-[15px] text-[var(--app-text-primary)] placeholder:text-[var(--app-text-muted)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)] transition"
                 />
-                <p className="mt-1 text-[10px] text-slate-500">
-                  {tr('Список выше задаёт систему подсчёта очков на табло; текст показывается участникам.', 'Тизме таблодогу упай эсептөөнү аныктайт; текст катышуучуларга көрсөтүлөт.', 'The list sets the scoreboard scoring; the text is shown to participants.')}
-                </p>
               </div>
 
               <div>
@@ -1041,7 +941,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
 
               <div>
                 <label className="block text-sm font-semibold text-[var(--app-text-primary)] mb-1.5">
-                  {tr('Количество татами (площадок)', 'Татамилердин саны', 'Number of Tatamis')}
+                  {tr('Татами (площадок)', 'Татамилердин саны', 'Tatamis')}
                 </label>
                 <input
                   type="text"
@@ -1055,7 +955,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
             </div>
 
             {/* Row 4: Dates & Registration Deadline */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-sm font-semibold text-[var(--app-text-primary)] mb-1.5">
                   {tr('Дата начала', 'Башталуу датасы', 'Start Date')} <span className="text-rose-400">*</span>
@@ -1109,7 +1009,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
             </div>
 
             {/* Row 5: Location (Country, City, Venue) */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-sm font-semibold text-[var(--app-text-primary)] mb-1.5">
                   {tr('Страна', 'Өлкө', 'Country')} <span className="text-rose-400">*</span>
@@ -1180,7 +1080,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
               </div>
             </div>
 
-            <div className="flex gap-2 -mt-3">
+            <div className="flex gap-2 -mt-2">
               <input
                 type="text"
                 value={customDiscipline}
@@ -1215,7 +1115,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                 {tr('Описание турнира и регламент допуска', 'Мелдештин сүрөттөлүшү жана регламенти', 'Tournament Description & Regulations')}
               </label>
               <textarea
-                rows={3}
+                rows={2}
                 placeholder={tr(
                   'Укажите правила допуска, возрастные и весовые рамки, особенности взвешивания...',
                   'Катышуу эрежелерин, жаш жана салмак чектерин, таразага тартуу тартибин жазыңыз...',
@@ -1228,21 +1128,21 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
             </div>
 
             {/* Form Actions */}
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--app-border)]">
               <button
                 type="button"
                 onClick={() => {
                   resetForm();
                   setIsFormOpen(false);
                 }}
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
+                className="h-11 px-5 rounded-full border border-[var(--app-border)] text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)] text-sm font-semibold transition-colors cursor-pointer"
               >
                 {tr('Отмена', 'Жокко чыгаруу', 'Cancel')}
               </button>
               <button
                 type="submit"
                 disabled={isUploadingImage}
-                className="h-11 px-6 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white text-[15px] font-bold transition-all shadow-md shadow-[var(--accent-soft)] cursor-pointer"
+                className="h-11 px-6 rounded-full bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white text-[15px] font-bold transition-all shadow-md shadow-[var(--accent-soft)] cursor-pointer disabled:opacity-50"
               >
                 {editingTournamentId
                   ? tr('Сохранить изменения', 'Өзгөртүүлөрдү сактоо', 'Save Changes')
@@ -1294,11 +1194,11 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
 
       {/* Tournaments Registry Grid with Active / Archive Tabs */}
       <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
-          <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-            <Layers className="w-4 h-4 text-rose-400" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h3 className="text-lg font-bold text-[var(--app-text-primary)] flex items-center gap-2">
+            <Layers className="w-5 h-5 text-[var(--accent)]" />
             <span>
-              {tr('Реестр соревнований в системе', 'Системадагы мелдештердин реестри', 'System Tournaments Registry')} ({tournaments.length})
+              {tr('Все турниры', 'Бардык мелдештер', 'All tournaments')} <span className="text-[var(--app-text-muted)] font-semibold">{tournaments.length}</span>
             </span>
           </h3>
 

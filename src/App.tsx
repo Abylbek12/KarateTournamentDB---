@@ -1579,6 +1579,7 @@ function AppContent() {
           )}
 
           {activeTab === 'admin' && effectiveRole === 'admin' && (
+            <div className="max-w-4xl mx-auto w-full space-y-5">
             <TournamentEventsManager
               tournaments={tournaments}
               currentUserRole={currentUserRole}
@@ -1597,9 +1598,6 @@ function AppContent() {
               createRequestId={createTournamentRequest}
               onCreateRequestHandled={() => setCreateTournamentRequest(null)}
             />
-          )}
-          {activeTab === 'admin' && effectiveRole === 'admin' && (
-            <div className="max-w-4xl mx-auto w-full space-y-5">
               <UsersRolesPanel currentUserId={currentUser?.id} />
               <InviteLinksPanel />
               <LaunchPanel />
