@@ -145,7 +145,7 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
             </p>
           </div>
 
-          <div className="flex items-center gap-3 text-xs tabular-nums">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs tabular-nums">
             <div className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800">
               Всего заявлено: <span className="font-bold text-white">{participants.length}</span>
             </div>

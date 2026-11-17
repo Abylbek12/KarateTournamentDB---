@@ -101,11 +101,11 @@ export const InviteLinksPanel: React.FC = () => {
           { title: 'Для спортсменов и родителей', desc: 'Можно отправить в чаты, соцсети, на афишу турнира.', url: `${origin}/?join=athlete` },
           { title: 'Для тренеров и клубов', desc: 'Тренер регистрирует себя и потом подаёт заявки за своих учеников.', url: `${origin}/?join=coach` }
         ].map((l) => (
-          <div key={l.url} className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-subtle)] p-3">
+          <div key={l.url} className="min-w-0 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-subtle)] p-3">
             <div className="text-sm font-semibold text-[var(--app-text-primary)]">{l.title}</div>
             <div className="text-xs text-[var(--app-text-muted)] mt-0.5">{l.desc}</div>
             <div className="mt-2 flex items-center gap-2">
-              <code className="flex-1 truncate text-xs bg-[var(--app-surface)] border border-[var(--app-border)] rounded-lg px-2 py-1.5 text-[var(--app-text-secondary)]">
+              <code className="flex-1 min-w-0 truncate text-xs bg-[var(--app-surface)] border border-[var(--app-border)] rounded-lg px-2 py-1.5 text-[var(--app-text-secondary)]">
                 {l.url}
               </code>
               <CopyButton text={l.url} />
@@ -155,7 +155,7 @@ export const InviteLinksPanel: React.FC = () => {
         {error && <div className="mt-2 text-sm text-red-700">{error}</div>}
         {justCreated && (
           <div className="mt-3 rounded-lg bg-[var(--accent-soft)] p-2.5 flex items-center gap-2">
-            <code className="flex-1 truncate text-xs text-[var(--app-text-primary)]">{linkFor(justCreated)}</code>
+            <code className="flex-1 min-w-0 truncate text-xs text-[var(--app-text-primary)]">{linkFor(justCreated)}</code>
             <CopyButton text={linkFor(justCreated)} />
           </div>
         )}

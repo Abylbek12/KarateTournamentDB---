@@ -142,7 +142,7 @@ export const ScreensQrPanel: React.FC<{ tatamiNumbers: number[] }> = ({ tatamiNu
           const key = keys.find((k) => k.tatamiNumber === t);
           const controlUrl = key ? `${base}/?screen=control&t=${t}&key=${key.key}` : '';
           return (
-            <section key={t} className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 space-y-4">
+            <section key={t} className="min-w-0 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 space-y-4">
               <h2 className="text-lg font-bold text-[var(--app-text-primary)]">Татами {t}</h2>
               <div className="flex gap-4 items-start">
                 <Qr text={displayUrl} size={120} />

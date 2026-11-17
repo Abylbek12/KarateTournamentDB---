@@ -8,10 +8,28 @@ interface UserRow {
   fullName: string;
   role: AccessRole;
   clubName?: string;
+  alsoCompetes?: boolean;
   createdAt: string;
 }
 
 const ASSIGNABLE: AccessRole[] = ['athlete', 'club_coach', 'tatami_referee', 'scorekeeper', 'chief_referee', 'medical_officer', 'admin'];
+
+type Group = 'athletes' | 'coaches' | 'referees' | 'scorekeepers' | 'medics' | 'admins' | 'all';
+const GROUPS: { id: Group; label: string; test?: (u: { role: AccessRole; alsoCompetes?: boolean }) => boolean }[] = [
+  // Coaches who also compete appear here too, so every competitor is in one list
+  { id: 'athletes', label: 'Спортсмены', test: (u) => u.role === 'athlete' || (u.role === 'club_coach' && !!u.alsoCompetes) },
+  { id: 'coaches', label: 'Тренеры', test: (u) => u.role === 'club_coach' },
+  { id: 'referees', label: 'Судьи', test: (u) => u.role === 'tatami_referee' || u.role === 'chief_referee' },
+  { id: 'scorekeepers', label: 'Секретари', test: (u) => u.role === 'scorekeeper' },
+  { id: 'medics', label: 'Врачи', test: (u) => u.role === 'medical_officer' },
+  { id: 'admins', label: 'Администраторы', test: (u) => u.role === 'admin' },
+  { id: 'all', label: 'Все' }
+];
+const inGroup = (u: { role: AccessRole; alsoCompetes?: boolean }, g: Group) => {
+  const test = GROUPS.find((x) => x.id === g)?.test;
+  return !test || test(u);
+};
+const PAGE = 50;
 
 /** Admin-only list of accounts with role assignment (uses /api/admin/users). */
 export const UsersRolesPanel: React.FC<{ currentUserId?: string }> = ({ currentUserId }) => {
@@ -22,6 +40,9 @@ export const UsersRolesPanel: React.FC<{ currentUserId?: string }> = ({ currentU
   const [query, setQuery] = React.useState('');
   const [pending, setPending] = React.useState<{ user: UserRow; role: AccessRole } | null>(null);
   const [saving, setSaving] = React.useState(false);
+  const [group, setGroup] = React.useState<Group>('athletes');
+  const [shown, setShown] = React.useState(PAGE);
+  React.useEffect(() => setShown(PAGE), [group, query]);
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -75,7 +96,13 @@ export const UsersRolesPanel: React.FC<{ currentUserId?: string }> = ({ currentU
   };
 
   const q = query.trim().toLowerCase();
-  const visible = users.filter((u) => !q || u.fullName.toLowerCase().includes(q) || u.email.includes(q));
+  const matches = (u: UserRow) => !q || u.fullName.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || (u.clubName || '').toLowerCase().includes(q);
+  // Newest registrations first, so the people who just signed up are at the top
+  const filtered = users
+    .filter((u) => inGroup(u, group) && matches(u))
+    .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+  const visible = filtered.slice(0, shown);
+  const countOf = (g: Group) => users.filter((u) => inGroup(u, g) && matches(u)).length;
 
   return (
     <section className="theme-keep rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-sm">
@@ -97,7 +124,7 @@ export const UsersRolesPanel: React.FC<{ currentUserId?: string }> = ({ currentU
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Имя или email"
+              placeholder="Имя, email или клуб"
               className="bg-transparent outline-none text-sm w-40 text-[var(--app-text-primary)]"
             />
           </label>
@@ -111,15 +138,33 @@ export const UsersRolesPanel: React.FC<{ currentUserId?: string }> = ({ currentU
         </div>
       </div>
 
+      <div className="mt-4 flex flex-wrap gap-1.5" role="tablist">
+        {GROUPS.map((g) => (
+          <button
+            key={g.id}
+            role="tab"
+            aria-selected={group === g.id}
+            onClick={() => setGroup(g.id)}
+            className={`shrink-0 h-9 px-3.5 rounded-full text-sm font-medium border cursor-pointer transition ${
+              group === g.id
+                ? 'bg-[var(--accent)] border-[var(--accent)] text-white'
+                : 'bg-[var(--app-surface)] border-[var(--app-border)] text-[var(--app-text-secondary)] hover:bg-[var(--app-surface-subtle)]'
+            }`}
+          >
+            {g.label} <span className={`ml-1 tabular-nums ${group === g.id ? 'text-white/80' : 'text-[var(--app-text-muted)]'}`}>{countOf(g.id)}</span>
+          </button>
+        ))}
+      </div>
+
       {error && <div className="mt-3 text-sm rounded-xl px-3 py-2 bg-[var(--danger-soft)] border border-[var(--danger-border)] text-[var(--app-text-primary)]">{error}</div>}
       {notice && <div className="mt-3 text-sm rounded-xl px-3 py-2 bg-[var(--accent-soft)] text-[var(--app-text-primary)]">✓ {notice}</div>}
 
-      <div className="mt-4 overflow-x-auto rounded-xl border border-[var(--app-border)]">
+      <div className="mt-3 overflow-x-auto rounded-xl border border-[var(--app-border)]">
         <table className="w-full text-sm">
           <thead className="bg-[var(--app-surface-subtle)] text-[var(--app-text-secondary)] text-xs">
             <tr>
               <th className="text-left px-3 py-2 font-semibold">Пользователь</th>
-              <th className="text-left px-3 py-2 font-semibold">Email</th>
+              <th className="text-left px-3 py-2 font-semibold hidden sm:table-cell">Email</th>
               <th className="text-left px-3 py-2 font-semibold">Роль</th>
             </tr>
           </thead>
@@ -129,8 +174,13 @@ export const UsersRolesPanel: React.FC<{ currentUserId?: string }> = ({ currentU
                 <td className="px-3 py-2 text-[var(--app-text-primary)]">
                   {u.fullName}
                   {u.id === currentUserId && <span className="ml-2 text-xs text-[var(--app-text-muted)]">(это вы)</span>}
+                  {u.role === 'club_coach' && u.alsoCompetes && (
+                    <span className="ml-2 inline-block rounded-full bg-[var(--accent-soft)] text-[var(--accent)] text-[11px] font-semibold px-2 py-0.5">тренер, выступает</span>
+                  )}
+                  <div className="text-xs text-[var(--app-text-muted)] sm:hidden break-all">{u.email}</div>
+                  {u.clubName && <div className="text-xs text-[var(--app-text-muted)]">{u.clubName}</div>}
                 </td>
-                <td className="px-3 py-2 text-[var(--app-text-secondary)]">{u.email}</td>
+                <td className="px-3 py-2 text-[var(--app-text-secondary)] hidden sm:table-cell">{u.email}</td>
                 <td className="px-3 py-2">
                   <select
                     value={u.role}
@@ -156,6 +206,14 @@ export const UsersRolesPanel: React.FC<{ currentUserId?: string }> = ({ currentU
           </tbody>
         </table>
       </div>
+      {filtered.length > visible.length && (
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <button onClick={() => setShown((n) => n + PAGE)} className="h-10 px-4 rounded-lg border border-[var(--app-border)] text-sm font-medium text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)] cursor-pointer">
+            Показать ещё {Math.min(PAGE, filtered.length - visible.length)}
+          </button>
+          <span className="text-sm text-[var(--app-text-muted)]">Показано {visible.length} из {filtered.length}. Для быстрого поиска впишите имя или email.</span>
+        </div>
+      )}
       {pending && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={() => !saving && setPending(null)}>
           <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-2xl bg-[var(--app-surface)] border border-[var(--app-border)] shadow-2xl p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
