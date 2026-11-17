@@ -393,27 +393,28 @@ export const LiveVideo: React.FC<{
   anchorId?: string;
 }> = ({ streams, tatamis, selected, onSelect, language, anchorId = 'live-video' }) => {
   const frames = React.useRef<Record<number, HTMLIFrameElement | null>>({});
-  const [soundOn, setSoundOn] = React.useState<number | null>(null);
+  // Tatami whose sound is on — the viewer decides, any number at once
+  const [soundOn, setSoundOn] = React.useState<number[]>([]);
   const shown = selected === 'all' ? tatamis : tatamis.includes(selected) ? [selected] : tatamis.slice(0, 1);
   if (shown.length === 0) return null;
   const many = shown.length > 1;
 
+  // Each tatami's sound is switched on/off on its own; the others are not touched
   const toggleSound = (n: number) => {
-    const next = soundOn === n ? null : n;
-    shown.forEach((tn) => {
-      const frame = frames.current[tn];
-      if (tn === next) {
-        youtubeCommand(frame, 'unMute');
-        youtubeCommand(frame, 'setVolume', [100]);
-        youtubeCommand(frame, 'playVideo');
-      } else {
-        youtubeCommand(frame, 'mute');
-      }
-    });
-    setSoundOn(next);
+    const frame = frames.current[n];
+    if (soundOn.includes(n)) {
+      youtubeCommand(frame, 'mute');
+      setSoundOn(soundOn.filter((x) => x !== n));
+    } else {
+      youtubeCommand(frame, 'unMute');
+      youtubeCommand(frame, 'setVolume', [100]);
+      youtubeCommand(frame, 'playVideo');
+      setSoundOn([...soundOn, n]);
+    }
   };
+  // Switching view reloads the players muted
   const pick = (v: VideoChoice) => {
-    setSoundOn(null);
+    setSoundOn([]);
     onSelect(v);
   };
   const pill = (active: boolean) =>
@@ -446,7 +447,7 @@ export const LiveVideo: React.FC<{
       </div>
       {many && (
         <p className="px-4 pt-2 text-xs text-[var(--app-text-muted)]">
-          {t(language, 'Все видео идут без звука. Нажмите «Звук» на нужном татами — остальные останутся без звука.', 'Бардык видео үнсүз. Керектүү татамиде «Үн» баскычын басыңыз — калгандары үнсүз калат.', 'All videos are muted. Tap “Sound” on the tatami you want — the others stay muted.')}
+          {t(language, 'Видео начинаются без звука. Нажмите «Звук» на тех татами, которые хотите слушать — можно на одном, на нескольких или на всех. Повторное нажатие выключает звук.', 'Видеолор үнсүз башталат. Уккуңуз келген татамилерде «Үн» баскычын басыңыз — бирөөндө, бир нечесинде же баарында. Кайра басуу үндү өчүрөт.', 'Videos start muted. Tap “Sound” on the tatami you want to hear — one, several or all. Tap again to mute.')}
         </p>
       )}
       <div className={`grid gap-2 ${many ? 'p-2' : ''} ${gridCols(shown.length)}`}>
@@ -460,13 +461,13 @@ export const LiveVideo: React.FC<{
                   <span className="flex-1 text-sm font-semibold text-[var(--app-text-primary)]">{label(n)}</span>
                   <button
                     onClick={() => toggleSound(n)}
-                    aria-pressed={soundOn === n}
+                    aria-pressed={soundOn.includes(n)}
                     className={`inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-xs font-semibold border cursor-pointer ${
-                      soundOn === n ? 'bg-red-600 border-red-600 text-white' : 'border-[var(--app-border)] text-[var(--app-text-secondary)] hover:border-red-500'
+                      soundOn.includes(n) ? 'bg-red-600 border-red-600 text-white' : 'border-[var(--app-border)] text-[var(--app-text-secondary)] hover:border-red-500'
                     }`}
                   >
-                    {soundOn === n ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-                    {soundOn === n ? t(language, 'Звук включён', 'Үн күйүк', 'Sound on') : t(language, 'Звук', 'Үн', 'Sound')}
+                    {soundOn.includes(n) ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                    {soundOn.includes(n) ? t(language, 'Звук включён', 'Үн күйүк', 'Sound on') : t(language, 'Звук', 'Үн', 'Sound')}
                   </button>
                   <button onClick={() => pick(n)} className="text-xs text-[var(--accent)] hover:underline cursor-pointer" title={t(language, 'Смотреть крупно', 'Чоң көрүү', 'Watch large')}>
                     <Maximize2 className="w-4 h-4" />
