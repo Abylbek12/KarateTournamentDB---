@@ -4,6 +4,7 @@ import type { AuthenticatedUserProfile, BeltRank, EventCategory, Gender, Partici
 import { BELT_LABELS, BELT_CHOICES, categoryFits, categoryName, isTeamCategory } from '../utils/eventCategories';
 import { COUNTRIES, flagEmoji, countryByNoc } from '../utils/countries';
 import { transliterate } from '../utils/names';
+import { formatBirthInput, parseBirthText } from '../utils/dateInput';
 
 interface EntryFormProps {
   tournaments: Tournament[];
@@ -18,7 +19,8 @@ interface AthleteDraft {
   key: string;
   lastName: string;
   firstName: string;
-  birthDate: string;
+  birthDate: string; // ГГГГ-ММ-ДД, заполняется только когда дата введена правильно
+  birthText: string; // что набрал человек: ДД.ММ.ГГГГ
   gender: Gender;
   weightKg: string;
   beltRank: BeltRank;
@@ -33,6 +35,7 @@ const blankAthlete = (): AthleteDraft => ({
   lastName: '',
   firstName: '',
   birthDate: '',
+  birthText: '',
   gender: 'male',
   weightKg: '',
   beltRank: 'white_10kyu',
@@ -235,7 +238,24 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
               </div>
               <div className="lg:col-span-2">
                 <label className={label} htmlFor={`a-birth-${a.key}`}>Дата рождения</label>
-                <input id={`a-birth-${a.key}`} type="date" value={a.birthDate} onChange={(e) => update(a.key, { birthDate: e.target.value, categoryIds: [] })} className={field} />
+                <input
+                  id={`a-birth-${a.key}`}
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="bday"
+                  maxLength={10}
+                  placeholder="20.01.1991"
+                  value={a.birthText}
+                  onChange={(e) => {
+                    const birthText = formatBirthInput(e.target.value);
+                    update(a.key, { birthText, birthDate: parseBirthText(birthText), categoryIds: [] });
+                  }}
+                  aria-invalid={a.birthText.length === 10 && !a.birthDate}
+                  className={field}
+                />
+                {a.birthText.length === 10 && !a.birthDate && (
+                  <p className="mt-1 text-xs text-red-600">Проверьте дату: день.месяц.год, например 20.01.1991</p>
+                )}
               </div>
               <div className="lg:col-span-2">
                 <label className={label} htmlFor={`a-gender-${a.key}`}>Пол</label>
