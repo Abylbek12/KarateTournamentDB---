@@ -9,6 +9,19 @@
       "maxDuration": 30
     }
   },
+  "redirects": [
+    {
+      "source": "/((?!api/|auth/).*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "tatami-kg.vercel.app"
+        }
+      ],
+      "destination": "https://apsatarov.vercel.app/$1",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
