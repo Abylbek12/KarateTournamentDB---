@@ -68,8 +68,8 @@ export const TournamentInfoDetailView: React.FC<TournamentInfoDetailViewProps> =
   return (
     <div className="space-y-4 animate-fadeIn font-sans pb-16 max-w-7xl mx-auto">
       {/* Top Breadcrumbs with back button */}
-      <div className="flex items-center justify-between bg-white px-4 py-2.5 rounded-xl border border-slate-200/90 shadow-2xs">
-        <div className="flex items-center gap-2 text-xs text-slate-500">
+      <div className="flex flex-wrap items-center justify-between gap-2 bg-white px-4 py-2.5 rounded-xl border border-slate-200/90 shadow-2xs">
+        <div className="flex items-center gap-2 text-xs text-slate-500 min-w-0">
           <button
             onClick={onBack}
             className="flex items-center gap-1 text-sky-600 hover:text-sky-700 font-semibold cursor-pointer transition-colors"

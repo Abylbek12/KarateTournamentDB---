@@ -1,3 +1,4 @@
+import { ROLE_LABELS } from '../utils/access';
 import { BrandFullLogo } from './BrandLogo';
 import React, { useState, useEffect } from 'react';
 import { 
@@ -357,14 +358,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           {/* ========================================================
               LEFT COLUMN: Centered Apsatarov Swirl Logo & Wordmark
              ======================================================== */}
-          <div className="flex-1 flex flex-col items-center justify-center py-6 md:py-0 w-full">
+          <div className="flex-1 flex flex-col items-center justify-center pt-2 pb-4 md:py-0 w-full">
             <BrandFullLogo />
-
-            {/* Security Badge */}
-            <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-[11px] tabular-nums border border-slate-200">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Обязательная аутентификация · SSL 256-bit</span>
-            </div>
           </div>
 
           {/* ========================================================
@@ -746,23 +741,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <span className="tabular-nums text-slate-800">{pendingProfileUser.email}</span>
                   </div>
 
-                  <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                    <span className="text-slate-400">Способ авторизации:</span>
-                    <span className="capitalize font-semibold text-slate-700 flex items-center gap-1">
-                      {pendingProfileUser.provider === 'google' && <GoogleIcon />}
-                      {pendingProfileUser.provider === 'facebook' && <FacebookIcon />}
-                      <span>{pendingProfileUser.provider}</span>
-                    </span>
-                  </div>
+                  {(pendingProfileUser.provider === 'google' || pendingProfileUser.provider === 'facebook') && (
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                      <span className="text-slate-400">Вход через:</span>
+                      <span className="font-semibold text-slate-700 flex items-center gap-1">
+                        {pendingProfileUser.provider === 'google' ? <GoogleIcon /> : <FacebookIcon />}
+                        <span>{pendingProfileUser.provider === 'google' ? 'Google' : 'Facebook'}</span>
+                      </span>
+                    </div>
+                  )}
 
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-400">Роль в системе:</span>
+                    <span className="text-slate-400">Роль:</span>
                     <span className="px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 font-semibold text-[11px]">
-                      {pendingProfileUser.role === 'admin' && '👑 Организатор / Admin'}
-                      {pendingProfileUser.role === 'club_coach' && '🥋 Тренер / Спортсмен'}
-                      {pendingProfileUser.role === 'chief_referee' && '⚖️ Главный судья WKF'}
-                      {pendingProfileUser.role === 'tatami_referee' && '🚩 Судья татами'}
-                      {pendingProfileUser.role === 'scorekeeper' && '⏱️ Оператор табло'}
+                      {ROLE_LABELS[pendingProfileUser.role as keyof typeof ROLE_LABELS] || pendingProfileUser.role}
                     </span>
                   </div>
                 </div>

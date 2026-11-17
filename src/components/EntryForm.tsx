@@ -257,11 +257,11 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
               </div>
               <div className="lg:col-span-3">
                 <label className={label} htmlFor={`a-lastlat-${a.key}`}>Фамилия латиницей (как в паспорте)</label>
-                <input id={`a-lastlat-${a.key}`} value={a.lastNameLatin} placeholder={transliterate(a.lastName) || 'Abdykadyrov'} onChange={(e) => update(a.key, { lastNameLatin: e.target.value })} className={field} />
+                <input id={`a-lastlat-${a.key}`} value={a.lastNameLatin} placeholder={transliterate(a.lastName) || 'напр. Abdykadyrov'} onChange={(e) => update(a.key, { lastNameLatin: e.target.value })} className={field} />
               </div>
               <div className="lg:col-span-3">
                 <label className={label} htmlFor={`a-firstlat-${a.key}`}>Имя латиницей</label>
-                <input id={`a-firstlat-${a.key}`} value={a.firstNameLatin} placeholder={transliterate(a.firstName) || 'Adilet'} onChange={(e) => update(a.key, { firstNameLatin: e.target.value })} className={field} />
+                <input id={`a-firstlat-${a.key}`} value={a.firstNameLatin} placeholder={transliterate(a.firstName) || 'напр. Adilet'} onChange={(e) => update(a.key, { firstNameLatin: e.target.value })} className={field} />
               </div>
             </div>
 

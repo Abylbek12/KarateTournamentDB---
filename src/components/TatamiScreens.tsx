@@ -200,7 +200,14 @@ export const TatamiDisplay: React.FC<{
           <span className="opacity-60 uppercase tracking-wider">{tr(lang, 'Далее', 'Кийинки', 'Next')}</span>
           {next.map((b) => (
             <span key={b.id} className="truncate">
-              #{b.boutNumber} <span className="text-red-300">{name(b.akaParticipant)}</span> — <span className="text-blue-300">{name(b.aoParticipant)}</span>
+              #{b.boutNumber}{' '}
+              {b.akaParticipantId || b.aoParticipantId ? (
+                <>
+                  <span className="text-red-300">{name(b.akaParticipant)}</span> — <span className="text-blue-300">{name(b.aoParticipant)}</span>
+                </>
+              ) : (
+                <span className="opacity-70">{stageLabel(b.roundStage)} · {tr(lang, 'ждёт победителей', 'жеңүүчүлөрдү күтөт', 'awaiting winners')}</span>
+              )}
             </span>
           ))}
         </div>
