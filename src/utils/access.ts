@@ -28,6 +28,7 @@ export const TAB_ACCESS: Record<string, 'public' | AccessRole[]> = {
   // Personal / club area (sign-in required)
   registration: ['admin', 'club_coach', 'athlete'],
   coach: ['admin', 'club_coach', 'athlete'],
+  athletes: ['admin', 'club_coach', 'athlete'],
   acquiring: ['admin', 'club_coach', 'athlete'],
 
   // Competition operations (officials)

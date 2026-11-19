@@ -42,6 +42,7 @@ export type NavTabId =
   | 'about'
   | 'help'
   | 'coach'
+  | 'athletes'
   | 'acquiring'
   | 'scoreboard'
   | 'referee_vr'
@@ -132,6 +133,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         isSignedIn && !isAdmin
           ? [
               { id: 'admin' as NavTabId, label: tr('Личный кабинет', 'Жеке кабинет', 'My account'), icon: UserCircle2 },
+              { id: 'athletes' as NavTabId, label: tr('Мои спортсмены', 'Менин спортчуларым', 'My athletes'), icon: Users },
               { id: 'registration' as NavTabId, label: tr('Подать заявку', 'Табыштама берүү', 'Enter a tournament'), icon: ClipboardList },
               { id: 'acquiring' as NavTabId, label: tr('Мои заявки и оплата', 'Өтүнмөлөрүм жана төлөм', 'My entries & fees'), icon: CreditCard }
             ]

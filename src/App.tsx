@@ -49,6 +49,7 @@ import { SenseiAiChatbot } from './components/SenseiAiChatbot';
 import { AboutUsView, HelpFaqView } from './components/InfoPages';
 import { RankingsPanel, ClubsPanel, LiveNowPanel } from './components/CommunityViews';
 import { MyEntriesPanel, FeesPanel } from './components/EntriesPanels';
+import { AthletesPanel } from './components/AthletesPanel';
 import { AuthModal, PrivacyPolicyModal } from './components/AuthAndPrivacyModals';
 import { SAMPLE_NOTIFICATIONS, playNotificationSound } from './data/sampleAcquiringAndExports';
 import { generateProtectedWkfCategoryBouts } from './utils/wkfBracketSeeding';
@@ -597,6 +598,7 @@ function AppContent() {
       case 'about': return language === 'ru' ? 'О платформе Apsatarov' : language === 'ky' ? 'Apsatarov жөнүндө' : 'About Apsatarov';
       case 'help': return language === 'ru' ? 'Помощь и FAQ' : language === 'ky' ? 'Жардам жана FAQ' : 'Help & FAQ';
       case 'coach': return language === 'ru' ? 'Мои заявки и оплата' : 'My entries & fees';
+      case 'athletes': return language === 'ky' ? 'Менин спортчуларым' : language === 'en' ? 'My athletes' : 'Мои спортсмены';
       case 'rankings': return language === 'ru' ? 'Рейтинги' : 'Rankings';
       case 'acquiring': return language === 'ru' ? 'Взносы' : 'Entry fees';
       case 'scoreboard': return language === 'ru' ? 'Татами' : 'Tatami';
@@ -1533,6 +1535,9 @@ function AppContent() {
               onNewEntry={() => navigateWithHash('registration')}
             />
           )}
+
+          {/* 3.2 «Мои спортсмены»: база спортсменов тренера или родителя (#athletes) */}
+          {activeTab === 'athletes' && currentUser && <AthletesPanel user={currentUser} onNewEntry={() => navigateWithHash('registration')} />}
 
           {/* 4. Рейтинги и Аналитика (#rankings) */}
           {activeTab === 'rankings' && <RankingsPanel tournaments={tournaments} bouts={bouts} participants={participants} />}

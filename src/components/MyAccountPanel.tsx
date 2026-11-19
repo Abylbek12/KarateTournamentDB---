@@ -1,7 +1,9 @@
 import React from 'react';
-import { UserCircle2, ClipboardList, Users, CreditCard, BookOpen, Check } from 'lucide-react';
+import { UserCircle2, ClipboardList, Users, UserPlus, CreditCard, BookOpen, Check } from 'lucide-react';
 import type { AuthenticatedUserProfile } from '../types/schema';
 import { ROLE_LABELS } from '../utils/access';
+import { useApp } from '../context/AppContext';
+import { trLang } from '../utils/globalDomTranslator';
 
 interface MyAccountPanelProps {
   user: AuthenticatedUserProfile;
@@ -16,6 +18,7 @@ export const MyAccountPanel: React.FC<MyAccountPanelProps> = ({ user, onNavigate
   const [saved, setSaved] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const isCoach = user.role === 'club_coach';
+  const { language } = useApp();
   const canEnter = user.role === 'athlete' || isCoach;
 
   const save = async (patch: Record<string, unknown>) => {
@@ -65,12 +68,18 @@ export const MyAccountPanel: React.FC<MyAccountPanelProps> = ({ user, onNavigate
       </div>
 
       {canEnter && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className={`grid gap-3 sm:grid-cols-2 ${isCoach ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}>
           {action(
             <ClipboardList className="w-5 h-5" />,
             isCoach ? 'Подать заявки' : 'Подать заявку',
             isCoach ? (user.alsoCompetes ? 'За учеников и за себя' : 'За своих учеников') : 'Выбрать турнир и категории',
             'registration'
+          )}
+          {action(
+            <UserPlus className="w-5 h-5" />,
+            trLang(language, 'Мои спортсмены', 'Менин спортчуларым', 'My athletes'),
+            trLang(language, 'Внести один раз, заявлять быстро', 'Бир жолу киргизип, тез каттоо', 'Enter once, register fast'),
+            'athletes'
           )}
           {isCoach && action(<Users className="w-5 h-5" />, 'Кабинет клуба', 'Ученики, команды, история', 'coach')}
           {action(<CreditCard className="w-5 h-5" />, 'Мои оплаты', 'Взносы и квитанции', 'acquiring')}

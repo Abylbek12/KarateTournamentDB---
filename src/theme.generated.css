@@ -138,6 +138,8 @@
   .text-sky-600 { color: var(--color-sky-400); }
   .text-amber-600 { color: var(--color-amber-400); }
   .text-amber-700 { color: var(--color-amber-300); }
+  .text-red-600 { color: var(--color-red-400); }
+  .text-emerald-700 { color: var(--color-emerald-300); }
   .text-rose-700 { color: var(--color-rose-300); }
   .text-\[\#2c5270\] { color: var(--app-text-primary); }
   .text-\[\#3b668d\] { color: var(--app-text-primary); }
@@ -148,9 +150,7 @@
   .text-teal-800 { color: var(--color-teal-300); }
   .text-blue-600 { color: var(--color-blue-400); }
   .text-black { color: var(--app-text-primary); }
-  .text-red-600 { color: var(--color-red-400); }
   .text-\[\#2b3442\] { color: var(--app-text-primary); }
-  .text-emerald-700 { color: var(--color-emerald-300); }
   .text-amber-900 { color: var(--color-amber-300); }
   .text-emerald-600 { color: var(--color-emerald-400); }
   .text-red-700 { color: var(--color-red-300); }

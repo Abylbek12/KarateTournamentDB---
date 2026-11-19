@@ -5,9 +5,14 @@ import { BELT_LABELS, BELT_CHOICES, categoryFits, categoryName, isTeamCategory }
 import { COUNTRIES, flagEmoji, countryByNoc } from '../utils/countries';
 import { transliterate } from '../utils/names';
 import { formatBirthInput, parseBirthText } from '../utils/dateInput';
+import { Search } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { sanitizePricing, quoteEntries, countPaidBefore, athleteKey, bishkekDate, categoryPrice, currentPeriod, type QuoteLine } from '../utils/pricing';
 import { clockNow } from '../utils/serverClock';
+import { useAthletes, fullName } from '../utils/useAthletes';
+import { ROSTER_ROLES, type ClubAthlete } from '../utils/athletes';
+import { isoToBirthText } from '../utils/dateInput';
+import { beltName } from '../utils/eventCategories';
 
 const tl = (lang: string, ru: string, ky: string, en: string) => (lang === 'ky' ? ky : lang === 'en' ? en : ru);
 
@@ -33,7 +38,25 @@ interface AthleteDraft {
   categoryIds: string[];
   lastNameLatin: string;
   firstNameLatin: string;
+  /** Chosen from «Мои спортсмены»: the server takes personal data from this card. */
+  athleteId?: string;
 }
+
+const fromCard = (a: ClubAthlete): AthleteDraft => ({
+  key: `card-${a.id}`,
+  lastName: a.lastName,
+  firstName: a.firstName,
+  birthDate: a.birthDate,
+  birthText: isoToBirthText(a.birthDate),
+  gender: a.gender,
+  weightKg: a.weightKg ? String(a.weightKg) : '',
+  beltRank: a.beltRank as BeltRank,
+  beltOther: a.beltOther || '',
+  categoryIds: [],
+  lastNameLatin: a.lastNameLatin || '',
+  firstNameLatin: a.firstNameLatin || '',
+  athleteId: a.id
+});
 
 const blankAthlete = (): AthleteDraft => ({
   key: Math.random().toString(36).slice(2),
@@ -57,9 +80,11 @@ const label = 'block text-xs font-medium text-[var(--app-text-secondary)] mb-1';
 export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, participants, currentUser, initialTournamentId, currency = 'сом' }) => {
   const isCoach = currentUser.role === 'club_coach' || currentUser.role === 'admin' || currentUser.role === 'chief_referee' || currentUser.role === 'scorekeeper';
   const open = tournaments.filter((t) => categories.some((c) => c.tournamentId === t.id && !c.isClosed) && t.status !== 'completed');
-  const [tournamentId, setTournamentId] = React.useState(
+  const [chosenTournamentId, setTournamentId] = React.useState(
     open.some((t) => t.id === initialTournamentId) ? initialTournamentId! : open[0]?.id || ''
   );
+  // Categories may arrive after the form opens (link straight to #registration): fall back to what the list shows.
+  const tournamentId = open.some((t) => t.id === chosenTournamentId) ? chosenTournamentId : open.some((t) => t.id === initialTournamentId) ? initialTournamentId! : open[0]?.id || '';
   const tournament = tournaments.find((t) => t.id === tournamentId);
   const cats = categories.filter((c) => c.tournamentId === tournamentId && !c.isClosed);
   const teamCats = cats.filter(isTeamCategory);
@@ -73,6 +98,26 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
     const [last = '', first = ''] = currentUser.fullName.split(' ');
     return [{ ...blankAthlete(), lastName: last, firstName: first }];
   });
+  // «Мои спортсмены»: pick athletes with a tick instead of typing them again.
+  const hasRoster = ROSTER_ROLES.has(currentUser.role) && currentUser.role !== 'admin';
+  const roster = useAthletes(hasRoster);
+  const activeRoster = roster.athletes.filter((a) => !a.archived).sort((a, b) => a.lastName.localeCompare(b.lastName, 'ru') || a.firstName.localeCompare(b.firstName, 'ru'));
+  const [rosterQuery, setRosterQuery] = React.useState('');
+  const untouched = (a: AthleteDraft) => !a.athleteId && !a.birthText && a.categoryIds.length === 0;
+  // When the roster has athletes, start with nobody chosen instead of an empty (or prefilled) form.
+  const startedEmpty = React.useRef(false);
+  React.useEffect(() => {
+    if (startedEmpty.current || !roster.loaded || activeRoster.length === 0) return;
+    startedEmpty.current = true;
+    setAthletes((list) => (list.length === 1 && untouched(list[0]) ? [] : list));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roster.loaded, activeRoster.length]);
+  const isChosen = (id: string) => athletes.some((a) => a.athleteId === id);
+  const toggleCard = (a: ClubAthlete) =>
+    setAthletes((list) => (list.some((x) => x.athleteId === a.id) ? list.filter((x) => x.athleteId !== a.id) : [...list.filter((x) => !untouched(x)), fromCard(a)]));
+  const rq = rosterQuery.trim().toLowerCase();
+  const rosterShown = activeRoster.filter((a) => !rq || `${a.lastName} ${a.firstName}`.toLowerCase().includes(rq));
+
   const [teams, setTeams] = React.useState<{ key: string; categoryId: string; teamName: string; members: string }[]>([]);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -99,6 +144,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
         .filter((id) => cats.some((c) => c.id === id))
         .map((categoryId) => ({
           categoryId,
+          athleteId: a.athleteId,
           lastName: a.lastName,
           firstName: a.firstName,
           birthDate: a.birthDate,
@@ -179,7 +225,12 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
       if (!res.ok) throw new Error(data.error || 'Заявка не отправлена');
       const due = (data.entries as { feeAmount?: number }[]).reduce((sum, e) => sum + (e.feeAmount || 0), 0);
       setDone(`${tl(language, 'Отправлено заявок', 'Жөнөтүлгөн табыштамалар', 'Entries sent')}: ${data.entries.length}. ${due > 0 ? `${tl(language, 'К оплате', 'Төлөөгө', 'To pay')}: ${due} ${currency}.` : ''}`);
-      setAthletes(isCoach ? [blankAthlete()] : athletes.map((a) => ({ ...a, categoryIds: [] })));
+      if (hasRoster) {
+        await roster.reload();
+        setAthletes([]);
+      } else {
+        setAthletes(isCoach ? [blankAthlete()] : athletes.map((a) => ({ ...a, categoryIds: [] })));
+      }
       setTeams([]);
     } catch (e: any) {
       setError(e.message);
@@ -250,6 +301,42 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
         </div>
       </section>
 
+      {hasRoster && activeRoster.length > 0 && (
+        <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 space-y-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex-1 min-w-[180px]">
+              <div className="font-semibold text-[var(--app-text-primary)]">{tl(language, 'Мои спортсмены', 'Менин спортчуларым', 'My athletes')}</div>
+              <div className="text-xs text-[var(--app-text-muted)]">
+                {tl(language, 'Отметьте, кого заявить. Ниже появятся подходящие категории.', 'Кимди каттоону белгилеңиз. Төмөндө ылайыктуу категориялар чыгат.', 'Tick who to enter. Matching categories appear below.')}
+              </div>
+            </div>
+            {activeRoster.length > 8 && (
+              <label className="relative w-full sm:w-64">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--app-text-muted)]" />
+                <input value={rosterQuery} onChange={(e) => setRosterQuery(e.target.value)} className={`${field} pl-9`} placeholder={tl(language, 'Поиск по фамилии', 'Фамилиясы боюнча издөө', 'Search by surname')} aria-label={tl(language, 'Поиск по фамилии', 'Фамилиясы боюнча издөө', 'Search by surname')} />
+              </label>
+            )}
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 max-h-80 overflow-y-auto">
+            {rosterShown.map((a) => {
+              const checked = isChosen(a.id);
+              return (
+                <label key={a.id} className={`flex items-start gap-2.5 rounded-lg border px-3 py-2 cursor-pointer ${checked ? 'border-[var(--accent)] bg-[var(--accent-soft)]' : 'border-[var(--app-border)]'}`}>
+                  <input type="checkbox" className="mt-1" checked={checked} onChange={() => toggleCard(a)} />
+                  <span className="min-w-0">
+                    <span className="block text-sm text-[var(--app-text-primary)] truncate">{fullName(a)}</span>
+                    <span className="block text-xs text-[var(--app-text-muted)] truncate">
+                      {isoToBirthText(a.birthDate)} · {beltName(a)}{a.weightKg ? ` · ${a.weightKg} ${tl(language, 'кг', 'кг', 'kg')}` : ''}
+                    </span>
+                  </span>
+                </label>
+              );
+            })}
+            {rosterShown.length === 0 && <div className="text-sm text-[var(--app-text-muted)]">{tl(language, 'Никого не нашли', 'Эч ким табылган жок', 'Nobody found')}</div>}
+          </div>
+        </section>
+      )}
+
       {athletes.map((a, idx) => {
         const options = eligibleFor(a);
         const fits = options.filter((o) => o.fit.ok);
@@ -259,12 +346,27 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
             <div className="flex items-center gap-2">
               <span className="font-semibold text-[var(--app-text-primary)]">Спортсмен {athletes.length > 1 ? idx + 1 : ''}</span>
               <span className="flex-1" />
-              {athletes.length > 1 && (
+              {(athletes.length > 1 || hasRoster) && (
                 <button onClick={() => setAthletes((l) => l.filter((x) => x.key !== a.key))} className="p-1.5 rounded-lg text-[var(--app-text-muted)] hover:text-red-600 cursor-pointer" title="Убрать">
                   <Trash2 className="w-4 h-4" />
                 </button>
               )}
             </div>
+            {a.athleteId ? (
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="flex-1 min-w-[200px]">
+                  <div className="text-[15px] font-medium text-[var(--app-text-primary)]">{fullName(a)}</div>
+                  <div className="text-xs text-[var(--app-text-muted)]">
+                    {a.birthText} · {a.gender === 'female' ? tl(language, 'жен.', 'аял', 'F') : tl(language, 'муж.', 'эркек', 'M')} · {beltName(a)}
+                  </div>
+                  <div className="text-xs text-[var(--app-text-muted)]">{tl(language, 'Данные из «Мои спортсмены». Пояс и имя меняются там.', 'Маалымат «Менин спортчуларым» бөлүмүнөн. Кур жана аты ошол жерде өзгөрөт.', 'Data from «My athletes». Change the belt or name there.')}</div>
+                </div>
+                <div className="w-32">
+                  <label className={label} htmlFor={`a-weight-${a.key}`}>{tl(language, 'Вес сейчас, кг', 'Азыркы салмак, кг', 'Weight now, kg')}</label>
+                  <input id={`a-weight-${a.key}`} type="text" inputMode="decimal" value={a.weightKg} onChange={(e) => update(a.key, { weightKg: e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''), categoryIds: [] })} className={field} />
+                </div>
+              </div>
+            ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
               <div className="lg:col-span-2">
                 <label className={label} htmlFor={`a-last-${a.key}`}>Фамилия</label>
@@ -335,6 +437,10 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
                 <input id={`a-firstlat-${a.key}`} value={a.firstNameLatin} placeholder={transliterate(a.firstName) || 'напр. Adilet'} onChange={(e) => update(a.key, { firstNameLatin: e.target.value })} className={field} />
               </div>
             </div>
+            )}
+            {!a.athleteId && hasRoster && (
+              <div className="text-xs text-[var(--app-text-muted)]">{tl(language, 'После отправки спортсмен сам попадёт в «Мои спортсмены».', 'Жөнөткөндөн кийин спортчу «Менин спортчуларым» бөлүмүнө өзү түшөт.', 'After you submit, the athlete is added to «My athletes».')}</div>
+            )}
 
             <div>
               <div className="text-sm font-medium text-[var(--app-text-primary)] mb-2">Категории</div>
@@ -373,17 +479,17 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
         );
       })}
 
-      {isCoach && (
+      {(isCoach || hasRoster) && (
         <div className="flex flex-wrap gap-2">
           <button onClick={() => setAthletes((l) => [...l, blankAthlete()])} className="inline-flex items-center gap-2 h-10 px-4 rounded-lg border border-[var(--app-border)] text-sm text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)] cursor-pointer">
-            <UserPlus className="w-4 h-4" /> Добавить спортсмена
+            <UserPlus className="w-4 h-4" /> {activeRoster.length > 0 ? tl(language, 'Новый спортсмен', 'Жаңы спортчу', 'New athlete') : tl(language, 'Добавить спортсмена', 'Спортчу кошуу', 'Add athlete')}
           </button>
-          {currentUser.alsoCompetes && (
+          {isCoach && currentUser.alsoCompetes && (
             <button onClick={addSelf} className="inline-flex items-center gap-2 h-10 px-4 rounded-lg border border-[var(--app-border)] text-sm text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)] cursor-pointer">
               <UserPlus className="w-4 h-4" /> Добавить себя
             </button>
           )}
-          {teamCats.length > 0 && (
+          {isCoach && teamCats.length > 0 && (
             <button
               onClick={() => setTeams((l) => [...l, { key: Math.random().toString(36).slice(2), categoryId: teamCats[0].id, teamName: '', members: '' }])}
               className="inline-flex items-center gap-2 h-10 px-4 rounded-lg border border-[var(--app-border)] text-sm text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)] cursor-pointer"
