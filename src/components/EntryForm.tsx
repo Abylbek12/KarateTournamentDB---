@@ -5,6 +5,11 @@ import { BELT_LABELS, BELT_CHOICES, categoryFits, categoryName, isTeamCategory }
 import { COUNTRIES, flagEmoji, countryByNoc } from '../utils/countries';
 import { transliterate } from '../utils/names';
 import { formatBirthInput, parseBirthText } from '../utils/dateInput';
+import { useApp } from '../context/AppContext';
+import { sanitizePricing, quoteEntries, countPaidBefore, athleteKey, bishkekDate, categoryPrice, currentPeriod, type QuoteLine } from '../utils/pricing';
+import { clockNow } from '../utils/serverClock';
+
+const tl = (lang: string, ru: string, ky: string, en: string) => (lang === 'ky' ? ky : lang === 'en' ? en : ru);
 
 interface EntryFormProps {
   tournaments: Tournament[];
@@ -122,7 +127,39 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
         countryCode
       }))
   ];
-  const total = entries.reduce((sum, e) => sum + (cats.find((c) => c.id === e.categoryId)?.fee || 0), 0);
+  // Fee estimate: price period of today and the next-category discount. The server recalculates and fixes the amount.
+  const { language } = useApp();
+  const pricing = sanitizePricing(tournament?.pricing);
+  const today = bishkekDate(new Date(clockNow()));
+  const period = currentPeriod(pricing, today);
+  const quoteKeys: string[] = [];
+  const quote = quoteEntries(
+    [
+      ...athletes.flatMap((a) =>
+        a.categoryIds
+          .map((id) => cats.find((c) => c.id === id))
+          .filter((c): c is EventCategory => Boolean(c))
+          .map((c) => {
+            quoteKeys.push(`${a.key}:${c.id}`);
+            return { category: c, athleteKey: athleteKey(a.lastName, a.firstName, a.birthDate) };
+          })
+      ),
+      ...teams
+        .filter((t) => t.categoryId && t.teamName.trim())
+        .map((t) => cats.find((c) => c.id === t.categoryId))
+        .filter((c): c is EventCategory => Boolean(c))
+        .map((c) => {
+          quoteKeys.push(`team:${c.id}`);
+          return { category: c, athleteKey: null };
+        })
+    ],
+    pricing,
+    today,
+    countPaidBefore(participants, categories, tournamentId)
+  );
+  const lineFor = new Map<string, QuoteLine>(quoteKeys.map((k, i) => [k, quote.lines[i]]));
+  const total = quote.total;
+  const discounted = quote.lines.filter((l) => l.kind === 'additional').length;
 
   const submit = async () => {
     setError(null);
@@ -140,7 +177,8 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Заявка не отправлена');
-      setDone(`Отправлено заявок: ${data.entries.length}. ${total > 0 ? `К оплате: ${total} ${currency}.` : ''}`);
+      const due = (data.entries as { feeAmount?: number }[]).reduce((sum, e) => sum + (e.feeAmount || 0), 0);
+      setDone(`${tl(language, 'Отправлено заявок', 'Жөнөтүлгөн табыштамалар', 'Entries sent')}: ${data.entries.length}. ${due > 0 ? `${tl(language, 'К оплате', 'Төлөөгө', 'To pay')}: ${due} ${currency}.` : ''}`);
       setAthletes(isCoach ? [blankAthlete()] : athletes.map((a) => ({ ...a, categoryIds: [] })));
       setTeams([]);
     } catch (e: any) {
@@ -311,6 +349,8 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
                 <div className="grid gap-2 sm:grid-cols-2">
                   {fits.map(({ c }) => {
                     const checked = a.categoryIds.includes(c.id);
+                    const line = checked ? lineFor.get(`${a.key}:${c.id}`) : undefined;
+                    const price = line ? line.amount : categoryPrice(c, period);
                     return (
                       <label key={c.id} className={`flex items-center gap-2.5 rounded-lg border px-3 py-2 cursor-pointer ${checked ? 'border-[var(--accent)] bg-[var(--accent-soft)]' : 'border-[var(--app-border)]'}`}>
                         <input
@@ -319,7 +359,10 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
                           onChange={(e) => update(a.key, { categoryIds: e.target.checked ? [...a.categoryIds, c.id] : a.categoryIds.filter((x) => x !== c.id) })}
                         />
                         <span className="flex-1 text-sm text-[var(--app-text-primary)]">{categoryName(c)}</span>
-                        <span className="text-xs text-[var(--app-text-muted)] whitespace-nowrap">{c.fee ? `${c.fee} ${currency}` : 'бесплатно'}</span>
+                        <span className="text-xs text-[var(--app-text-muted)] whitespace-nowrap text-right">
+                          {c.fee ? `${price} ${currency}` : tl(language, 'бесплатно', 'акысыз', 'free')}
+                          {line?.kind === 'additional' && <span className="block text-emerald-700">{tl(language, 'след. категория', 'кийинки категория', 'next category')}</span>}
+                        </span>
                       </label>
                     );
                   })}
@@ -382,7 +425,16 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
       <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 flex flex-wrap items-center gap-3">
         <div className="flex-1 min-w-[200px] text-[var(--app-text-primary)]">
           <div className="font-semibold">Заявок: {entries.length}</div>
-          <div className="text-sm text-[var(--app-text-muted)]">Взнос: {total} {currency}</div>
+          <div className="text-sm text-[var(--app-text-muted)]">
+            {tl(language, 'Взнос', 'Төлөм', 'Fee')}: {total} {currency}
+            {period && ` · ${period.name || tl(language, 'текущий период', 'учурдагы мезгил', 'current period')}`}
+            {discounted > 0 && ` · ${tl(language, 'со скидкой за следующие категории', 'кийинки категорияларга арзандатуу менен', 'with next-category discount')}: ${discounted}`}
+          </div>
+          {total > 0 && (
+            <div className="text-xs text-[var(--app-text-muted)]">
+              {tl(language, 'Точную сумму сайт посчитает при отправке и покажет в «Мои заявки».', 'Так сумманы сайт жөнөтүүдө эсептеп, «Менин табыштамаларым» бөлүмүндө көрсөтөт.', 'The exact amount is calculated when you submit and shown in «My entries».')}
+            </div>
+          )}
         </div>
         <button onClick={submit} disabled={busy || entries.length === 0} className="h-11 px-6 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white font-semibold disabled:opacity-40 cursor-pointer">
           {busy ? 'Отправка…' : 'Отправить заявку'}

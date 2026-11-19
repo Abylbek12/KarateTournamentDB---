@@ -1,0 +1,43 @@
+feature,area,priority,original,clone,notes
+Каталог турниров: карточки с датой и городом,catalog,must,yes,yes,S01
+Фильтры каталога: страна / вид спорта / тип / даты / поиск по названию,catalog,must,yes,partial,S01; в Apsatarov проверить фильтр по стране и диапазону дат
+Страница турнира: описание / афиша / адрес с картой,event page,must,yes,partial,S04; карта (Mapbox) у Uventex; у нас проверить
+Обратный отсчёт до конца регистрации,event page,must,yes,yes,S04
+Таблица категорий с кодом (K001...) и поиском по коду,divisions,must,yes,yes,S05; TournamentDivisionsPricingView
+Ценовые периоды (ранняя / поздняя цена по датам),divisions,must,yes,no,S05; у Uventex переключатель периодов над таблицей
+Цена за первую и за каждую следующую категорию (1st / 2nd+),divisions,must,yes,no,S05
+Классы категорий: личные / командные / пары (Individual / Team / Dual),divisions,must,yes,partial,S05; командные есть; пары (Dual) не найдены
+Регистрация спортсмена на категории,registration,must,yes,yes,S16; EntryForm
+Заявка от клуба тренером (несколько спортсменов),registration,must,yes,yes,роль club_coach
+Онлайн-оплата взноса при регистрации,payments,must,yes,no,сейчас отметка оплаты вручную организатором; карта не подключена
+Публичный список участников,event page,must,yes,partial,S06; у нас список видят только официальные лица (защита данных детей) — оставить так или показывать только имя/клуб
+Сетки и жеребьёвка,brackets,must,yes,yes,S07; wkfBracketSeeding
+Распределение категорий по рингам (Ring Assignment),operations,must,yes,yes,S20; расписание татами
+Пульт секретаря: ведение боя и очки,operations,must,yes,yes,BoutConsole; у Uventex роль Scorekeeper
+Онлайн-табло: стена из нескольких рингов с выбором рингов и дней,live,must,yes,partial,S10; у нас TatamiOverview; нет выбора числа рингов на экране и интервала обновления
+Расписание на экране: «сейчас / следующий» по каждому рингу,live,must,yes,partial,S12; у Uventex параметры day / ringIds / nextCount в адресе
+Результаты по категориям,results,must,yes,yes,S09
+Медальный зачёт,results,must,yes,yes,S08
+Вход по e-mail и паролю и восстановление пароля,accounts,must,yes,partial,S02; вход есть; восстановление пароля проверить
+Вход через Google / Facebook,accounts,should,yes,no,у нас заглушки
+Расписание явки на чек-ин (Check-In Timetable),operations,should,yes,no,S11; когда спортсмену приходить на регистрацию/взвешивание
+Регистрация судей на турнир,officials,should,yes,partial,S17; у нас роли судей выдаёт админ; нет формы заявки судьи
+Статистика заявок: всего / по категориям / по командам / по странам,analytics,should,yes,partial,S14
+Продажа билетов зрителям,tickets,should,yes,no,S15
+Трансляции по рингам,live,should,yes,yes,S13; у Uventex свой Uventex TV; у нас YouTube
+Мои категории (личный кабинет спортсмена),accounts,should,yes,partial,S18
+Обучение по ролям: регистрация / секретарь / координатор,help,should,yes,partial,видео и вебинары у Uventex; у нас RoleGuide и Сенсей
+Интерфейс на нескольких языках,i18n,should,yes,partial,Uventex 11 языков; у нас ru / ky / en — для Кыргызстана достаточно
+Рейтинги спортсменов,rankings,should,yes,yes,S23
+Трансфер и проживание (Travel & Hotel),event page,could,yes,no,S21
+Галерея фото турнира,event page,could,yes,no,S22
+Семинары при турнире (My Seminars),event page,could,yes,no,
+Магазин (Store),commerce,could,yes,no,S24
+Кабинет федерации / лиги: члены / клубы / регионы / ID-карты / комитет,league,could,yes,no,S25; у Uventex отдельный блок League management
+Согласование (санкционирование) турниров лигой,league,could,yes,no,в каталоге есть событие «PCL Event Sanctioning»
+Мобильное приложение для участников,mobile,could,yes,no,MYuventex Event App (Android/iOS)
+Онлайн-чат поддержки на сайте,help,could,yes,partial,у Uventex виджет «Need help?»; у нас ИИ-ассистент Сенсей
+Управление школами/студиями (Studios),studios,could,yes,skip,отдельный продукт Uventex (myuventexstudio.com); вне выбранного среза
+Виртуальные турниры (Virtual Studios),studios,could,yes,skip,отдельный продукт; вне среза
+Реклама и брендированные магазины спонсоров,commerce,could,yes,skip,их рекламный бизнес; не функция турнира
+База спортсменов и рейтинги чужих лиг (NASKA и др.),rankings,could,yes,skip,данные принадлежат Uventex и лигам; строим свою базу

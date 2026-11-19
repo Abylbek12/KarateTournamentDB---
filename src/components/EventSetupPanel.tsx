@@ -2,6 +2,7 @@ import React from 'react';
 import { Plus, Trash2, Shuffle, Lock, Unlock, ChevronDown, Layers, Printer, ListChecks } from 'lucide-react';
 import { printUrl } from './PrintDocuments';
 import { NumberField } from './NumberField';
+import { PricingEditor } from './PricingEditor';
 import type { Bout, EventCategory, Gender, Participant, Tournament } from '../types/schema';
 import { WKF_AGE_GROUPS, buildWkfSet, categoryName, newCategoryId, activeEntries, DISCIPLINE_LABELS, isTeamCategory } from '../utils/eventCategories';
 
@@ -16,6 +17,8 @@ interface EventSetupPanelProps {
   onDraw: (category: EventCategory, tatamiNumber: number) => void;
   onWithdraw: (entryId: string) => void;
   currency?: string;
+  /** Saves tournament fields (price periods). Without it the price editor is hidden. */
+  onUpdateTournament?: (t: Tournament) => void;
 }
 
 const field = 'rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-text-primary)] px-2.5 py-1.5 text-sm';
@@ -31,7 +34,8 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
   tatamiNumbers,
   onDraw,
   onWithdraw,
-  currency = 'сом'
+  currency = 'сом',
+  onUpdateTournament
 }) => {
   const [tid, setTid] = React.useState(initialTournamentId && tournaments.some((t) => t.id === initialTournamentId) ? initialTournamentId : tournaments[0]?.id || '');
   const cats = categories.filter((c) => c.tournamentId === tid);
@@ -193,6 +197,19 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
           </button>
         </section>
       </div>
+
+      {onUpdateTournament && tournaments.find((t) => t.id === tid) && (
+        <PricingEditor
+          tournament={tournaments.find((t) => t.id === tid)!}
+          categories={cats}
+          currency={currency}
+          onSave={(pricing) => {
+            const current = tournaments.find((t) => t.id === tid);
+            // An empty object (not undefined) so that clearing all periods is sent to the server too
+            if (current) onUpdateTournament({ ...current, pricing: pricing || { periods: [], additionalDiscount: 0 } });
+          }}
+        />
+      )}
 
       <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] overflow-hidden">
         <div className="px-4 py-3 border-b border-[var(--app-border)] flex flex-wrap items-center gap-2">

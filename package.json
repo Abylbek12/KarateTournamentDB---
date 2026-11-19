@@ -15,11 +15,12 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "test:draw": "tsx scripts/test-draw.ts",
-    "test": "npm run test:draw && npm run test:bouts && npm run test:categories && npm run test:intl && npm run test:youtube",
+    "test": "npm run test:draw && npm run test:bouts && npm run test:categories && npm run test:intl && npm run test:youtube && npm run test:pricing",
     "test:bouts": "tsx scripts/test-bouts.ts",
     "test:categories": "tsx scripts/test-categories.ts",
     "test:intl": "tsx scripts/test-intl.ts",
-    "test:youtube": "tsx scripts/test-youtube.ts"
+    "test:youtube": "tsx scripts/test-youtube.ts",
+    "test:pricing": "tsx scripts/test-pricing.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.9.0",
