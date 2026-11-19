@@ -3,7 +3,7 @@ import { Rocket, Download, ShieldAlert, CheckCircle2, Upload } from 'lucide-reac
 
 interface LaunchStatus {
   launchedAt: string | null;
-  counts: Record<'events' | 'participants' | 'bouts' | 'categories' | 'protocols' | 'accounts' | 'invites' | 'deviceKeys', number>;
+  counts: Record<'events' | 'participants' | 'bouts' | 'categories' | 'protocols' | 'accounts' | 'invites' | 'deviceKeys' | 'athletes', number>;
 }
 
 const PHRASE = 'ЗАПУСК';
@@ -15,6 +15,7 @@ const LABELS: [keyof LaunchStatus['counts'], string][] = [
   ['bouts', 'Поединки'],
   ['protocols', 'Судейские протоколы'],
   ['accounts', 'Аккаунты (кроме администраторов)'],
+  ['athletes', 'Карточки «Мои спортсмены»'],
   ['invites', 'Ссылки-приглашения'],
   ['deviceKeys', 'Ключи пультов татами']
 ];

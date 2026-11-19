@@ -68,6 +68,28 @@ export interface DeviceKeyRecord {
   expiresAt: number;
 }
 
+/** A club athlete card: entered once, reused for every entry. Validated in server/athletes.ts. */
+export interface ClubAthleteRecord {
+  id: string;
+  ownerId: string;
+  lastName: string;
+  firstName: string;
+  lastNameLatin?: string;
+  firstNameLatin?: string;
+  birthDate: string;
+  gender: 'male' | 'female';
+  beltRank: string;
+  beltOther?: string;
+  weightKg?: number;
+  licenseNumber?: string;
+  clubName?: string;
+  city?: string;
+  countryCode?: string;
+  archived?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface DbShape {
   events: any[] | null;
   invites: Record<string, InviteRecord>;
@@ -76,6 +98,8 @@ interface DbShape {
   accounts: StoredUserAccount[];
   sessions: Record<string, SessionRecord>;
   images: Record<string, ImageMeta>;
+  /** Club athlete database («Мои спортсмены»): private to the owner account and admin. */
+  athletes: ClubAthleteRecord[];
   /** Set by «Подготовка к запуску»: demo data is never seeded again. */
   launchedAt?: string;
 }
@@ -95,7 +119,7 @@ export const DATABASE_MISSING = !USE_DATABASE && !!process.env.VERCEL;
 
 if (!USE_DATABASE && !DATABASE_MISSING) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
-const emptyDb = (): DbShape => ({ events: null, state: {}, invites: {}, deviceKeys: {}, accounts: [], sessions: {}, images: {} });
+const emptyDb = (): DbShape => ({ events: null, state: {}, invites: {}, deviceKeys: {}, accounts: [], sessions: {}, images: {}, athletes: [] });
 
 function normalize(raw: any): DbShape {
   return {
@@ -106,6 +130,7 @@ function normalize(raw: any): DbShape {
       accounts: Array.isArray(raw.accounts) ? raw.accounts : [],
       sessions: raw.sessions && typeof raw.sessions === 'object' ? raw.sessions : {},
       images: raw.images && typeof raw.images === 'object' ? raw.images : {},
+      athletes: Array.isArray(raw.athletes) ? raw.athletes : [],
       launchedAt: typeof raw.launchedAt === 'string' ? raw.launchedAt : undefined
   };
 }
@@ -363,7 +388,7 @@ export function rateLimiter(limit: number, windowMs: number) {
 
 // ---------------- Database mode (Vercel + Postgres) ----------------
 
-const DB_KEYS = ['events', 'invites', 'deviceKeys', 'state', 'accounts', 'sessions', 'images', 'launchedAt'] as const;
+const DB_KEYS = ['events', 'invites', 'deviceKeys', 'state', 'accounts', 'sessions', 'images', 'athletes', 'launchedAt'] as const;
 const pendingImages = new Map<string, string>();
 const pendingBackups: { key: string; value: unknown }[] = [];
 let pool: pg.Pool | null = null;

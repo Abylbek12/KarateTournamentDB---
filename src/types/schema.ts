@@ -273,6 +273,8 @@ export interface Participant {
   firstNameLatin?: string;
   /** Account that submitted the entry (athlete, parent or coach). */
   createdBy?: string;
+  /** Card in «Мои спортсмены» of the account that made the entry. Data is copied into the entry at submit time. */
+  athleteId?: string;
   createdAt?: string;
   /** Team entries (team kata / team kumite): team name and members. */
   teamName?: string;

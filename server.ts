@@ -79,6 +79,17 @@ app.use(databaseMiddleware(() => ensureAdminAccount(true)));
 import { DEMO_EVENTS } from './src/data/eventsData';
 import { sanitizeLiveStreams } from './src/utils/youtube';
 import { sanitizePricing, quoteEntries, countPaidBefore, athleteKey, bishkekDate } from './src/utils/pricing';
+import {
+  sanitizeAthlete,
+  findSameAthlete,
+  visibleAthletes,
+  canManageAthlete,
+  athleteFromEntry,
+  suggestFromEntries,
+  ROSTER_ROLES,
+  MAX_ATHLETES_PER_OWNER,
+  type ClubAthlete
+} from './src/utils/athletes';
 import { SAMPLE_BOUTS, SAMPLE_PARTICIPANTS } from './src/data/sampleTournamentData';
 
 const hasAiKey = () => !!process.env.ANTHROPIC_API_KEY?.trim();
@@ -755,7 +766,8 @@ app.get('/api/admin/launch-status', (req: Request, res: Response) => {
       protocols: stateCount('protocols'),
       accounts: db.accounts.filter((a) => a.role !== 'admin').length,
       invites: Object.keys(db.invites).length,
-      deviceKeys: Object.keys(db.deviceKeys).length
+      deviceKeys: Object.keys(db.deviceKeys).length,
+      athletes: db.athletes.length
     }
   });
 });
@@ -764,7 +776,7 @@ const LAUNCH_PHRASE = 'ЗАПУСК';
 
 /**
  * «Подготовка к запуску»: saves a full backup, then removes all tournaments, entries, bouts,
- * categories, protocols, invitations, tatami device keys and every account except administrators.
+ * categories, protocols, invitations, tatami device keys, club athlete cards and every account except administrators.
  * Demo data is never created again after this.
  */
 app.post('/api/admin/launch-reset', (req: Request, res: Response) => {
@@ -795,6 +807,7 @@ app.post('/api/admin/launch-reset', (req: Request, res: Response) => {
   }
   db.invites = {};
   db.deviceKeys = {};
+  db.athletes = [];
   const adminIds = new Set(db.accounts.filter((a) => a.role === 'admin').map((a) => a.id));
   db.accounts = db.accounts.filter((a) => adminIds.has(a.id));
   for (const [sid, sess] of Object.entries(db.sessions)) {
@@ -926,7 +939,7 @@ function visibleParticipants(list: any[], user: StoredUserAccount | null): any[]
   if (user && PERSONAL_DATA_ROLES.has(user.role)) return list;
   return list.map((p) => {
     if (user && p?.createdBy === user.id) return p;
-    const { birthDate, declaredWeightKg, actualWeightKg, licenseNumber, feePaymentStatus, feeAmountRub, feeAmount, eligibilityNote, isMedicalCleared, createdBy, ...rest } = p || {};
+    const { birthDate, declaredWeightKg, actualWeightKg, licenseNumber, feePaymentStatus, feeAmountRub, feeAmount, eligibilityNote, isMedicalCleared, createdBy, athleteId, ...rest } = p || {};
     return { ...rest, birthDate: '', declaredWeightKg: 0, actualWeightKg: null, licenseNumber: '', isMedicalCleared: false };
   });
 }
@@ -976,6 +989,122 @@ app.put('/api/state/:key', (req: Request, res: Response) => {
 });
 
 // ========================================================
+// CLUB ATHLETES («Мои спортсмены»): a coach or parent enters an athlete once and reuses the card.
+// Private: a card is seen and changed only by its owner account and the admin (many athletes are children).
+// Officials see athlete data only through tournament entries, as before.
+// ========================================================
+const rosterUser = (req: Request, res: Response): StoredUserAccount | null => {
+  const user = getSessionUser(req);
+  if (!user) {
+    res.status(401).json({ error: 'Войдите в аккаунт.' });
+    return null;
+  }
+  if (!ROSTER_ROLES.has(user.role)) {
+    res.status(403).json({ error: 'База спортсменов доступна тренерам, спортсменам и родителям.' });
+    return null;
+  }
+  return user;
+};
+
+/** Adds a card; returns it, or an error text. Same athlete already in the roster → that card. */
+function addAthlete(ownerId: string, fields: Omit<ClubAthlete, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>): { athlete: ClubAthlete; existed: boolean } | { error: string } {
+  const same = findSameAthlete(db.athletes as ClubAthlete[], ownerId, fields);
+  if (same) return { athlete: same, existed: true };
+  if (db.athletes.filter((a) => a.ownerId === ownerId).length >= MAX_ATHLETES_PER_OWNER) {
+    return { error: `В базе уже ${MAX_ATHLETES_PER_OWNER} спортсменов — больше добавить нельзя. Отправьте лишних в архив или напишите администратору.` };
+  }
+  const now = new Date().toISOString();
+  const athlete: ClubAthlete = { ...fields, archived: undefined, id: `a-${crypto.randomUUID()}`, ownerId, createdAt: now, updatedAt: now };
+  db.athletes.push(athlete);
+  return { athlete, existed: false };
+}
+
+app.get('/api/athletes', (req: Request, res: Response) => {
+  const user = rosterUser(req, res);
+  if (!user) return;
+  const ownerId = typeof req.query.ownerId === 'string' ? req.query.ownerId : undefined;
+  res.json({ athletes: visibleAthletes(db.athletes as ClubAthlete[], user, ownerId) });
+});
+
+app.post('/api/athletes', (req: Request, res: Response) => {
+  const user = rosterUser(req, res);
+  if (!user) return;
+  const checked = sanitizeAthlete(req.body);
+  if (!checked.ok) {
+    res.status(400).json({ error: checked.error });
+    return;
+  }
+  if (findSameAthlete(db.athletes as ClubAthlete[], user.id, checked.value)) {
+    res.status(409).json({ error: `${checked.value.lastName} ${checked.value.firstName} уже есть в базе.` });
+    return;
+  }
+  const added = addAthlete(user.id, checked.value);
+  if ('error' in added) {
+    res.status(400).json({ error: added.error });
+    return;
+  }
+  saveDb();
+  res.status(201).json({ athlete: added.athlete });
+});
+
+/** Adds several athletes from past entries at once (button «Добавить из прошлых заявок»). */
+app.post('/api/athletes/import-from-entries', (req: Request, res: Response) => {
+  const user = rosterUser(req, res);
+  if (!user) return;
+  const candidates = suggestFromEntries(participantsList(), db.athletes as ClubAthlete[], user.id);
+  let added = 0;
+  for (const c of candidates) {
+    const r = addAthlete(user.id, c);
+    if ('error' in r) break;
+    if (!r.existed) added++;
+  }
+  if (added) saveDb();
+  res.json({ added, athletes: visibleAthletes(db.athletes as ClubAthlete[], user) });
+});
+
+app.get('/api/athletes/suggest-from-entries', (req: Request, res: Response) => {
+  const user = rosterUser(req, res);
+  if (!user) return;
+  res.json({ candidates: suggestFromEntries(participantsList(), db.athletes as ClubAthlete[], user.id) });
+});
+
+app.put('/api/athletes/:id', (req: Request, res: Response) => {
+  const user = rosterUser(req, res);
+  if (!user) return;
+  const athlete = (db.athletes as ClubAthlete[]).find((a) => a.id === req.params.id);
+  if (!athlete || !canManageAthlete(athlete, user)) {
+    res.status(404).json({ error: 'Спортсмен не найден.' });
+    return;
+  }
+  const checked = sanitizeAthlete({ ...athlete, ...req.body, archived: athlete.archived });
+  if (!checked.ok) {
+    res.status(400).json({ error: checked.error });
+    return;
+  }
+  if (findSameAthlete(db.athletes as ClubAthlete[], athlete.ownerId, checked.value, athlete.id)) {
+    res.status(409).json({ error: `${checked.value.lastName} ${checked.value.firstName} уже есть в базе.` });
+    return;
+  }
+  Object.assign(athlete, checked.value, { updatedAt: new Date().toISOString() });
+  saveDb();
+  res.json({ athlete });
+});
+
+app.post('/api/athletes/:id/archive', (req: Request, res: Response) => {
+  const user = rosterUser(req, res);
+  if (!user) return;
+  const athlete = (db.athletes as ClubAthlete[]).find((a) => a.id === req.params.id);
+  if (!athlete || !canManageAthlete(athlete, user)) {
+    res.status(404).json({ error: 'Спортсмен не найден.' });
+    return;
+  }
+  athlete.archived = req.body?.archived === false ? undefined : true;
+  athlete.updatedAt = new Date().toISOString();
+  saveDb();
+  res.json({ athlete });
+});
+
+// ========================================================
 // ENTRIES (заявки): athletes, parents and coaches enter tournaments.
 // Each entry is appended on its own, so many coaches can submit at once.
 // ========================================================
@@ -1008,7 +1137,7 @@ app.post('/api/entries', (req: Request, res: Response) => {
   const categories: any[] = Array.isArray(db.state.categories?.value) ? (db.state.categories!.value as any[]) : [];
   const list = participantsList();
   const created: any[] = [];
-  for (const e of entries) {
+  for (let e of entries) {
     const cat = categories.find((c) => c.id === e?.categoryId);
     if (!cat) {
       res.status(400).json({ error: 'Категория не найдена. Обновите страницу и выберите категорию заново.' });
@@ -1019,6 +1148,31 @@ app.post('/api/entries', (req: Request, res: Response) => {
       return;
     }
     const isTeam = cat.discipline === 'team_kata' || cat.discipline === 'team_kumite';
+    // An athlete from «Мои спортсмены»: personal data comes from the card (only one's own card), weight may be updated.
+    let card: ClubAthlete | undefined;
+    if (!isTeam && e?.athleteId) {
+      card = (db.athletes as ClubAthlete[]).find((a) => a.id === e.athleteId && a.ownerId === user.id);
+      if (!card) {
+        res.status(404).json({ error: 'Спортсмен не найден в вашей базе. Обновите страницу.' });
+        return;
+      }
+      e = {
+        ...e,
+        lastName: card.lastName,
+        firstName: card.firstName,
+        lastNameLatin: card.lastNameLatin,
+        firstNameLatin: card.firstNameLatin,
+        birthDate: card.birthDate,
+        gender: card.gender,
+        beltRank: card.beltRank,
+        beltOther: card.beltOther,
+        licenseNumber: card.licenseNumber,
+        clubName: e.clubName || card.clubName,
+        city: e.city || card.city,
+        countryCode: e.countryCode || card.countryCode,
+        declaredWeightKg: Number(e.declaredWeightKg) > 0 ? e.declaredWeightKg : card.weightKg
+      };
+    }
     const last = String(e.lastName || '').trim().slice(0, 80);
     const first = String(e.firstName || '').trim().slice(0, 80);
     if (!isTeam && (!last || !first || !/^\d{4}-\d{2}-\d{2}$/.test(String(e.birthDate || '')))) {
@@ -1064,6 +1218,7 @@ app.post('/api/entries', (req: Request, res: Response) => {
       licenseNumber: String(e.licenseNumber || '').trim().slice(0, 40),
       teamName: isTeam ? String(e.teamName || '').trim().slice(0, 80) : undefined,
       teamMembers: isTeam && Array.isArray(e.teamMembers) ? e.teamMembers.map((m: unknown) => String(m).trim().slice(0, 80)).filter(Boolean).slice(0, 8) : undefined,
+      athleteId: card?.id,
       createdBy: user.id,
       createdAt: new Date().toISOString()
     });
@@ -1088,8 +1243,32 @@ app.post('/api/entries', (req: Request, res: Response) => {
       p.feePaymentStatus = quote.lines[i].amount > 0 ? 'pending' : 'exempt';
     });
   }
+  // «Мои спортсмены»: a new athlete entered by hand lands in the roster; a chosen one gets the newest weight.
+  // A full roster never blocks the entry itself.
+  // Only coaches and parents get automatic cards: an official entering many clubs keeps no roster of them.
+  let rosterChanged = false;
+  if (user.role === 'club_coach' || user.role === 'athlete') {
+    for (const p of created) {
+      if (p.teamName) continue;
+      const card = p.athleteId ? (db.athletes as ClubAthlete[]).find((a) => a.id === p.athleteId) : undefined;
+      if (card) {
+        if (p.declaredWeightKg > 0 && card.weightKg !== p.declaredWeightKg) {
+          card.weightKg = p.declaredWeightKg;
+          card.updatedAt = new Date().toISOString();
+          rosterChanged = true;
+        }
+        continue;
+      }
+      const fields = athleteFromEntry(p);
+      if (!fields.ok) continue;
+      const r = addAthlete(user.id, fields.value);
+      if ('error' in r) continue;
+      p.athleteId = r.athlete.id;
+      rosterChanged = true;
+    }
+  }
   saveParticipants([...list, ...created], user.id);
-  res.status(201).json({ success: true, entries: created });
+  res.status(201).json({ success: true, entries: created, rosterChanged });
 });
 
 /** Withdraw an entry: its author (before the draw) or an official. */
