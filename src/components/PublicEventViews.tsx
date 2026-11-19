@@ -11,6 +11,7 @@ import { clockNow } from '../utils/serverClock';
 import { displayName, displayClub, localizeCategoryName, nameModeFor, participantFlag, participantNoc, participantCountry, type NameMode } from '../utils/names';
 import { countryName, flagEmoji } from '../utils/countries';
 import { currentBoutOf, upcomingOf } from './TatamiScreens';
+import { sanitizePricing, currentPeriod, periodStartsOn, bishkekDate, categoryPrice, additionalPrice, isTeamDiscipline } from '../utils/pricing';
 import { streamTatamis, youtubeVideoId, youtubeEmbedUrl, youtubeCommand, fitVideoGrid } from '../utils/youtube';
 
 type Lang = 'ru' | 'ky' | 'en';
@@ -694,6 +695,13 @@ export const PublicCategoriesView: React.FC<
 > = (props) => {
   const { event, participants, language, eventCategories, onEnter, currency = 'сом' } = props;
   const cats = eventCategories.filter((c) => c.tournamentId === event.id);
+  const pricing = sanitizePricing(event.pricing);
+  const nowPeriod = currentPeriod(pricing, bishkekDate(new Date(clockNow())));
+  const [periodId, setPeriodId] = React.useState<string | null>(null);
+  const period = pricing?.periods.find((p) => p.id === periodId) || nowPeriod;
+  const showNext = (pricing?.additionalDiscount || 0) > 0;
+  const fmt = (iso: string) => iso.split('-').reverse().join('.');
+  const money = (n: number) => (n ? `${n} ${currency}` : '—');
   const groups = (['kata', 'kumite', 'team_kata', 'team_kumite', 'other'] as const)
     .map((d) => ({ d, list: cats.filter((c) => c.discipline === d) }))
     .filter((g) => g.list.length > 0);
@@ -708,6 +716,47 @@ export const PublicCategoriesView: React.FC<
           {t(language, 'Подать заявку', 'Табыштама берүү', 'Enter')}
         </button>
       </div>
+      {pricing && (pricing.periods.length > 0 || showNext) && (
+        <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 space-y-3">
+          {pricing.periods.length > 0 && (
+            <div>
+              <div className="text-sm font-semibold text-[var(--app-text-primary)] mb-2">{t(language, 'Ценовые периоды', 'Баа мезгилдери', 'Price periods')}</div>
+              <div className="flex flex-wrap gap-2" role="group" aria-label={t(language, 'Ценовые периоды', 'Баа мезгилдери', 'Price periods')}>
+                {pricing.periods.map((p) => {
+                  const start = periodStartsOn(pricing, p.id);
+                  const active = period?.id === p.id;
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => setPeriodId(p.id)}
+                      aria-pressed={active}
+                      className={`text-left rounded-xl border px-3 py-2 text-sm cursor-pointer ${active ? 'bg-[var(--accent)] border-[var(--accent)] text-white' : 'border-[var(--app-border)] text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)]'}`}
+                    >
+                      <span className="block font-semibold">
+                        {p.name || t(language, 'Период', 'Мезгил', 'Period')}
+                        {nowPeriod?.id === p.id && <span className={`ml-2 text-xs font-normal ${active ? 'text-white/85' : 'text-emerald-700'}`}>{t(language, 'сейчас', 'азыр', 'now')}</span>}
+                      </span>
+                      <span className={`block text-xs ${active ? 'text-white/85' : 'text-[var(--app-text-muted)]'}`}>
+                        {start ? `${fmt(start)} – ${fmt(p.endsOn)}` : `${t(language, 'до', 'чейин', 'until')} ${fmt(p.endsOn)}`}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {showNext && (
+            <p className="text-sm text-[var(--app-text-secondary)]">
+              {t(
+                language,
+                `Несколько категорий: самая дорогая — полная цена, каждая следующая — на ${pricing.additionalDiscount} ${currency} дешевле. Командные — без скидки.`,
+                `Бир нече категория: эң кымбаты — толук баада, ар бир кийинкиси — ${pricing.additionalDiscount} ${currency} арзан. Командалыктарга арзандатуу жок.`,
+                `Several categories: the most expensive is full price, each next one is ${pricing.additionalDiscount} ${currency} less. No discount for teams.`
+              )}
+            </p>
+          )}
+        </section>
+      )}
       {groups.map(({ d, list }) => (
         <section key={d} className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] overflow-hidden">
           <h2 className="px-4 py-3 font-semibold text-[var(--app-text-primary)] border-b border-[var(--app-border)]">{DISCIPLINE_LABELS[d]}</h2>
@@ -717,7 +766,8 @@ export const PublicCategoriesView: React.FC<
                 <tr>
                   <th className="px-4 py-2 text-left">{t(language, 'Категория', 'Категория', 'Category')}</th>
                   <th className="px-4 py-2 text-right">{t(language, 'Заявок', 'Табыштама', 'Entries')}</th>
-                  <th className="px-4 py-2 text-right">{t(language, 'Взнос', 'Төлөм', 'Fee')}</th>
+                  <th className="px-4 py-2 text-right">{showNext ? t(language, '1-я категория', '1-категория', '1st category') : t(language, 'Взнос', 'Төлөм', 'Fee')}</th>
+                  {showNext && <th className="px-4 py-2 text-right">{t(language, 'Следующая', 'Кийинки', 'Next')}</th>}
                   <th className="px-4 py-2 text-right">{t(language, 'Статус', 'Абалы', 'Status')}</th>
                 </tr>
               </thead>
@@ -726,7 +776,12 @@ export const PublicCategoriesView: React.FC<
                   <tr key={c.id} className="border-t border-[var(--app-border)]">
                     <td className="px-4 py-2">{categoryName(c)}</td>
                     <td className="px-4 py-2 text-right tabular-nums">{activeEntries(participants, c.id).length}</td>
-                    <td className="px-4 py-2 text-right tabular-nums whitespace-nowrap">{c.fee ? `${c.fee} ${currency}` : '—'}</td>
+                    <td className="px-4 py-2 text-right tabular-nums whitespace-nowrap">{money(categoryPrice(c, period))}</td>
+                    {showNext && (
+                      <td className="px-4 py-2 text-right tabular-nums whitespace-nowrap">
+                        {isTeamDiscipline(c.discipline) ? '—' : money(additionalPrice(c, period, pricing))}
+                      </td>
+                    )}
                     <td className="px-4 py-2 text-right text-xs">
                       <span className={c.isClosed ? 'text-[var(--app-text-muted)]' : 'text-emerald-700'}>
                         {c.isClosed ? t(language, 'приём закрыт', 'жабык', 'closed') : t(language, 'приём заявок', 'ачык', 'open')}

@@ -1630,6 +1630,7 @@ function AppContent() {
               tatamiNumbers={tatamiNumbers}
               onDraw={handleDrawCategory}
               onWithdraw={handleWithdrawEntry}
+              onUpdateTournament={currentUserRole === 'admin' ? handleUpdateTournament : undefined}
             />
           )}
 

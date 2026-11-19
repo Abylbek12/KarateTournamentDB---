@@ -1,3 +1,4 @@
+import type { TournamentPricing } from '../utils/pricing';
 export type UserRole = 
   | 'admin'
   | 'chief_referee'
@@ -167,6 +168,8 @@ export interface Tournament {
   scheduleSummary?: TournamentScheduleItem[];
   /** YouTube live broadcast per tatami: { "1": "https://www.youtube.com/watch?v=..." }. */
   liveStreams?: Record<string, string>;
+  /** Price periods and the discount for next categories (src/utils/pricing.ts). */
+  pricing?: TournamentPricing;
 }
 
 export interface Club {
@@ -258,6 +261,8 @@ export interface Participant {
   isMedicalCleared: boolean;
   feePaymentStatus?: 'paid' | 'pending' | 'exempt' | 'refunded';
   feeAmountRub?: number;
+  /** Entry fee fixed by the server when the entry was made (tournament currency). Older entries: category fee. */
+  feeAmount?: number;
   status: ParticipantStatus;
   licenseNumber: string;
   placement?: '1st_gold' | '2nd_silver' | '3rd_bronze_1' | '3rd_bronze_2' | '5th' | '7th';

@@ -78,6 +78,7 @@ app.use(databaseMiddleware(() => ensureAdminAccount(true)));
 
 import { DEMO_EVENTS } from './src/data/eventsData';
 import { sanitizeLiveStreams } from './src/utils/youtube';
+import { sanitizePricing, quoteEntries, countPaidBefore, athleteKey, bishkekDate } from './src/utils/pricing';
 import { SAMPLE_BOUTS, SAMPLE_PARTICIPANTS } from './src/data/sampleTournamentData';
 
 const hasAiKey = () => !!process.env.ANTHROPIC_API_KEY?.trim();
@@ -253,7 +254,8 @@ app.post('/api/events', (req: Request, res: Response) => {
     availableActions: newEvent.availableActions || ['info', 'categories_prices', 'brackets', 'results', 'medals', 'live_scoring'],
     athleteCount: newEvent.athleteCount || 0,
     clubCount: newEvent.clubCount || 0,
-    liveStreams: sanitizeLiveStreams(newEvent.liveStreams)
+    liveStreams: sanitizeLiveStreams(newEvent.liveStreams),
+    pricing: sanitizePricing(newEvent.pricing)
   };
 
   db.events = [preparedEvent, ...eventsList().filter((e) => e.id !== id)];
@@ -298,7 +300,9 @@ app.put('/api/events/:id', (req: Request, res: Response) => {
     locationLabel: updateData.locationLabel || (updateData.city ? `${updateData.country || existing.country}, ${updateData.city}` : existing.locationLabel),
     dateLabel: updateData.dateLabel || (updateData.startDate ? `${updateData.startDate} - ${updateData.endDate || updateData.startDate}` : existing.dateLabel),
     // Only valid YouTube links per tatami are kept
-    liveStreams: sanitizeLiveStreams(updateData.liveStreams !== undefined ? updateData.liveStreams : existing.liveStreams)
+    liveStreams: sanitizeLiveStreams(updateData.liveStreams !== undefined ? updateData.liveStreams : existing.liveStreams),
+    // Price periods and next-category discount: only valid values are kept
+    pricing: sanitizePricing(updateData.pricing !== undefined ? updateData.pricing : existing.pricing)
   };
 
   eventsList()[index] = updatedEvent;
@@ -922,7 +926,7 @@ function visibleParticipants(list: any[], user: StoredUserAccount | null): any[]
   if (user && PERSONAL_DATA_ROLES.has(user.role)) return list;
   return list.map((p) => {
     if (user && p?.createdBy === user.id) return p;
-    const { birthDate, declaredWeightKg, actualWeightKg, licenseNumber, feePaymentStatus, feeAmountRub, eligibilityNote, isMedicalCleared, createdBy, ...rest } = p || {};
+    const { birthDate, declaredWeightKg, actualWeightKg, licenseNumber, feePaymentStatus, feeAmountRub, feeAmount, eligibilityNote, isMedicalCleared, createdBy, ...rest } = p || {};
     return { ...rest, birthDate: '', declaredWeightKg: 0, actualWeightKg: null, licenseNumber: '', isMedicalCleared: false };
   });
 }
@@ -1062,6 +1066,26 @@ app.post('/api/entries', (req: Request, res: Response) => {
       teamMembers: isTeam && Array.isArray(e.teamMembers) ? e.teamMembers.map((m: unknown) => String(m).trim().slice(0, 80)).filter(Boolean).slice(0, 8) : undefined,
       createdBy: user.id,
       createdAt: new Date().toISOString()
+    });
+  }
+  // Fees are decided here, never taken from the browser: current price period of each tournament,
+  // the most expensive category of an athlete is paid in full, the others with the next-category discount.
+  const today = bishkekDate();
+  for (const tournamentId of new Set(created.map((p) => p.tournamentId))) {
+    const event = eventsList().find((ev) => ev.id === tournamentId);
+    const own = created.filter((p) => p.tournamentId === tournamentId);
+    const quote = quoteEntries(
+      own.map((p) => ({
+        category: categories.find((c) => c.id === p.categoryId),
+        athleteKey: p.teamName ? null : athleteKey(p.lastName, p.firstName, p.birthDate)
+      })),
+      sanitizePricing(event?.pricing),
+      today,
+      countPaidBefore(list, categories, tournamentId)
+    );
+    own.forEach((p, i) => {
+      p.feeAmount = quote.lines[i].amount;
+      p.feePaymentStatus = quote.lines[i].amount > 0 ? 'pending' : 'exempt';
     });
   }
   saveParticipants([...list, ...created], user.id);

@@ -1,4 +1,5 @@
 import React from 'react';
+import { entryFee } from '../utils/pricing';
 import { ClipboardList, Wallet, Search } from 'lucide-react';
 import type { AuthenticatedUserProfile, Bout, EventCategory, Participant, Tournament } from '../types/schema';
 import { belongsToEvent } from '../data/sampleTournamentData';
@@ -72,7 +73,7 @@ export const MyEntriesPanel: React.FC<MyEntriesProps> = ({ user, tournaments, ca
         <div className={`${card} border-dashed p-10 text-center text-sm text-[var(--app-text-muted)]`}>Вы ещё не подавали заявок.</div>
       ) : (
         byEvent.map(({ t, list }) => {
-          const due = list.filter((p) => p.status !== 'withdrawn' && feeOf(p) === 'pending').reduce((s, p) => s + (categories.find((c) => c.id === p.categoryId)?.fee ?? 0), 0);
+          const due = list.filter((p) => p.status !== 'withdrawn' && feeOf(p) === 'pending').reduce((s, p) => s + entryFee(p, categories.find((c) => c.id === p.categoryId)), 0);
           return (
             <section key={t.id} className={`${card} overflow-hidden`}>
               <div className="px-4 py-3 border-b border-[var(--app-border)] flex flex-wrap items-center gap-2">
@@ -136,7 +137,7 @@ export const FeesPanel: React.FC<FeesProps> = ({ tournaments, initialTournamentI
   const [filter, setFilter] = React.useState<'all' | FeeStatus>('all');
   const [q, setQ] = React.useState('');
   const entries = participants.filter((p) => belongsToEvent(p.tournamentId, tid) && p.status !== 'withdrawn');
-  const fee = (p: Participant) => categories.find((c) => c.id === p.categoryId)?.fee ?? 0;
+  const fee = (p: Participant) => entryFee(p, categories.find((c) => c.id === p.categoryId));
   const sum = (s: FeeStatus) => entries.filter((p) => feeOf(p) === s).reduce((a, p) => a + fee(p), 0);
   const shown = entries
     .filter((p) => filter === 'all' || feeOf(p) === filter)
