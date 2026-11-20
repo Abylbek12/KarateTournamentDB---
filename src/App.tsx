@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
 import { 
+  Video,
+  ClipboardList,
+  QrCode,
+  LayoutGrid,
+  UserCircle2,
   Database, 
   Tv, 
   Trophy, 
@@ -1883,91 +1888,73 @@ function AppContent() {
         }`}
         aria-label={tr('Нижняя панель быстрой навигации', 'Төмөнкү ыкчам навигация панели', 'Mobile Bottom Navigation Bar')}
       >
-        <button
-          type="button"
-          onClick={() => navigateWithHash('tournaments')}
-          className={`flex flex-col items-center justify-center gap-1 h-full rounded-xl transition-colors cursor-pointer ${
-            activeTab === 'tournaments' || activeTab === 'event_info'
-              ? 'text-sky-500 font-semibold'
-              : 'hover:text-sky-500'
-          }`}
-        >
-          <Calendar className="w-5 h-5" />
-          <span className="text-[11px] leading-none truncate max-w-[64px]">
-            {tr('События', 'Окуялар', 'Events')}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => navigateWithHash(canAccess('scoreboard', effectiveRole) ? 'scoreboard' : 'event_live_scoring')}
-          className={`flex flex-col items-center justify-center gap-1 h-full rounded-xl transition-colors cursor-pointer ${
-            activeTab === 'scoreboard' || activeTab === 'event_live_scoring'
-              ? 'text-sky-500 font-semibold'
-              : 'hover:text-sky-500'
-          }`}
-        >
-          <Tv className="w-5 h-5" />
-          <span className="text-[11px] leading-none truncate max-w-[64px]">
-            {tr('Табло', 'Табло', 'Live')}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => navigateWithHash(canAccess('event_setup', effectiveRole) ? 'event_setup' : 'event_brackets')}
-          className={`flex flex-col items-center justify-center gap-1 h-full rounded-xl transition-colors cursor-pointer ${
-            activeTab === 'event_setup' || activeTab === 'event_brackets'
-              ? 'text-sky-500 font-semibold'
-              : 'hover:text-sky-500'
-          }`}
-        >
-          <Trophy className="w-5 h-5" />
-          <span className="text-[11px] leading-none truncate max-w-[64px]">
-            {tr('Сетки', 'Торчолор', 'Brackets')}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            if (effectiveRole === 'guest') {
-              setAuthModalMode('login');
-              setIsAuthModalOpen(true);
-            } else {
-              navigateWithHash('admin');
-            }
-          }}
-          className={`flex flex-col items-center justify-center gap-1 h-full rounded-xl transition-colors cursor-pointer ${
-            activeTab === 'admin'
-              ? 'text-sky-500 font-semibold'
-              : 'hover:text-sky-500'
-          }`}
-        >
-          <Layers className="w-5 h-5" />
-          <span className="text-[11px] leading-none truncate max-w-[64px]">
-            {effectiveRole === 'guest'
-              ? tr('Войти', 'Кирүү', 'Sign in')
-              : effectiveRole === 'admin'
-                ? tr('Админ', 'Админ', 'Admin')
-                : tr('Кабинет', 'Кабинет', 'Account')}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setIsMobileNavOpen(true)}
-          className={`flex flex-col items-center justify-center gap-1 h-full rounded-xl transition-colors cursor-pointer ${
-            isMobileNavOpen
-              ? 'text-sky-500 font-semibold'
-              : 'hover:text-sky-500'
-          }`}
-        >
-          <Menu className="w-5 h-5" />
-          <span className="text-[11px] leading-none truncate max-w-[64px]">
-            {tr('Меню', 'Меню', 'Menu')}
-          </span>
-        </button>
+        {/* Five buttons chosen for the role: what each person needs most at the tournament */}
+        {(() => {
+          type BottomItem = { key: string; label: string; icon: React.ElementType; active: boolean; onClick: () => void; live?: boolean };
+          const go = (tab: string, label: string, icon: React.ElementType, also: string[] = [], live = false): BottomItem => ({
+            key: tab,
+            label,
+            icon,
+            live,
+            active: activeTab === tab || also.includes(activeTab),
+            onClick: () => navigateWithHash(tab)
+          });
+          const events = go('tournaments', tr('Турниры', 'Мелдештер', 'Events'), Calendar, ['event_info', 'event_categories_prices', 'event_results', 'event_medals']);
+          const liveNow = go('virtual_studios', tr('Идут бои', 'Түз эфир', 'Live'), Video, ['event_live_scoring'], true);
+          const brackets = go('event_brackets', tr('Сетки', 'Торчолор', 'Brackets'), Trophy);
+          const tatami = go('scoreboard', tr('Татами', 'Татами', 'Tatami'), Tv);
+          const menu: BottomItem = { key: 'menu', label: tr('Меню', 'Меню', 'Menu'), icon: Menu, active: isMobileNavOpen, onClick: () => setIsMobileNavOpen(true) };
+          const cabinet = go('admin', tr('Кабинет', 'Кабинет', 'Account'), UserCircle2);
+          const role = effectiveRole;
+          const items: BottomItem[] =
+            role === 'guest'
+              ? [
+                  events,
+                  liveNow,
+                  brackets,
+                  {
+                    key: 'login',
+                    label: tr('Войти', 'Кирүү', 'Sign in'),
+                    icon: LogIn,
+                    active: false,
+                    onClick: () => {
+                      setAuthModalMode('login');
+                      setIsAuthModalOpen(true);
+                    }
+                  },
+                  menu
+                ]
+              : role === 'admin'
+                ? [events, tatami, go('event_setup', tr('Жеребьёвка', 'Чүчүкулак', 'Draw'), Layers), go('screens', tr('Экраны', 'Экрандар', 'Screens'), QrCode), menu]
+                : role === 'club_coach' || role === 'athlete'
+                  ? [events, go('registration', tr('Заявка', 'Табыштама', 'Enter'), ClipboardList), go('athletes', tr('Спортсмены', 'Спортчулар', 'Athletes'), Users), liveNow, menu]
+                  : [
+                      // Officials: tatami console first; weigh-in for those who run it, otherwise brackets
+                      canAccess('scoreboard', role) ? tatami : brackets,
+                      canAccess('participants', role) ? go('participants', tr('Взвешивание', 'Таразалоо', 'Weigh-in'), Scale) : brackets,
+                      liveNow,
+                      cabinet,
+                      menu
+                    ];
+          return items.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={item.onClick}
+                aria-current={item.active ? 'page' : undefined}
+                className={`relative flex flex-col items-center justify-center gap-1 h-full rounded-xl transition-colors cursor-pointer ${
+                  item.active ? 'text-sky-500 font-semibold' : 'hover:text-sky-500'
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+                {item.live && <span className="absolute top-2 right-[calc(50%-16px)] w-2 h-2 rounded-full bg-red-600" aria-hidden />}
+                <span className="text-[10.5px] leading-none truncate max-w-[74px] tracking-tight">{item.label}</span>
+              </button>
+            );
+          });
+        })()}
       </nav>
     </div>
   );

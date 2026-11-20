@@ -191,8 +191,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       key: 'organizer',
       title: tr('Организатор', 'Уюштуруучу', 'Organizer'),
-      items:
-        isAdmin || seesLockedOrganizer
+      items: seesLockedOrganizer
+        ? // Coaches and athletes: one locked line instead of the whole organizer list (keeps the menu short)
+          [
+            {
+              id: 'admin' as NavTabId,
+              label: tr('Для организаторов', 'Уюштуруучулар үчүн', 'For organizers'),
+              icon: ShieldCheck,
+              locked: true
+            }
+          ]
+        : isAdmin
           ? [
               { id: 'admin' as NavTabId, label: tr('Турниры и пользователи', 'Мелдештер жана колдонуучулар', 'Events & users'), icon: ShieldCheck },
               { id: 'event_setup' as NavTabId, label: tr('Категории и жеребьёвка', 'Категориялар жана чүчүкулак', 'Categories & draw'), icon: Layers },
@@ -201,7 +210,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               { id: 'acquiring' as NavTabId, label: tr('Взносы', 'Төгүмдөр', 'Entry fees'), icon: CreditCard },
               { id: 'exports' as NavTabId, label: tr('Документы и печать', 'Документтер жана басып чыгаруу', 'Documents & printing'), icon: Stamp },
               { id: 'lan' as NavTabId, label: tr('Работа без интернета', 'Интернетсиз режим', 'Offline (LAN)'), icon: Wifi }
-            ].map((item) => ({ ...item, locked: !isAdmin }))
+            ]
           : []
     },
     {
