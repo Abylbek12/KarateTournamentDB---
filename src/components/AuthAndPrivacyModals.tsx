@@ -66,6 +66,8 @@ interface AuthModalProps {
   lockedRole?: UserRole | null;
   /** Secret staff invitation token sent with the registration. */
   inviteToken?: string | null;
+  /** Public link (?join=athlete / ?join=coach): role chosen in advance, but the person may change it. */
+  suggestedRole?: UserRole | null;
 }
 
 const LOCKED_ROLE_LABELS: Partial<Record<UserRole, string>> = {
@@ -86,8 +88,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onLogout,
   language,
   lockedRole,
-  inviteToken
+  inviteToken,
+  suggestedRole
 }) => {
+  const trL = (ru: string, ky: string, en: string) => (language === 'ky' ? ky : language === 'en' ? en : ru);
   // Mode: 'login' | 'register' | 'confirm_profile'
   const [activeTab, setActiveTab] = useState<'login' | 'register' | 'confirm_profile'>(initialMode);
 
@@ -122,6 +126,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [regPassword, setRegPassword] = useState('');
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
   const [regRole, setRegRole] = useState<UserRole>('athlete');
+  // A public link pre-selects the role (athlete or coach); the person can still switch
+  useEffect(() => {
+    if (suggestedRole === 'athlete' || suggestedRole === 'club_coach') setRegRole(suggestedRole);
+  }, [suggestedRole]);
   const [regAgreeTerms, setRegAgreeTerms] = useState(false);
 
   // Quick fill helper toggle
@@ -623,21 +631,53 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       </div>
                     ) : (
                     <div>
-                      <label className="block text-[11px] font-semibold text-[#2c5270] mb-1 font-sans">
-                        {language !== 'en' ? 'Роль на портале' : 'Platform Role'}
-                      </label>
-                      <select
-                        value={regRole}
-                        onChange={(e) => setRegRole(e.target.value as UserRole)}
-                        className="w-full rounded-full bg-white border border-slate-200/80 px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-[#38a3a5] shadow-2xs font-sans cursor-pointer"
-                      >
-                        <option value="athlete">🥋 Спортсмен (или родитель спортсмена)</option>
-                        <option value="club_coach">🥊 Тренер / представитель клуба</option>
-                      </select>
-                      <p className="mt-1 text-[10px] text-slate-500 font-sans">
-                        {language !== 'en'
-                          ? 'Роли судьи и организатора выдаёт администратор после регистрации.'
-                          : 'Referee and organizer roles are granted by an administrator after sign-up.'}
+                      {/* Two big buttons: nobody misses the choice (a small dropdown was easy to overlook) */}
+                      <div className="block text-[11px] font-semibold text-[#2c5270] mb-1.5 font-sans">
+                        {trL('Кто вы?', 'Сиз кимсиз?', 'Who are you?')}
+                      </div>
+                      <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={trL('Роль на портале', 'Порталдагы роль', 'Platform role')}>
+                        {(
+                          [
+                            ['athlete', '🥋', trL('Я спортсмен', 'Мен спортчумун', "I'm an athlete"), trL('или родитель спортсмена', 'же спортчунун ата-энеси', 'or a parent')],
+                            ['club_coach', '🥊', trL('Я тренер', 'Мен машыктыруучумун', "I'm a coach"), trL('или представитель клуба', 'же клубдун өкүлү', 'or club representative')]
+                          ] as const
+                        ).map(([value, emoji, title, sub]) => {
+                          const on = regRole === value;
+                          return (
+                            <button
+                              key={value}
+                              type="button"
+                              role="radio"
+                              aria-checked={on}
+                              onClick={() => setRegRole(value)}
+                              className={`relative flex flex-col items-center justify-center text-center gap-0.5 rounded-2xl border-2 px-2 py-2.5 min-h-[76px] font-sans cursor-pointer transition-colors ${
+                                on ? 'border-[#38a3a5] bg-[#38a3a5]/15 text-slate-900 shadow-sm' : 'border-slate-200 bg-white text-slate-500 hover:border-[#38a3a5]/60'
+                              }`}
+                            >
+                              {on && (
+                                <span className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-[#38a3a5] text-white text-[11px] font-bold flex items-center justify-center" aria-hidden>
+                                  ✓
+                                </span>
+                              )}
+                              <span className="text-xl leading-none" aria-hidden>{emoji}</span>
+                              <span className="text-[13px] font-bold leading-tight">{title}</span>
+                              <span className="text-[10px] text-slate-500 leading-tight">{sub}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="mt-1.5 text-[10px] text-slate-500 font-sans">
+                        {suggestedRole
+                          ? trL(
+                              'Роль выбрана по ссылке. Если она не ваша — нажмите другую кнопку. Роли судьи и организатора выдаёт администратор.',
+                              'Роль шилтеме боюнча тандалды. Эгер сиздики болбосо — башка баскычты басыңыз. Калыс жана уюштуруучу ролдорун администратор берет.',
+                              'The role was chosen by your link. If it is not yours, tap the other button. Referee and organizer roles are granted by an administrator.'
+                            )
+                          : trL(
+                              'Роли судьи и организатора выдаёт администратор после регистрации.',
+                              'Калыс жана уюштуруучу ролдорун администратор каттоодон кийин берет.',
+                              'Referee and organizer roles are granted by an administrator after sign-up.'
+                            )}
                       </p>
                     </div>
                     )}

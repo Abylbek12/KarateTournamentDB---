@@ -1872,7 +1872,9 @@ function AppContent() {
         }}
         onLogout={handleLogout}
         language={language}
-        lockedRole={inviteRole}
+        // Secret staff invitation fixes the role; public links (?join=...) only pre-select athlete or coach
+        lockedRole={inviteToken ? inviteRole : null}
+        suggestedRole={inviteToken ? null : inviteRole}
         inviteToken={inviteToken}
       />
 
