@@ -16,6 +16,8 @@ const check = (name: string, ok: boolean, detail = '') => {
 // ---------------- Part 1: rules ----------------
 const good = sanitizeAthlete({ lastName: '  Асанов ', firstName: 'Бек', birthDate: '2014-03-05', gender: 'male', beltRank: 'green_6kyu', weightKg: '34.56', countryCode: 'kgz' });
 check('sanitize: valid card', good.ok && good.value.lastName === 'Асанов' && good.value.weightKg === 34.6 && good.value.countryCode === 'KGZ');
+check('sanitize: own card flag kept', (() => { const r = sanitizeAthlete({ lastName: 'А', firstName: 'Б', birthDate: '1990-01-01', gender: 'male', isSelf: true }); return r.ok && r.value.isSelf === true; })());
+check('sanitize: own card flag only when true', (() => { const r = sanitizeAthlete({ lastName: 'А', firstName: 'Б', birthDate: '1990-01-01', gender: 'male', isSelf: 'yes' }); return r.ok && r.value.isSelf === undefined; })());
 check('sanitize: no surname → error', !sanitizeAthlete({ firstName: 'Бек', birthDate: '2014-03-05', gender: 'male' }).ok);
 check('sanitize: bad birth date → error', !sanitizeAthlete({ lastName: 'А', firstName: 'Б', birthDate: '05.03.2014', gender: 'male' }).ok);
 check('sanitize: future birth date → error', !sanitizeAthlete({ lastName: 'А', firstName: 'Б', birthDate: '2999-01-01', gender: 'male' }).ok);

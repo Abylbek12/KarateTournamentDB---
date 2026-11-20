@@ -296,6 +296,7 @@ export const AthletesPanel: React.FC<{ user: AuthenticatedUserProfile; onNewEntr
                 <div className="flex-1 min-w-[180px]">
                   <div className="font-medium text-[var(--app-text-primary)]">
                     {fullName(a)}
+                    {a.isSelf && <span className="ml-2 text-xs font-semibold px-1.5 py-0.5 rounded-full bg-sky-500/10 text-sky-700">{tl(language, 'это я', 'бул мен', 'me')}</span>}
                     {a.archived && <span className="ml-2 text-xs text-[var(--app-text-muted)]">{tl(language, 'в архиве', 'архивде', 'archived')}</span>}
                   </div>
                   <div className="text-xs text-[var(--app-text-muted)]">

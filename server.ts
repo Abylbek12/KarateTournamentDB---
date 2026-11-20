@@ -1137,6 +1137,8 @@ app.post('/api/entries', (req: Request, res: Response) => {
   const categories: any[] = Array.isArray(db.state.categories?.value) ? (db.state.categories!.value as any[]) : [];
   const list = participantsList();
   const created: any[] = [];
+  // Entries a competing coach marked as himself («Добавить себя»): his roster card gets «это я»
+  const selfEntryIds = new Set<string>();
   for (let e of entries) {
     const cat = categories.find((c) => c.id === e?.categoryId);
     if (!cat) {
@@ -1222,6 +1224,7 @@ app.post('/api/entries', (req: Request, res: Response) => {
       createdBy: user.id,
       createdAt: new Date().toISOString()
     });
+    if (!isTeam && e?.isSelf === true && user.role === 'club_coach') selfEntryIds.add(created[created.length - 1].id);
   }
   // Fees are decided here, never taken from the browser: current price period of each tournament,
   // the most expensive category of an athlete is paid in full, the others with the next-category discount.
@@ -1265,6 +1268,11 @@ app.post('/api/entries', (req: Request, res: Response) => {
       const r = addAthlete(user.id, fields.value);
       if ('error' in r) continue;
       p.athleteId = r.athlete.id;
+      if (selfEntryIds.has(p.id)) {
+        // Only one own card per account
+        for (const a of db.athletes as ClubAthlete[]) if (a.ownerId === user.id && a.isSelf && a.id !== r.athlete.id) a.isSelf = undefined;
+        r.athlete.isSelf = true;
+      }
       rosterChanged = true;
     }
   }

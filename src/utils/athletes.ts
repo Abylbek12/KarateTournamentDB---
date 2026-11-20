@@ -30,6 +30,8 @@ export interface ClubAthlete {
   countryCode?: string;
   /** Archived cards are hidden from the entry form but kept: old entries and results point to them. */
   archived?: boolean;
+  /** The account owner's own card (a coach who also competes): «Добавить себя» uses it. */
+  isSelf?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -79,7 +81,8 @@ export function sanitizeAthlete(input: unknown): { ok: true; value: Omit<ClubAth
       clubName: optional(raw.clubName, 120),
       city: optional(raw.city, 80),
       countryCode: /^[A-Z]{3}$/.test(countryCode) ? countryCode : undefined,
-      archived: raw.archived === true ? true : undefined
+      archived: raw.archived === true ? true : undefined,
+      isSelf: raw.isSelf === true ? true : undefined
     }
   };
 }

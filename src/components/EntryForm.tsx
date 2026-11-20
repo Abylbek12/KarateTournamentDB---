@@ -40,6 +40,8 @@ interface AthleteDraft {
   firstNameLatin: string;
   /** Chosen from «Мои спортсмены»: the server takes personal data from this card. */
   athleteId?: string;
+  /** The coach entering himself for the first time: after sending, the data is kept as his own card. */
+  saveAsSelf?: boolean;
 }
 
 const fromCard = (a: ClubAthlete): AthleteDraft => ({
@@ -126,9 +128,20 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
   const update = (key: string, patch: Partial<AthleteDraft>) =>
     setAthletes((list) => list.map((a) => (a.key === key ? { ...a, ...patch } : a)));
 
+  // «Добавить себя»: the coach's own card from «Мои спортсмены» (birth date, belt, weight filled in);
+  // the first time only the name is known, and after sending the data is kept for next time.
+  const [ownLast = '', ownFirst = ''] = currentUser.fullName.split(' ');
+  const selfCard =
+    activeRoster.find((a) => a.isSelf) ||
+    activeRoster.find((a) => a.lastName.toLowerCase() === ownLast.toLowerCase() && a.firstName.toLowerCase() === ownFirst.toLowerCase());
+  const selfAdded = athletes.some((a) => a.saveAsSelf || (selfCard && a.athleteId === selfCard.id));
   const addSelf = () => {
-    const [last = '', first = ''] = currentUser.fullName.split(' ');
-    setAthletes((list) => [...list, { ...blankAthlete(), lastName: last, firstName: first }]);
+    if (selfAdded) return;
+    if (selfCard) {
+      setAthletes((list) => [...list.filter((x) => !untouched(x)), fromCard(selfCard)]);
+    } else {
+      setAthletes((list) => [...list.filter((x) => !untouched(x)), { ...blankAthlete(), lastName: ownLast, firstName: ownFirst, saveAsSelf: true }]);
+    }
   };
 
   const individualCats = cats.filter((c) => !isTeamCategory(c));
@@ -145,6 +158,8 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
         .map((categoryId) => ({
           categoryId,
           athleteId: a.athleteId,
+          // The coach entering himself: the server marks the saved card as «это я»
+          isSelf: a.saveAsSelf || undefined,
           lastName: a.lastName,
           firstName: a.firstName,
           birthDate: a.birthDate,
@@ -344,7 +359,11 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
         return (
           <section key={a.key} className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 space-y-3">
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-[var(--app-text-primary)]">Спортсмен {athletes.length > 1 ? idx + 1 : ''}</span>
+              <span className="font-semibold text-[var(--app-text-primary)]">
+                {a.saveAsSelf || (selfCard && a.athleteId === selfCard.id)
+                  ? tl(language, 'Я (тренер)', 'Мен (машыктыруучу)', 'Me (coach)')
+                  : `${tl(language, 'Спортсмен', 'Спортчу', 'Athlete')} ${athletes.length > 1 ? idx + 1 : ''}`}
+              </span>
               <span className="flex-1" />
               {(athletes.length > 1 || hasRoster) && (
                 <button onClick={() => setAthletes((l) => l.filter((x) => x.key !== a.key))} className="p-1.5 rounded-lg text-[var(--app-text-muted)] hover:text-red-600 cursor-pointer" title="Убрать">
@@ -485,8 +504,17 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
             <UserPlus className="w-4 h-4" /> {activeRoster.length > 0 ? tl(language, 'Новый спортсмен', 'Жаңы спортчу', 'New athlete') : tl(language, 'Добавить спортсмена', 'Спортчу кошуу', 'Add athlete')}
           </button>
           {isCoach && currentUser.alsoCompetes && (
-            <button onClick={addSelf} className="inline-flex items-center gap-2 h-10 px-4 rounded-lg border border-[var(--app-border)] text-sm text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)] cursor-pointer">
-              <UserPlus className="w-4 h-4" /> Добавить себя
+            <button
+              onClick={addSelf}
+              disabled={selfAdded}
+              className="inline-flex items-center gap-2 h-10 px-4 rounded-lg border border-[var(--app-border)] text-sm text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)] cursor-pointer disabled:opacity-50 disabled:cursor-default"
+              title={
+                selfCard
+                  ? tl(language, 'Ваши данные возьмутся из «Мои спортсмены»', 'Маалыматыңыз «Менин спортчуларым» бөлүмүнөн алынат', 'Your data comes from «My athletes»')
+                  : tl(language, 'В первый раз введите свои данные — они сохранятся для следующих турниров', 'Биринчи жолу маалыматыңызды киргизиңиз — кийинки мелдештер үчүн сакталат', 'Enter your data once — it is kept for the next tournaments')
+              }
+            >
+              <UserPlus className="w-4 h-4" /> {tl(language, 'Добавить себя', 'Өзүмдү кошуу', 'Add myself')}
             </button>
           )}
           {isCoach && teamCats.length > 0 && (
