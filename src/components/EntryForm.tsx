@@ -99,7 +99,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
     return [{ ...blankAthlete(), lastName: last, firstName: first }];
   });
   // «Мои спортсмены»: pick athletes with a tick instead of typing them again.
-  const hasRoster = ROSTER_ROLES.has(currentUser.role) && currentUser.role !== 'admin';
+  const hasRoster = ROSTER_ROLES.has(currentUser.role);
   const roster = useAthletes(hasRoster);
   const activeRoster = roster.athletes.filter((a) => !a.archived).sort((a, b) => a.lastName.localeCompare(b.lastName, 'ru') || a.firstName.localeCompare(b.firstName, 'ru'));
   const [rosterQuery, setRosterQuery] = React.useState('');

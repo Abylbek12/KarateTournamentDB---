@@ -1245,9 +1245,10 @@ app.post('/api/entries', (req: Request, res: Response) => {
   }
   // «Мои спортсмены»: a new athlete entered by hand lands in the roster; a chosen one gets the newest weight.
   // A full roster never blocks the entry itself.
-  // Only coaches and parents get automatic cards: an official entering many clubs keeps no roster of them.
+  // Coaches, parents and the organizer get automatic cards (the owner asked the organizer to work like a coach).
+  // Other officials (chief referee, secretary) enter athletes without keeping a roster.
   let rosterChanged = false;
-  if (user.role === 'club_coach' || user.role === 'athlete') {
+  if (ROSTER_ROLES.has(user.role)) {
     for (const p of created) {
       if (p.teamName) continue;
       const card = p.athleteId ? (db.athletes as ClubAthlete[]).find((a) => a.id === p.athleteId) : undefined;

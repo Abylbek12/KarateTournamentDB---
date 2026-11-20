@@ -95,7 +95,7 @@ async function main() {
     await coach.call('POST', '/api/auth/register', { fullName: 'Тренер Один', email: 'coach1@test.localhost', password: 'coach-pass-1', role: 'club_coach', clubName: 'Клуб А' });
     await other.call('POST', '/api/auth/register', { fullName: 'Тренер Два', email: 'coach2@test.localhost', password: 'coach-pass-2', role: 'club_coach' });
     const ref = await referee.call('POST', '/api/auth/register', { fullName: 'Судья', email: 'ref@test.localhost', password: 'ref-pass-123', role: 'athlete' });
-    await admin.call('PUT', `/api/admin/users/${ref.data.user.id}/role`, { role: 'tatami_referee' });
+    await admin.call('PUT', `/api/admin/users/${ref.data.user.id}/role`, { role: 'scorekeeper' });
 
     // tournament + two categories
     await admin.call('POST', '/api/events', { id: 'ev-test', title: 'Тест', startDate: '2099-05-01', endDate: '2099-05-02' });
@@ -112,7 +112,7 @@ async function main() {
     check('add: same athlete again → 409', (await coach.call('POST', '/api/athletes', { ...athlete, lastName: 'АСАНОВ' })).status === 409);
     check('add: bad data → 400', (await coach.call('POST', '/api/athletes', { lastName: 'X' })).status === 400);
     check('add: guest → 401', (await client().call('POST', '/api/athletes', athlete)).status === 401);
-    check('add: referee role → 403', (await referee.call('POST', '/api/athletes', athlete)).status === 403);
+    check('add: secretary role → 403', (await referee.call('POST', '/api/athletes', athlete)).status === 403);
     check('list: owner sees the card', (await coach.call('GET', '/api/athletes')).data.athletes?.length === 1);
     check('list: other coach sees nothing', (await other.call('GET', '/api/athletes')).data.athletes?.length === 0);
     check('list: other coach cannot peek with ownerId', (await other.call('GET', `/api/athletes?ownerId=${added.data.athlete.ownerId}`)).data.athletes?.length === 0);
@@ -141,8 +141,10 @@ async function main() {
     const roster2 = (await coach.call('GET', '/api/athletes')).data.athletes || [];
     check('entry by hand: card created once for two categories', typed.status === 201 && roster2.length === 2 && typed.data.entries.every((e: any) => e.athleteId === roster2.find((a: any) => a.lastName === 'Иванов')?.id));
     check('entry by hand: server reports the roster changed', typed.data.rosterChanged === true);
-    const adminEntry = await admin.call('POST', '/api/entries', { entries: [{ ...hand, lastName: 'Секретарев' }] });
-    check('entry by an official: no automatic card', adminEntry.status === 201 && (await admin.call('GET', '/api/athletes')).data.athletes?.length === 0);
+    const adminEntry = await admin.call('POST', '/api/entries', { entries: [{ ...hand, lastName: 'Организаторов' }] });
+    check('entry by the organizer: card lands in the organizer roster', adminEntry.status === 201 && (await admin.call('GET', '/api/athletes')).data.athletes?.length === 1);
+    const secretaryEntry = await referee.call('POST', '/api/entries', { entries: [{ ...hand, lastName: 'Секретарев' }] });
+    check('entry by the secretary: no automatic card', secretaryEntry.status === 201 && !secretaryEntry.data.entries?.[0]?.athleteId);
 
     // import from past entries
     check('suggest: nothing new for coach (already in roster)', (await coach.call('GET', '/api/athletes/suggest-from-entries')).data.candidates?.length === 0);

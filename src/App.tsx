@@ -485,6 +485,21 @@ function AppContent() {
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register' | 'confirm_profile'>('login');
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState<boolean>(false);
   const [globalSystemToast, setGlobalSystemToast] = useState<string | null>(null);
+  // 'info' = a calm notice (e.g. «this section is for the organizer»), not a success message.
+  const [infoToastText, setInfoToastText] = useState<string | null>(null);
+  const toastTone: 'ok' | 'info' = globalSystemToast && globalSystemToast === infoToastText ? 'info' : 'ok';
+  const toastTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showLockedNotice = (label: string) => {
+    const text = tr(
+        `«${label}» — раздел организатора турнира. Он открывается только администратору сайта. Если вы проводите турнир, напишите администратору, чтобы он выдал вам доступ.`,
+        `«${label}» — мелдешти уюштуруучунун бөлүмү. Ал сайттын администраторуна гана ачылат. Эгер мелдеш өткөрсөңүз, администраторго жазыңыз, ал сизге уруксат берет.`,
+        `«${label}» is the tournament organizer's section. Only the site administrator can open it. If you run a tournament, write to the administrator to get access.`
+    );
+    setInfoToastText(text);
+    setGlobalSystemToast(text);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setGlobalSystemToast((cur) => (cur === text ? null : cur)), 6000);
+  };
   const [isMobileNavOpen, setIsMobileNavOpen] = useState<boolean>(false);
 
   // Live Notifications & Operational Alert Dispatcher State
@@ -927,6 +942,7 @@ function AppContent() {
         onToggleMobile={() => setIsMobileNavOpen(!isMobileNavOpen)}
         language={language}
         onOpenPrivacyModal={() => setIsPrivacyModalOpen(true)}
+        onLockedTab={showLockedNotice}
       />
 
       {/* Main Stretched Content Canvas */}
@@ -1284,14 +1300,17 @@ function AppContent() {
 
         {/* Global Toast if active */}
         {globalSystemToast && (
-          <div className="bg-emerald-600/90 text-white border-b border-emerald-500 px-4 py-2.5 shadow-lg backdrop-blur sticky top-16 z-20 flex items-center justify-between text-xs sm:text-sm font-medium animate-fadeIn">
+          <div
+            role="status"
+            className={`${toastTone === 'info' ? 'bg-slate-800/95 border-slate-600' : 'bg-emerald-600/90 border-emerald-500'} text-white border-b px-4 py-2.5 shadow-lg backdrop-blur sticky top-16 z-20 flex items-center justify-between gap-3 text-xs sm:text-sm font-medium animate-fadeIn`}
+          >
             <span className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-200" />
+              {toastTone === 'info' ? <Lock className="w-4 h-4 shrink-0 text-slate-300" /> : <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-200" />}
               {globalSystemToast}
             </span>
             <button 
               onClick={() => setGlobalSystemToast(null)}
-              className="text-emerald-200 hover:text-white text-xs px-2 py-0.5 rounded bg-emerald-800/60"
+              className={`${toastTone === 'info' ? 'text-slate-300 bg-slate-700/80' : 'text-emerald-200 bg-emerald-800/60'} hover:text-white text-xs px-2 py-0.5 rounded shrink-0`}
             >
               ✕ {tr('Закрыть', 'Жабуу', 'Close')}
             </button>

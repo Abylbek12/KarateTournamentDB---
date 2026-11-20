@@ -199,7 +199,7 @@ export const AthletesPanel: React.FC<{ user: AuthenticatedUserProfile; onNewEntr
     }
   };
 
-  const isCoach = user.role === 'club_coach';
+  const isCoach = user.role === 'club_coach' || user.role === 'admin';
 
   return (
     <div className="theme-keep space-y-4 pb-8 max-w-5xl">

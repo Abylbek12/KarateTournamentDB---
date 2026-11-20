@@ -24,6 +24,7 @@ import {
   PanelLeftOpen,
   X,
   QrCode,
+  Lock,
   Layers
 } from 'lucide-react';
 import { hashForTab, isPlainClick } from '../utils/routes';
@@ -73,6 +74,8 @@ interface SidebarProps {
   onToggleMobile: () => void;
   language?: Language;
   onOpenPrivacyModal?: () => void;
+  /** Coach/athlete tapped an organizer item: they see it, but it is closed for them. */
+  onLockedTab?: (label: string) => void;
 }
 
 interface NavItem {
@@ -80,6 +83,8 @@ interface NavItem {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   badge?: string;
+  /** Shown, but closed for this role: a tap only explains why. */
+  locked?: boolean;
 }
 
 interface NavSection {
@@ -106,7 +111,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isMobileOpen,
   onToggleMobile,
   language: propLanguage,
-  onOpenPrivacyModal
+  onOpenPrivacyModal,
+  onLockedTab
 }) => {
   const appContext = useApp();
   const language = propLanguage || appContext.language;
@@ -115,6 +121,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const isAdmin = role === 'admin';
   const isSignedIn = role !== 'guest';
+  // Coaches and athletes see the organizer menu too (so they know what the site can do), but it stays closed for them.
+  const seesLockedOrganizer = role === 'club_coach' || role === 'athlete';
 
   const rawSections: NavSection[] = [
     {
@@ -152,16 +160,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       key: 'organizer',
       title: tr('Организатор', 'Уюштуруучу', 'Organizer'),
-      items: isAdmin
-        ? [
-            { id: 'admin' as NavTabId, label: tr('Турниры и пользователи', 'Мелдештер жана колдонуучулар', 'Events & users'), icon: ShieldCheck },
-            { id: 'event_setup' as NavTabId, label: tr('Категории и жеребьёвка', 'Категориялар жана чүчүкулак', 'Categories & draw'), icon: Layers },
-            { id: 'screens' as NavTabId, label: tr('Экраны и QR-коды', 'Экрандар жана QR', 'Screens & QR'), icon: QrCode },
-            { id: 'acquiring' as NavTabId, label: tr('Взносы', 'Төгүмдөр', 'Entry fees'), icon: CreditCard },
-            { id: 'exports' as NavTabId, label: tr('Документы и печать', 'Документтер жана басып чыгаруу', 'Documents & printing'), icon: Stamp },
-            { id: 'lan' as NavTabId, label: tr('Работа без интернета', 'Интернетсиз режим', 'Offline (LAN)'), icon: Wifi }
-          ]
-        : []
+      items:
+        isAdmin || seesLockedOrganizer
+          ? [
+              { id: 'admin' as NavTabId, label: tr('Турниры и пользователи', 'Мелдештер жана колдонуучулар', 'Events & users'), icon: ShieldCheck },
+              { id: 'event_setup' as NavTabId, label: tr('Категории и жеребьёвка', 'Категориялар жана чүчүкулак', 'Categories & draw'), icon: Layers },
+              ...(isAdmin ? [{ id: 'athletes' as NavTabId, label: tr('Мои спортсмены', 'Менин спортчуларым', 'My athletes'), icon: Users }] : []),
+              { id: 'screens' as NavTabId, label: tr('Экраны и QR-коды', 'Экрандар жана QR', 'Screens & QR'), icon: QrCode },
+              { id: 'acquiring' as NavTabId, label: tr('Взносы', 'Төгүмдөр', 'Entry fees'), icon: CreditCard },
+              { id: 'exports' as NavTabId, label: tr('Документы и печать', 'Документтер жана басып чыгаруу', 'Documents & printing'), icon: Stamp },
+              { id: 'lan' as NavTabId, label: tr('Работа без интернета', 'Интернетсиз режим', 'Offline (LAN)'), icon: Wifi }
+            ].map((item) => ({ ...item, locked: !isAdmin }))
+          : []
     },
     {
       key: 'help',
@@ -173,10 +183,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   ];
   const sections = rawSections
-    .map((s) => ({ ...s, items: s.items.filter((i) => canAccess(i.id, role)) }))
+    .map((s) => ({ ...s, items: s.items.filter((i) => i.locked || canAccess(i.id, role)) }))
     .filter((s) => s.items.length > 0);
 
   const compact = isCollapsed && !isMobileOpen;
+
+  const showLocked = (item: NavItem) => {
+    onLockedTab?.(item.label);
+    if (isMobileOpen) onToggleMobile();
+  };
 
   const select = (id: NavTabId) => {
     onTabChange(id);
@@ -243,6 +258,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {section.items.map((item) => {
                   const Icon = item.icon;
                   const active = isActive(item.id);
+                  if (item.locked) {
+                    return (
+                      <button
+                        key={`${section.key}-${item.id}`}
+                        type="button"
+                        onClick={() => showLocked(item)}
+                        aria-disabled="true"
+                        title={`${item.label} — ${tr('только для организатора', 'уюштуруучу үчүн гана', 'organizer only')}`}
+                        className={`w-full flex items-center gap-3 rounded-lg text-left cursor-not-allowed text-[var(--app-text-muted)] opacity-60 hover:opacity-80 ${
+                          compact ? 'justify-center p-2.5' : 'px-3 py-2 min-h-[40px]'
+                        }`}
+                      >
+                        <Icon className="w-[18px] h-[18px] shrink-0" />
+                        {!compact && <span className="text-sm truncate flex-1">{item.label}</span>}
+                        {!compact && <Lock className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />}
+                      </button>
+                    );
+                  }
                   return (
                     <a
                       key={`${section.key}-${item.id}`}
