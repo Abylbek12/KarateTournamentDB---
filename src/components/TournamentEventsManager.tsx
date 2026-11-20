@@ -122,11 +122,19 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
   const [showTournamentList, setShowTournamentList] = useState(false);
   const [tournamentPendingDelete, setTournamentPendingDelete] = useState<Tournament | null>(null);
 
+  const tournamentListRef = useRef<HTMLDivElement | null>(null);
+  // Show archived tournaments right away: archive tab + open list + scroll to it
+  const openArchive = React.useCallback(() => {
+    setRegistryViewTab('archive');
+    setShowTournamentList(true);
+    setTimeout(() => tournamentListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+  }, []);
+
   React.useEffect(() => {
-    const handleOpenArchive = () => setRegistryViewTab('archive');
+    const handleOpenArchive = () => openArchive();
     window.addEventListener('apsatarov-open-archive-tab', handleOpenArchive);
     return () => window.removeEventListener('apsatarov-open-archive-tab', handleOpenArchive);
-  }, []);
+  }, [openArchive]);
 
   const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
     setNotification({ message, type });
@@ -1160,47 +1168,32 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
         </div>
       )}
 
-      {/* Automatic Archive Info Banner */}
+      {/* Concluded tournaments: a small button on the right shows the archive */}
       {archivedTournaments.length > 0 && (
-        <div className="p-4 rounded-2xl bg-amber-950/30 border border-amber-600/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 shrink-0 mt-0.5">
-              <Archive className="w-4 h-4" />
-            </div>
-            <div className="space-y-1">
-              <div className="text-xs font-bold text-amber-300 uppercase tracking-wide">
-                {tr(
-                  `Автоматическая архивация завершённых турниров: в архиве — ${archivedTournaments.length}`,
-                  `Аяктаган мелдештерди автоматтык архивдөө: архивде — ${archivedTournaments.length}`,
-                  `Automatic Archiving of Concluded Events: ${archivedTournaments.length} in Archive`
-                )}
-              </div>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                {tr(
-                  'По истечении срока окончания турниры не удаляются автоматически, а переносятся во вкладку «Архив турниров». При необходимости вы можете удалить любой турнир с предварительным подтверждением («Да» / «Нет»).',
-                  'Аяктоо мөөнөтү бүткөндө мелдештер автоматтык түрдө өчүрүлбөстөн, «Мелдештер архиви» өтмөгүнө которулат. Кааласаңыз, тастыктоо терезеси («Ооба» / «Жок») аркылуу өчүрө аласыз.',
-                  'When the end date passes, tournaments are automatically moved to the "Tournament Archive" tab instead of being deleted. You can delete any tournament with a "Yes" / "No" confirmation dialog.'
-                )}
-              </p>
-            </div>
-          </div>
+        <div className="flex justify-end">
           <button
             type="button"
-            onClick={() => setRegistryViewTab(registryViewTab === 'archive' ? 'active' : 'archive')}
-            className="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-xs font-bold transition-colors cursor-pointer shrink-0 flex items-center gap-1.5"
+            onClick={() => (registryViewTab === 'archive' && showTournamentList ? setRegistryViewTab('active') : openArchive())}
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-[var(--app-border)] bg-[var(--app-surface)] text-xs font-medium text-[var(--app-text-secondary)] hover:border-amber-500 hover:text-amber-700 transition-colors cursor-pointer"
+            title={tr(
+              'Турниры, у которых прошли даты, автоматически переносятся в архив (не удаляются). Удалить можно в архиве с подтверждением.',
+              'Мөөнөтү өткөн мелдештер архивге автоматтык түрдө которулат (өчүрүлбөйт). Архивде тастыктоо менен өчүрсө болот.',
+              'Tournaments whose dates have passed move to the archive automatically (not deleted). You can delete them in the archive with confirmation.'
+            )}
           >
-            <Archive className="w-3.5 h-3.5" />
-            <span>
-              {registryViewTab === 'archive'
-                ? tr('Показать актуальные', 'Актуалдууларды көрсөтүү', 'Show Active Events')
-                : tr(`Открыть Архив (${archivedTournaments.length})`, `Архивди ачуу (${archivedTournaments.length})`, `Open Archive (${archivedTournaments.length})`)}
+            <Archive className="w-3.5 h-3.5 text-amber-600" />
+            {registryViewTab === 'archive' && showTournamentList
+              ? tr('Показать актуальные', 'Актуалдууларды көрсөтүү', 'Show current')
+              : tr('Архив завершённых турниров', 'Аяктаган мелдештер архиви', 'Concluded tournaments archive')}
+            <span className="min-w-5 h-5 px-1.5 rounded-full bg-amber-500/15 text-amber-700 text-[11px] font-semibold inline-flex items-center justify-center">
+              {archivedTournaments.length}
             </span>
           </button>
         </div>
       )}
 
       {/* Tournaments list: «Все турниры» opens and closes it; compact cards, three per row on wide screens */}
-      <div className="rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-sm p-4 sm:p-5 space-y-4">
+      <div ref={tournamentListRef} className="scroll-mt-20 rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-sm p-4 sm:p-5 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <button
             type="button"
