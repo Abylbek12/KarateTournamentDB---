@@ -85,6 +85,9 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
 
   // Form State
   const [title, setTitle] = useState('');
+  // Optional names for the Kyrgyz and English versions of the site
+  const [titleKy, setTitleKy] = useState('');
+  const [titleEn, setTitleEn] = useState('');
   const [organization, setOrganization] = useState('Федерация каратэ (WKF)');
   const [rulesType, setRulesType] = useState<TournamentRules>('wkf');
   const [venueName, setVenueName] = useState('');
@@ -165,6 +168,8 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
   // Reset form fields
   const resetForm = () => {
     setTitle('');
+    setTitleKy('');
+    setTitleEn('');
     setOrganization('Федерация каратэ (WKF)');
     setRulesType('wkf');
     setVenueName('');
@@ -339,6 +344,8 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
   const handleStartEdit = (t: Tournament) => {
     setEditingTournamentId(t.id);
     setTitle(t.title);
+    setTitleKy(t.titleKy || '');
+    setTitleEn(t.titleEn || '');
     setOrganization(t.organization || 'Федерация каратэ');
     setRulesType(t.rulesType);
     setVenueName(t.venueName);
@@ -498,6 +505,8 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
         ...existing,
         id: editingTournamentId,
         title: title.trim(),
+        titleKy: titleKy.trim(),
+        titleEn: titleEn.trim(),
         slug: existing?.slug || slug,
         organization: organization.trim(),
         rulesType,
@@ -541,6 +550,8 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
       const newTournament: Tournament = {
         id: `tourn_${Date.now()}`,
         title: title.trim(),
+        titleKy: titleKy.trim() || undefined,
+        titleEn: titleEn.trim() || undefined,
         slug,
         organization: organization.trim(),
         rulesType,
@@ -837,6 +848,45 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                   className="w-full h-11 bg-[var(--app-surface)] border border-[var(--app-border)] rounded-xl px-3.5 text-[15px] text-[var(--app-text-primary)] placeholder:text-[var(--app-text-muted)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)] transition"
                 />
               </div>
+            </div>
+
+            {/* Names in Kyrgyz and English: shown when the site is switched to that language */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-semibold text-[var(--app-text-primary)] mb-1.5">
+                  {tr('Название на кыргызском', 'Кыргызча аталышы', 'Title in Kyrgyz')}{' '}
+                  <span className="font-normal text-[var(--app-text-muted)]">{tr('(по желанию)', '(каалоо боюнча)', '(optional)')}</span>
+                </label>
+                <input
+                  type="text"
+                  maxLength={200}
+                  placeholder={tr('напр. Каратэ WKF боюнча Ачык Кубок 2026', 'мис. Каратэ WKF боюнча Ачык Кубок 2026', 'e.g. Каратэ WKF боюнча Ачык Кубок 2026')}
+                  value={titleKy}
+                  onChange={(e) => setTitleKy(e.target.value)}
+                  className="w-full h-11 bg-[var(--app-surface)] border border-[var(--app-border)] rounded-xl px-3.5 text-[15px] text-[var(--app-text-primary)] placeholder:text-[var(--app-text-muted)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)] transition"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[var(--app-text-primary)] mb-1.5">
+                  {tr('Название на английском', 'Англисче аталышы', 'Title in English')}{' '}
+                  <span className="font-normal text-[var(--app-text-muted)]">{tr('(по желанию)', '(каалоо боюнча)', '(optional)')}</span>
+                </label>
+                <input
+                  type="text"
+                  maxLength={200}
+                  placeholder="e.g. Open WKF Karate Cup 2026"
+                  value={titleEn}
+                  onChange={(e) => setTitleEn(e.target.value)}
+                  className="w-full h-11 bg-[var(--app-surface)] border border-[var(--app-border)] rounded-xl px-3.5 text-[15px] text-[var(--app-text-primary)] placeholder:text-[var(--app-text-muted)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)] transition"
+                />
+              </div>
+              <p className="md:col-span-2 -mt-1 text-xs text-[var(--app-text-muted)]">
+                {tr(
+                  'Если поле пустое, на этом языке покажется название на русском. Город и страна переводятся сами.',
+                  'Талаа бош болсо, бул тилде орусча аталышы көрсөтүлөт. Шаар жана өлкө өзү которулат.',
+                  'If empty, the Russian title is shown in that language. City and country are translated automatically.'
+                )}
+              </p>
             </div>
 
             {/* Row 2: Event image — one compact row (JPG/WebP up to 2 MB) */}

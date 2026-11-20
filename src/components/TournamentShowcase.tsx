@@ -296,7 +296,7 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
                 )}
               </div>
               <h2 className="mt-1.5 text-lg sm:text-2xl font-bold leading-snug text-[var(--app-text-primary)] group-hover:text-[var(--accent)] transition-colors">
-                <a href={hashForTab('event_info', featured.id)} onClick={(e) => openInfo(e, featured)}>{featured.title}</a>
+                <a href={hashForTab('event_info', featured.id)} onClick={(e) => openInfo(e, featured)} translate="no">{featured.title}</a>
               </h2>
               <div className="mt-2.5">{renderMeta(featured, true)}</div>
             </div>
@@ -347,7 +347,7 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
                     <div className="min-w-0 flex-1">
                       <span className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-semibold ${toneCls[st.tone]}`}>{st.label}</span>
                       <h4 className="mt-1 sm:mt-1.5 text-[15px] sm:text-[17px] font-semibold leading-snug text-[var(--app-text-primary)] line-clamp-2">
-                        <a href={hashForTab('event_info', item.id)} onClick={(e) => openInfo(e, item)}>{item.title}</a>
+                        <a href={hashForTab('event_info', item.id)} onClick={(e) => openInfo(e, item)} translate="no">{item.title}</a>
                       </h4>
                       <div className="mt-1.5 sm:mt-2">{renderMeta(item)}</div>
                     </div>

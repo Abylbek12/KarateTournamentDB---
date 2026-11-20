@@ -16,6 +16,7 @@ import { EventItem } from '../data/eventsData';
 import { EventEmblem } from './EventEmblems';
 import { useApp } from '../context/AppContext';
 import { localizeEventItem, trLang } from '../utils/globalDomTranslator';
+import { disciplineLabel } from '../utils/eventI18n';
 
 interface TournamentInfoDetailViewProps {
   tournament: EventItem;
@@ -78,7 +79,7 @@ export const TournamentInfoDetailView: React.FC<TournamentInfoDetailViewProps> =
             <span>{tr('Главная', 'Башкы бет', 'Home')}</span>
           </button>
           <span>/</span>
-          <span className="text-slate-400 truncate max-w-[200px] sm:max-w-md">{tournament.title}</span>
+          <span translate="no" className="text-slate-400 truncate max-w-[200px] sm:max-w-md">{tournament.title}</span>
           <span>/</span>
           <span className="text-slate-800 font-semibold">{tr('Информация', 'Маалымат', 'Information')}</span>
         </div>
@@ -119,7 +120,7 @@ export const TournamentInfoDetailView: React.FC<TournamentInfoDetailViewProps> =
               <span>{tournament.league || tr('Официальный турнир', 'Расмий мелдеш', 'Official Tournament')}</span>
             </div>
 
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 leading-tight">
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 leading-tight" translate="no">
               {tournament.title}
             </h1>
 
@@ -137,12 +138,12 @@ export const TournamentInfoDetailView: React.FC<TournamentInfoDetailViewProps> =
               {tournament.venueName && (
                 <div className="flex items-center gap-1.5">
                   <Building2 className="w-4 h-4 text-indigo-500" />
-                  <span>{tournament.venueName}</span>
+                  <span translate="no">{tournament.venueName}</span>
                 </div>
               )}
             </div>
 
-            <p className="text-sm text-slate-600 leading-relaxed max-w-2xl pt-1">
+            <p translate={tournament.description ? 'no' : undefined} className="text-sm text-slate-600 leading-relaxed max-w-2xl pt-1">
               {tournament.description || tr(
                 'Официальные спортивные соревнования. Регистрация открыта для индивидуальных спортсменов и клубов.',
                 'Расмий спорттук мелдештер. Каттоо жеке спортчулар жана клубдар үчүн ачык.',
@@ -218,7 +219,7 @@ export const TournamentInfoDetailView: React.FC<TournamentInfoDetailViewProps> =
         <div className="grid grid-cols-2 md:grid-cols-4 border-t border-slate-100 bg-slate-50/50">
           <div className="p-4 border-r border-b md:border-b-0 border-slate-100 text-center">
             <div className="text-[11px] text-slate-400">{tr('Организатор', 'Уюштуруучу', 'Organization')}</div>
-            <div className="text-xs font-bold text-slate-800 mt-0.5 truncate">{tournament.organization || '—'}</div>
+            <div translate="no" className="text-xs font-bold text-slate-800 mt-0.5 truncate">{tournament.organization || '—'}</div>
           </div>
           <div className="p-4 border-r border-b md:border-b-0 border-slate-100 text-center">
             <div className="text-[11px] text-slate-400">{tr('Татами / Рингов', 'Татами / Рингдер', 'Tatami / Rings')}</div>
@@ -265,7 +266,7 @@ export const TournamentInfoDetailView: React.FC<TournamentInfoDetailViewProps> =
             <div className="text-[11px] uppercase tracking-wide text-slate-400 mb-1.5">{tr('Дисциплины в программе', 'Программадагы дисциплиналар', 'Disciplines')}</div>
             <div className="flex flex-wrap gap-1.5">
               {rawTournament.disciplines.map((d) => (
-                <span key={d} className="px-2.5 py-1 rounded-lg bg-sky-50 border border-sky-200 text-sky-800 text-xs">{d}</span>
+                <span key={d} translate="no" className="px-2.5 py-1 rounded-lg bg-sky-50 border border-sky-200 text-sky-800 text-xs">{disciplineLabel(d, language)}</span>
               ))}
             </div>
           </div>

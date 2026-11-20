@@ -6,6 +6,7 @@ import { displayName, participantFlag, participantNoc } from '../utils/names';
 import { useApp } from '../context/AppContext';
 import { belongsToEvent } from '../data/sampleTournamentData';
 import { streamTatamis } from '../utils/youtube';
+import { eventTitle, placeName } from '../utils/eventI18n';
 import { LiveVideo, type VideoChoice } from './PublicEventViews';
 
 /**
@@ -238,8 +239,8 @@ const LiveNowCard: React.FC<{ ev: Tournament; live: Bout[]; tatamis: number[]; v
   return (
     <div className={`rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] overflow-hidden ${videoTatamis.length > 0 ? 'sm:col-span-2' : ''}`}>
       <div className="p-4">
-        <div className="font-semibold text-[var(--app-text-primary)]">{ev.title}</div>
-        <div className="text-sm text-[var(--app-text-muted)]">{ev.city} · {ev.startDate}</div>
+        <div translate="no" className="font-semibold text-[var(--app-text-primary)]">{eventTitle(ev, lang)}</div>
+        <div className="text-sm text-[var(--app-text-muted)]">{placeName(ev.city, lang)} · {ev.startDate}</div>
         <div className="mt-2 text-sm text-[var(--app-text-secondary)]">
           {live.length > 0
             ? `${t(lang, 'Идут бои на татами', 'Татамиде беттештер', 'Bouts on tatami')}: ${tatamis.join(', ')}`

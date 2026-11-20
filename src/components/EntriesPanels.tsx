@@ -1,3 +1,5 @@
+import { eventTitle, placeName } from '../utils/eventI18n';
+import { useApp } from '../context/AppContext';
 import React from 'react';
 import { entryFee } from '../utils/pricing';
 import { ClipboardList, Wallet, Search } from 'lucide-react';
@@ -13,6 +15,14 @@ const FEE_LABEL: Record<FeeStatus, string> = {
   exempt: 'Освобождён',
   refunded: 'Возвращено'
 };
+const FEE_LABEL_I18N: Record<FeeStatus, [ky: string, en: string]> = {
+  pending: ['Төлөнгөн жок', 'Not paid'],
+  paid: ['Төлөндү', 'Paid'],
+  exempt: ['Бошотулган', 'Exempt'],
+  refunded: ['Кайтарылды', 'Refunded']
+};
+const feeLabel = (s: FeeStatus, lang: string) => (lang === 'ky' ? FEE_LABEL_I18N[s][0] : lang === 'en' ? FEE_LABEL_I18N[s][1] : FEE_LABEL[s]);
+const tl = (lang: string, ru: string, ky: string, en: string) => (lang === 'ky' ? ky : lang === 'en' ? en : ru);
 const FEE_STYLE: Record<FeeStatus, string> = {
   pending: 'bg-amber-500/10 text-amber-700',
   paid: 'bg-emerald-600/10 text-emerald-700',
@@ -29,7 +39,10 @@ const catTitle = (categories: EventCategory[], id?: string) => {
   return def ? categoryName(def) : id || '—';
 };
 
-const Badge: React.FC<{ s: FeeStatus }> = ({ s }) => <span className={`text-xs px-2 py-0.5 rounded-md whitespace-nowrap ${FEE_STYLE[s]}`}>{FEE_LABEL[s]}</span>;
+const Badge: React.FC<{ s: FeeStatus }> = ({ s }) => {
+  const { language } = useApp();
+  return <span className={`text-xs px-2 py-0.5 rounded-md whitespace-nowrap ${FEE_STYLE[s]}`}>{feeLabel(s, language)}</span>;
+};
 
 // ---------------------------------------------------------------------------
 // Athlete / parent / coach: the entries this account submitted
@@ -47,6 +60,7 @@ interface MyEntriesProps {
 }
 
 export const MyEntriesPanel: React.FC<MyEntriesProps> = ({ user, tournaments, categories, participants, bouts, currency, onWithdraw, onNewEntry }) => {
+  const { language } = useApp();
   const mine = participants.filter((p) => p.createdBy === user.id);
   const [confirmId, setConfirmId] = React.useState<string | null>(null);
   const byEvent = tournaments
@@ -58,19 +72,24 @@ export const MyEntriesPanel: React.FC<MyEntriesProps> = ({ user, tournaments, ca
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex-1 min-w-[240px]">
           <h1 className="text-2xl font-bold text-[var(--app-text-primary)] flex items-center gap-2">
-            <ClipboardList className="w-6 h-6 text-[var(--accent)]" /> Мои заявки и оплата
+            <ClipboardList className="w-6 h-6 text-[var(--accent)]" /> {tl(language, 'Мои заявки и оплата', 'Өтүнмөлөрүм жана төлөм', 'My entries & fees')}
           </h1>
           <p className="text-[15px] text-[var(--app-text-secondary)] mt-1">
-            Заявки, поданные с вашего аккаунта. Взнос оплачивается так, как указал организатор (по реквизитам или на мандатной комиссии); статус оплаты отмечает организатор.
+            {tl(
+              language,
+              'Заявки, поданные с вашего аккаунта. Взнос оплачивается так, как указал организатор (по реквизитам или на мандатной комиссии); статус оплаты отмечает организатор.',
+              'Аккаунтуңуздан берилген табыштамалар. Төгүм уюштуруучу көрсөткөндөй төлөнөт (реквизиттер боюнча же мандаттык комиссияда); төлөмдүн абалын уюштуруучу белгилейт.',
+              'Entries sent from your account. The fee is paid the way the organizer says (bank details or at registration desk); the organizer marks the payment.'
+            )}
           </p>
         </div>
         <button onClick={onNewEntry} className="h-10 px-4 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white text-sm font-semibold cursor-pointer">
-          Подать заявку
+          {tl(language, 'Подать заявку', 'Табыштама берүү', 'Enter a tournament')}
         </button>
       </div>
 
       {byEvent.length === 0 ? (
-        <div className={`${card} border-dashed p-10 text-center text-sm text-[var(--app-text-muted)]`}>Вы ещё не подавали заявок.</div>
+        <div className={`${card} border-dashed p-10 text-center text-sm text-[var(--app-text-muted)]`}>{tl(language, 'Вы ещё не подавали заявок.', 'Сиз азырынча табыштама берген жоксуз.', 'You have not entered yet.')}</div>
       ) : (
         byEvent.map(({ t, list }) => {
           const due = list.filter((p) => p.status !== 'withdrawn' && feeOf(p) === 'pending').reduce((s, p) => s + entryFee(p, categories.find((c) => c.id === p.categoryId)), 0);
@@ -78,10 +97,10 @@ export const MyEntriesPanel: React.FC<MyEntriesProps> = ({ user, tournaments, ca
             <section key={t.id} className={`${card} overflow-hidden`}>
               <div className="px-4 py-3 border-b border-[var(--app-border)] flex flex-wrap items-center gap-2">
                 <div className="flex-1 min-w-[200px]">
-                  <div className="font-semibold text-[var(--app-text-primary)]">{t.title}</div>
-                  <div className="text-xs text-[var(--app-text-muted)]">{t.city} · {t.startDate}</div>
+                  <div translate="no" className="font-semibold text-[var(--app-text-primary)]">{eventTitle(t, language)}</div>
+                  <div className="text-xs text-[var(--app-text-muted)]">{placeName(t.city, language)} · {t.startDate}</div>
                 </div>
-                {due > 0 && <span className="text-sm text-amber-700">К оплате: {due} {currency}</span>}
+                {due > 0 && <span className="text-sm text-amber-700">{tl(language, 'К оплате', 'Төлөөгө', 'To pay')}: {due} {language === 'en' && currency === 'сом' ? 'KGS' : currency}</span>}
               </div>
               <ul className="divide-y divide-[var(--app-border)]">
                 {list.map((p) => {
@@ -94,17 +113,17 @@ export const MyEntriesPanel: React.FC<MyEntriesProps> = ({ user, tournaments, ca
                         <div className="text-xs text-[var(--app-text-muted)]">{catTitle(categories, p.categoryId)}</div>
                       </div>
                       <span className="text-xs text-[var(--app-text-muted)] w-28">
-                        {withdrawn ? 'отозвана' : drawn ? 'в сетке' : p.isWeighedIn ? 'прошёл взвешивание' : 'принята'}
+                        {withdrawn ? tl(language, 'отозвана', 'кайтарылды', 'withdrawn') : drawn ? tl(language, 'в сетке', 'торчодо', 'in bracket') : p.isWeighedIn ? tl(language, 'прошёл взвешивание', 'таразадан өттү', 'weighed in') : tl(language, 'принята', 'кабыл алынды', 'accepted')}
                       </span>
                       <Badge s={feeOf(p)} />
                       {!withdrawn && !drawn && (
                         confirmId === p.id ? (
                           <span className="flex gap-1">
-                            <button onClick={() => { onWithdraw(p.id); setConfirmId(null); }} className="h-8 px-2.5 rounded-lg bg-red-600 text-white text-xs cursor-pointer">Отозвать</button>
-                            <button onClick={() => setConfirmId(null)} className="h-8 px-2.5 rounded-lg border border-[var(--app-border)] text-xs cursor-pointer text-[var(--app-text-primary)]">Нет</button>
+                            <button onClick={() => { onWithdraw(p.id); setConfirmId(null); }} className="h-8 px-2.5 rounded-lg bg-red-600 text-white text-xs cursor-pointer">{tl(language, 'Отозвать', 'Кайтарып алуу', 'Withdraw')}</button>
+                            <button onClick={() => setConfirmId(null)} className="h-8 px-2.5 rounded-lg border border-[var(--app-border)] text-xs cursor-pointer text-[var(--app-text-primary)]">{tl(language, 'Нет', 'Жок', 'No')}</button>
                           </span>
                         ) : (
-                          <button onClick={() => setConfirmId(p.id)} className="h-8 px-2.5 rounded-lg border border-[var(--app-border)] text-xs text-[var(--app-text-secondary)] cursor-pointer">Отозвать</button>
+                          <button onClick={() => setConfirmId(p.id)} className="h-8 px-2.5 rounded-lg border border-[var(--app-border)] text-xs text-[var(--app-text-secondary)] cursor-pointer">{tl(language, 'Отозвать', 'Кайтарып алуу', 'Withdraw')}</button>
                         )
                       )}
                     </li>

@@ -180,11 +180,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setErrorMessage(null);
 
     if (!loginEmail.trim()) {
-      setErrorMessage(language !== 'en' ? 'Введите e-mail для входа' : 'Enter your email');
+      setErrorMessage(trL('Введите e-mail для входа', 'Кирүү үчүн e-mail жазыңыз', 'Enter your email'));
       return;
     }
     if (!loginPassword) {
-      setErrorMessage(language !== 'en' ? 'Обязательно введите пароль' : 'Password is required');
+      setErrorMessage(trL('Обязательно введите пароль', 'Сырсөздү сөзсүз жазыңыз', 'Password is required'));
       return;
     }
 
@@ -254,23 +254,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setErrorMessage(null);
 
     if (!regFullName.trim()) {
-      setErrorMessage(language !== 'en' ? 'Укажите ваше имя и фамилию' : 'Enter your full name');
+      setErrorMessage(trL('Укажите ваше имя и фамилию', 'Атыңызды жана фамилияңызды жазыңыз', 'Enter your full name'));
       return;
     }
     if (!regEmail.trim()) {
-      setErrorMessage(language !== 'en' ? 'Укажите e-mail' : 'Enter your email');
+      setErrorMessage(trL('Укажите e-mail', 'E-mail жазыңыз', 'Enter your email'));
       return;
     }
     if (!regPassword || regPassword.length < 8) {
-      setErrorMessage(language !== 'en' ? 'Пароль должен состоять минимум из 8 символов' : 'Password must be at least 8 characters');
+      setErrorMessage(trL('Пароль должен состоять минимум из 8 символов', 'Сырсөз кеминде 8 белгиден турушу керек', 'Password must be at least 8 characters'));
       return;
     }
     if (regPassword !== regConfirmPassword) {
-      setErrorMessage(language !== 'en' ? 'Введенные пароли не совпадают' : 'Passwords do not match');
+      setErrorMessage(trL('Введенные пароли не совпадают', 'Киргизилген сырсөздөр дал келбейт', 'Passwords do not match'));
       return;
     }
     if (!regAgreeTerms) {
-      setErrorMessage(language !== 'en' ? 'Необходимо согласиться с политикой конфиденциальности' : 'Please accept terms');
+      setErrorMessage(trL('Необходимо согласиться с политикой конфиденциальности', 'Купуялык саясатына макул болуу керек', 'Please accept terms'));
       return;
     }
 
@@ -407,14 +407,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
                         <label className="block text-xs font-semibold text-[#2c5270] font-sans">
-                          {language !== 'en' ? 'Пароль' : 'Password'}
+                          {trL('Пароль', 'Сырсөз', 'Password')}
                         </label>
                         <span className="text-[10px] text-rose-500 font-semibold uppercase">Обязательно</span>
                       </div>
                       <div className="relative">
                         <input
                           type={showPassword ? 'text' : 'password'}
-                          placeholder={language !== 'en' ? 'Введите пароль...' : 'Password'}
+                          placeholder={trL('Введите пароль...', 'Сырсөздү жазыңыз...', 'Password')}
                           value={loginPassword}
                           onChange={(e) => setLoginPassword(e.target.value)}
                           required
@@ -434,10 +434,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <div className="text-right pt-0.5">
                       <button
                         type="button"
-                        onClick={() => alert(language !== 'en' ? 'Инструкции по восстановлению пароля отправлены на ваш e-mail.' : 'Password reset link sent to your email.')}
+                        onClick={() => alert(trL('Инструкции по восстановлению пароля отправлены на ваш e-mail.', 'Сырсөздү калыбына келтирүү нускамасы e-mail дарегиңизге жөнөтүлдү.', 'Password reset link sent to your email.'))}
                         className="text-xs text-[#3b668d] hover:text-[#1d4264] transition-colors cursor-pointer font-sans"
                       >
-                        {language !== 'en' ? 'Забыли пароль?' : 'Forgot password?'}
+                        {trL('Забыли пароль?', 'Сырсөздү унуттуңузбу?', 'Forgot password?')}
                       </button>
                     </div>
 
@@ -450,7 +450,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       {isSubmitting ? (
                         <span>Проверка учетных данных...</span>
                       ) : (
-                        <span>{language !== 'en' ? 'Продолжить' : 'Continue'}</span>
+                        <span>{trL('Продолжить', 'Улантуу', 'Continue')}</span>
                       )}
                     </button>
 
@@ -460,7 +460,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         <div className="w-full border-t border-[#c6d9ea]" />
                       </div>
                       <span className="relative bg-[#f0f5f9] px-3 text-xs text-[#52799c] font-medium font-sans">
-                        {language !== 'en' ? 'или' : 'or'}
+                        {trL('или', 'же', 'or')}
                       </span>
                     </div>
 
@@ -495,7 +495,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     onClick={() => setActiveTab('register')}
                     className="w-full py-2.5 px-4 rounded-full bg-[#3ca3a8] hover:bg-[#349297] text-white font-medium text-sm shadow-md transition-all cursor-pointer text-center font-sans tracking-wide active:scale-[0.99]"
                   >
-                    {language !== 'en' ? 'Регистрация' : 'Register'}
+                    {trL('Регистрация', 'Катталуу', 'Register')}
                   </button>
 
                   {/* Demo Credentials Quick Switcher (development builds only) */}
@@ -541,7 +541,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <div className="rounded-2xl bg-[#f0f5f9] border border-[#c5d8e8] p-5 sm:p-6 shadow-2xs">
                   <div className="text-center pb-2">
                     <h3 className="text-sm font-bold text-[#2c5270] font-sans">
-                      {language !== 'en' ? 'Регистрация на сайте Apsatarov' : 'Create Apsatarov Account'}
+                      {trL('Регистрация на сайте Apsatarov', 'Apsatarov сайтына катталуу', 'Create Apsatarov Account')}
                     </h3>
                   </div>
 
@@ -549,7 +549,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     {/* Full Name */}
                     <div>
                       <label className="block text-[11px] font-semibold text-[#2c5270] mb-1 font-sans">
-                        {language !== 'en' ? 'Имя и Фамилия' : 'Full Name'}
+                        {trL('Имя и Фамилия', 'Аты жана фамилиясы', 'Full Name')}
                       </label>
                       <input
                         type="text"
@@ -579,7 +579,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     {/* Phone */}
                     <div>
                       <label className="block text-[11px] font-semibold text-[#2c5270] mb-1 font-sans">
-                        {language !== 'en' ? 'Телефон' : 'Phone'}
+                        {trL('Телефон', 'Телефон', 'Phone')}
                       </label>
                       <input
                         type="tel"
@@ -593,7 +593,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     {/* Password */}
                     <div>
                       <label className="block text-[11px] font-semibold text-[#2c5270] mb-1 font-sans">
-                        {language !== 'en' ? 'Пароль (минимум 8 символов)' : 'Password (min 8 chars)'}
+                        {trL('Пароль (минимум 8 символов)', 'Сырсөз (кеминде 8 белги)', 'Password (min 8 chars)')}
                       </label>
                       <input
                         type="password"
@@ -608,7 +608,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     {/* Confirm Password */}
                     <div>
                       <label className="block text-[11px] font-semibold text-[#2c5270] mb-1 font-sans">
-                        {language !== 'en' ? 'Повторите пароль' : 'Confirm Password'}
+                        {trL('Повторите пароль', 'Сырсөздү кайталаңыз', 'Confirm Password')}
                       </label>
                       <input
                         type="password"
@@ -623,10 +623,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     {/* Role: fixed by the invitation link, otherwise athlete or coach */}
                     {lockedRole ? (
                       <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900 font-sans">
-                        {language !== 'en' ? 'Вы регистрируетесь как: ' : 'You are registering as: '}
+                        {trL('Вы регистрируетесь как: ', 'Сиз катталып жатасыз: ', 'You are registering as: ')}
                         <b>{LOCKED_ROLE_LABELS[lockedRole] || lockedRole}</b>
                         <div className="text-[10px] text-emerald-800/80 mt-0.5">
-                          {language !== 'en' ? 'Роль задана ссылкой-приглашением.' : 'The role is set by your invitation link.'}
+                          {trL('Роль задана ссылкой-приглашением.', 'Роль чакыруу шилтемеси менен берилген.', 'The role is set by your invitation link.')}
                         </div>
                       </div>
                     ) : (
@@ -686,13 +686,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     {((lockedRole || regRole) === 'club_coach' || (lockedRole || regRole) === 'athlete') && (
                       <div>
                         <label className="block text-[11px] font-semibold text-[#2c5270] mb-1 font-sans">
-                          {language !== 'en' ? 'Клуб (если есть)' : 'Club (optional)'}
+                          {trL('Клуб (если есть)', 'Клуб (болсо)', 'Club (optional)')}
                         </label>
                         <input
                           type="text"
                           value={regClubName}
                           onChange={(e) => setRegClubName(e.target.value)}
-                          placeholder={language !== 'en' ? 'Например: СК «Тигр», Бишкек' : 'e.g. Tiger Karate Club, Bishkek'}
+                          placeholder={trL('Например: СК «Тигр», Бишкек', 'Мисалы: СК «Жолборс», Бишкек', 'e.g. Tiger Karate Club, Bishkek')}
                           className="w-full rounded-full bg-white border border-slate-200/80 px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-[#38a3a5] shadow-2xs font-sans"
                         />
                       </div>
@@ -706,11 +706,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           className="mt-0.5 rounded text-[#38a3a5] focus:ring-[#38a3a5]"
                         />
                         <span>
-                          <b>{language !== 'en' ? 'Я тоже выступаю на соревнованиях' : 'I also compete'}</b>
+                          <b>{trL('Я тоже выступаю на соревнованиях', 'Мен да мелдештерге чыгам', 'I also compete')}</b>
                           <span className="block text-[10px] text-slate-500">
-                            {language !== 'en'
-                              ? 'Сможете подавать заявки и за учеников, и за себя — с одного аккаунта.'
-                              : 'Enter your athletes and yourself from one account.'}
+                            {trL('Сможете подавать заявки и за учеников, и за себя — с одного аккаунта.', 'Бир аккаунттан окуучулар үчүн да, өзүңүз үчүн да табыштама бере аласыз.', 'Enter your athletes and yourself from one account.')}
                           </span>
                         </span>
                       </label>
@@ -725,9 +723,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         className="mt-0.5 rounded text-[#38a3a5] focus:ring-[#38a3a5]"
                       />
                       <span>
-                        {language !== 'en'
-                          ? 'Согласен с Условиями и обработкой персональных данных'
-                          : 'I agree to the Terms & Privacy Policy'}
+                        {trL('Согласен с Условиями и обработкой персональных данных', 'Шарттарга жана жеке маалыматтарды иштетүүгө макулмун', 'I agree to the Terms & Privacy Policy')}
                       </span>
                     </label>
 
@@ -749,7 +745,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     onClick={() => setActiveTab('login')}
                     className="text-xs text-[#3b668d] hover:text-[#1d4264] font-medium font-sans cursor-pointer"
                   >
-                    {language !== 'en' ? 'Уже есть аккаунт? Войти' : 'Already have an account? Sign In'}
+                    {trL('Уже есть аккаунт? Войти', 'Аккаунтуңуз барбы? Кирүү', 'Already have an account? Sign In')}
                   </button>
                 </div>
               </div>
@@ -841,6 +837,7 @@ export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({
   onClose,
   language
 }) => {
+  const trL = (ru: string, ky: string, en: string) => (language === 'ky' ? ky : language === 'en' ? en : ru);
   if (!isOpen) return null;
 
   return (
@@ -854,10 +851,10 @@ export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-800">
-                {language !== 'en' ? 'Политика конфиденциальности и защиты данных' : 'Privacy & Data Protection Policy'}
+                {trL('Политика конфиденциальности и защиты данных', 'Купуялык жана маалыматтарды коргоо саясаты', 'Privacy & Data Protection Policy')}
               </h3>
               <p className="text-[11px] text-slate-500">
-                {language !== 'en' ? 'Как Apsatarov обращается с персональными данными' : 'How Apsatarov handles personal data'}
+                {trL('Как Apsatarov обращается с персональными данными', 'Apsatarov жеке маалыматтар менен кантип иштейт', 'How Apsatarov handles personal data')}
               </p>
             </div>
           </div>
@@ -908,7 +905,7 @@ export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({
             onClick={onClose}
             className="px-4 py-2 rounded-xl bg-[#3ca3a8] hover:bg-[#349297] text-white font-medium text-xs transition-colors cursor-pointer"
           >
-            {language !== 'en' ? 'Понятно и согласен' : 'Acknowledge & Close'}
+            {trL('Понятно и согласен', 'Түшүнүктүү, макулмун', 'Acknowledge & Close')}
           </button>
         </div>
       </div>

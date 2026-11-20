@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Language } from './translations';
 import { EventItem } from '../data/eventsData';
+import { eventTitle, placeName, countryLabel, locationText, setBuiltInTitleLookup } from './eventI18n';
 
 /**
  * Helper for 3-language inline translation in React components
@@ -111,6 +112,11 @@ export function localizeDateLabel(dateLabel: string, language: Language): string
   return out;
 }
 
+setBuiltInTitleLookup((id, lang) => {
+  const loc = EVENT_LOCALIZATIONS[id];
+  return loc && (lang === 'ky' || lang === 'en') ? loc[lang].title : undefined;
+});
+
 export function localizeEventItem(item: EventItem, language: Language): EventItem {
   const loc = EVENT_LOCALIZATIONS[item.id];
   const localizedDate = localizeDateLabel(item.dateLabel || `${item.startDate} - ${item.endDate}`, language);
@@ -123,6 +129,20 @@ export function localizeEventItem(item: EventItem, language: Language): EventIte
       title: target.title,
       locationLabel: target.locationLabel,
       description: target.description,
+      city: placeName(item.city, language),
+      country: countryLabel(item.country, language),
+      dateLabel: localizedDate
+    };
+  }
+
+  // Organizer's tournaments: own Kyrgyz / English name if given, city and country translated automatically
+  if (language !== 'ru') {
+    return {
+      ...item,
+      title: eventTitle(item, language),
+      city: placeName(item.city, language),
+      country: countryLabel(item.country, language),
+      locationLabel: item.city || item.country ? locationText(item, language) : item.locationLabel,
       dateLabel: localizedDate
     };
   }
@@ -478,15 +498,31 @@ function translateString(source: string, lang: Language): string {
     return source.replace(trimmed, target);
   }
 
+  // Whole words only: «Бишкек» → «Bishkek», but never «Бишкека» → «Bishkekа»
   let result = source;
   for (const item of FRAGMENT_REPLACEMENTS) {
     if (result.includes(item.ru)) {
       const replacement = lang === 'ky' ? item.ky : item.en;
-      result = result.split(item.ru).join(replacement);
+      result = result.replace(fragmentPattern(item.ru), replacement);
     }
   }
   return result;
 }
+
+const fragmentPatterns = new Map<string, RegExp>();
+function fragmentPattern(ru: string): RegExp {
+  let re = fragmentPatterns.get(ru);
+  if (!re) {
+    const escaped = ru.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    re = new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, 'gu');
+    fragmentPatterns.set(ru, re);
+  }
+  re.lastIndex = 0;
+  return re;
+}
+
+/** Names typed by people (tournaments, clubs) are not machine-translated word by word: mark them translate="no". */
+const isProtected = (el: Element | null) => !!el?.closest('[translate="no"]');
 
 function applyTranslationToSubtree(root: Node, lang: Language) {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
@@ -495,7 +531,7 @@ function applyTranslationToSubtree(root: Node, lang: Language) {
   while (current) {
     if (current.nodeType === Node.TEXT_NODE) {
       const parentTag = current.parentElement?.tagName;
-      if (parentTag !== 'SCRIPT' && parentTag !== 'STYLE' && parentTag !== 'TEXTAREA') {
+      if (parentTag !== 'SCRIPT' && parentTag !== 'STYLE' && parentTag !== 'TEXTAREA' && !isProtected(current.parentElement)) {
         const currentVal = current.nodeValue || '';
         if (!originalTextNodeMap.has(current)) {
           originalTextNodeMap.set(current, currentVal);
@@ -516,10 +552,14 @@ function applyTranslationToSubtree(root: Node, lang: Language) {
       }
     } else if (current.nodeType === Node.ELEMENT_NODE) {
       const el = current as HTMLElement;
-      if (el.hasAttribute('placeholder')) {
+      if (el.hasAttribute('placeholder') && !isProtected(el)) {
         const curPh = el.getAttribute('placeholder') || '';
         if (!originalPlaceholderMap.has(el)) {
           originalPlaceholderMap.set(el, curPh);
+        } else {
+          // The page itself changed the text (e.g. already translated in code): remember the new one
+          const orig = originalPlaceholderMap.get(el)!;
+          if (curPh !== orig && curPh !== translateString(orig, 'ky') && curPh !== translateString(orig, 'en')) originalPlaceholderMap.set(el, curPh);
         }
         const basePh = originalPlaceholderMap.get(el) || curPh;
         const nextPh = lang === 'ru' ? basePh : translateString(basePh, lang);
@@ -531,6 +571,10 @@ function applyTranslationToSubtree(root: Node, lang: Language) {
         const curTitle = el.getAttribute('title') || '';
         if (!originalTitleMap.has(el)) {
           originalTitleMap.set(el, curTitle);
+        } else {
+          // The page itself changed the text (e.g. already translated in code): remember the new one
+          const orig = originalTitleMap.get(el)!;
+          if (curTitle !== orig && curTitle !== translateString(orig, 'ky') && curTitle !== translateString(orig, 'en')) originalTitleMap.set(el, curTitle);
         }
         const baseTitle = originalTitleMap.get(el) || curTitle;
         const nextTitle = lang === 'ru' ? baseTitle : translateString(baseTitle, lang);

@@ -78,6 +78,7 @@ app.use(databaseMiddleware(() => ensureAdminAccount(true)));
 
 import { DEMO_EVENTS } from './src/data/eventsData';
 import { sanitizeLiveStreams } from './src/utils/youtube';
+import { cleanTitleTranslation } from './src/utils/eventI18n';
 import { sanitizePricing, quoteEntries, countPaidBefore, athleteKey, bishkekDate } from './src/utils/pricing';
 import {
   sanitizeAthlete,
@@ -266,7 +267,10 @@ app.post('/api/events', (req: Request, res: Response) => {
     athleteCount: newEvent.athleteCount || 0,
     clubCount: newEvent.clubCount || 0,
     liveStreams: sanitizeLiveStreams(newEvent.liveStreams),
-    pricing: sanitizePricing(newEvent.pricing)
+    pricing: sanitizePricing(newEvent.pricing),
+    // Optional names in Kyrgyz / English: short plain text only
+    titleKy: cleanTitleTranslation(newEvent.titleKy),
+    titleEn: cleanTitleTranslation(newEvent.titleEn)
   };
 
   db.events = [preparedEvent, ...eventsList().filter((e) => e.id !== id)];
@@ -313,7 +317,9 @@ app.put('/api/events/:id', (req: Request, res: Response) => {
     // Only valid YouTube links per tatami are kept
     liveStreams: sanitizeLiveStreams(updateData.liveStreams !== undefined ? updateData.liveStreams : existing.liveStreams),
     // Price periods and next-category discount: only valid values are kept
-    pricing: sanitizePricing(updateData.pricing !== undefined ? updateData.pricing : existing.pricing)
+    pricing: sanitizePricing(updateData.pricing !== undefined ? updateData.pricing : existing.pricing),
+    titleKy: cleanTitleTranslation(updateData.titleKy !== undefined ? updateData.titleKy : existing.titleKy),
+    titleEn: cleanTitleTranslation(updateData.titleEn !== undefined ? updateData.titleEn : existing.titleEn)
   };
 
   eventsList()[index] = updatedEvent;

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useApp } from '../context/AppContext';
 
 /**
  * Apsatarov brand mark: a competition tatami seen from above —
@@ -21,10 +22,15 @@ export const BrandWordmark: React.FC<{ className?: string }> = ({ className = ''
 );
 
 /** Large stacked logo for the sign-in screen. */
-export const BrandFullLogo: React.FC = () => (
-  <div className="flex flex-col items-center justify-center select-none text-center">
-    <BrandMark className="w-16 h-16 sm:w-28 sm:h-28 md:w-36 md:h-36 drop-shadow-sm" />
-    <BrandWordmark className="text-3xl sm:text-4xl md:text-5xl mt-2 sm:mt-4 text-[#2b3442]" />
-    <span className="mt-1 text-sm text-slate-500">Турниры по каратэ онлайн</span>
-  </div>
-);
+export const BrandFullLogo: React.FC = () => {
+  const { language } = useApp();
+  return (
+    <div className="flex flex-col items-center justify-center select-none text-center">
+      <BrandMark className="w-16 h-16 sm:w-28 sm:h-28 md:w-36 md:h-36 drop-shadow-sm" />
+      <BrandWordmark className="text-3xl sm:text-4xl md:text-5xl mt-2 sm:mt-4 text-[#2b3442]" />
+      <span className="mt-1 text-sm text-slate-500">
+        {language === 'ky' ? 'Каратэ мелдештери онлайн' : language === 'en' ? 'Karate tournaments online' : 'Турниры по каратэ онлайн'}
+      </span>
+    </div>
+  );
+};

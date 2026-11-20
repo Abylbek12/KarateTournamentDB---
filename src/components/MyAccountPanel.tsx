@@ -1,7 +1,7 @@
 import React from 'react';
 import { UserCircle2, ClipboardList, Users, UserPlus, CreditCard, BookOpen, Check } from 'lucide-react';
 import type { AuthenticatedUserProfile } from '../types/schema';
-import { ROLE_LABELS } from '../utils/access';
+import { roleLabel } from '../utils/access';
 import { useApp } from '../context/AppContext';
 import { trLang } from '../utils/globalDomTranslator';
 
@@ -30,7 +30,7 @@ export const MyAccountPanel: React.FC<MyAccountPanelProps> = ({ user, onNavigate
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      setError(data.error || 'Не удалось сохранить');
+      setError(data.error || trLang(language, 'Не удалось сохранить', 'Сактоо мүмкүн болгон жок', 'Could not save'));
       return;
     }
     onUserUpdated(data.user);
@@ -60,8 +60,8 @@ export const MyAccountPanel: React.FC<MyAccountPanelProps> = ({ user, onNavigate
         <div className="min-w-0">
           <h2 className="text-xl font-semibold text-[var(--app-text-primary)]">{user.fullName}</h2>
           <div className="text-sm text-[var(--app-text-muted)]">
-            {ROLE_LABELS[user.role]}
-            {isCoach && user.alsoCompetes && ' · также выступает'}
+            {roleLabel(user.role, language)}
+            {isCoach && user.alsoCompetes && ` · ${trLang(language, 'также выступает', 'өзү да чыгат', 'also competes')}`}
             {user.clubName && ` · ${user.clubName}`}
           </div>
         </div>
@@ -71,8 +71,8 @@ export const MyAccountPanel: React.FC<MyAccountPanelProps> = ({ user, onNavigate
         <div className={`grid gap-3 sm:grid-cols-2 ${isCoach ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}>
           {action(
             <ClipboardList className="w-5 h-5" />,
-            isCoach ? 'Подать заявки' : 'Подать заявку',
-            isCoach ? (user.alsoCompetes ? 'За учеников и за себя' : 'За своих учеников') : 'Выбрать турнир и категории',
+            isCoach ? trLang(language, 'Подать заявки', 'Табыштама берүү', 'Enter athletes') : trLang(language, 'Подать заявку', 'Табыштама берүү', 'Enter a tournament'),
+            isCoach ? (user.alsoCompetes ? trLang(language, 'За учеников и за себя', 'Окуучулар жана өзүм үчүн', 'For your athletes and yourself') : trLang(language, 'За своих учеников', 'Өз окуучуларыңыз үчүн', 'For your athletes')) : trLang(language, 'Выбрать турнир и категории', 'Мелдешти жана категорияларды тандоо', 'Choose a tournament and categories'),
             'registration'
           )}
           {action(
@@ -81,21 +81,21 @@ export const MyAccountPanel: React.FC<MyAccountPanelProps> = ({ user, onNavigate
             trLang(language, 'Внести один раз, заявлять быстро', 'Бир жолу киргизип, тез каттоо', 'Enter once, register fast'),
             'athletes'
           )}
-          {isCoach && action(<Users className="w-5 h-5" />, 'Кабинет клуба', 'Ученики, команды, история', 'coach')}
-          {action(<CreditCard className="w-5 h-5" />, 'Мои оплаты', 'Взносы и квитанции', 'acquiring')}
-          {action(<BookOpen className="w-5 h-5" />, 'Инструкция', 'Как всё работает, по шагам', 'help')}
+          {isCoach && action(<Users className="w-5 h-5" />, trLang(language, 'Кабинет клуба', 'Клуб кабинети', 'Club cabinet'), trLang(language, 'Ученики, команды, история', 'Окуучулар, командалар, тарых', 'Athletes, teams, history'), 'coach')}
+          {action(<CreditCard className="w-5 h-5" />, trLang(language, 'Мои заявки и оплата', 'Өтүнмөлөрүм жана төлөм', 'My entries & fees'), trLang(language, 'Взносы и статус заявок', 'Төгүмдөр жана табыштамалардын абалы', 'Fees and entry status'), 'acquiring')}
+          {action(<BookOpen className="w-5 h-5" />, trLang(language, 'Инструкция', 'Нускама', 'How it works'), trLang(language, 'Как всё работает, по шагам', 'Баары кантип иштейт, кадам боюнча', 'Step by step'), 'help')}
         </div>
       )}
 
       <div className="rounded-xl border border-[var(--app-border)] p-4 space-y-3">
-        <div className="text-sm font-semibold text-[var(--app-text-primary)]">Мои данные</div>
+        <div className="text-sm font-semibold text-[var(--app-text-primary)]">{trLang(language, 'Мои данные', 'Менин маалыматым', 'My details')}</div>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-xs text-[var(--app-text-secondary)] space-y-1">
-            <span>Клуб</span>
-            <input value={clubName} onChange={(e) => setClubName(e.target.value)} className={field} placeholder="Название клуба" />
+            <span>{trLang(language, 'Клуб', 'Клуб', 'Club')}</span>
+            <input value={clubName} onChange={(e) => setClubName(e.target.value)} className={field} placeholder={trLang(language, 'Название клуба', 'Клубдун аталышы', 'Club name')} />
           </label>
           <label className="text-xs text-[var(--app-text-secondary)] space-y-1">
-            <span>Телефон</span>
+            <span>{trLang(language, 'Телефон', 'Телефон', 'Phone')}</span>
             <input value={phone} onChange={(e) => setPhone(e.target.value)} className={field} placeholder="+996 …" />
           </label>
         </div>
@@ -108,9 +108,9 @@ export const MyAccountPanel: React.FC<MyAccountPanelProps> = ({ user, onNavigate
               className="mt-0.5 w-4 h-4"
             />
             <span className="text-sm text-[var(--app-text-primary)]">
-              Я тоже выступаю на соревнованиях
+              {trLang(language, 'Я тоже выступаю на соревнованиях', 'Мен да мелдештерге чыгам', 'I also compete')}
               <span className="block text-xs text-[var(--app-text-muted)]">
-                Тогда при подаче заявок вы сможете отметить и себя как спортсмена.
+                {trLang(language, 'Тогда при подаче заявок вы сможете отметить и себя как спортсмена.', 'Анда табыштама бергенде өзүңүздү да спортчу катары белгилей аласыз.', 'Then you can enter yourself as an athlete too.')}
               </span>
             </span>
           </label>
@@ -120,11 +120,11 @@ export const MyAccountPanel: React.FC<MyAccountPanelProps> = ({ user, onNavigate
             onClick={() => save({ clubName, phone })}
             className="px-4 py-2 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white text-sm font-semibold cursor-pointer"
           >
-            Сохранить
+            {trLang(language, 'Сохранить', 'Сактоо', 'Save')}
           </button>
           {saved && (
             <span className="text-sm text-emerald-600 inline-flex items-center gap-1">
-              <Check className="w-4 h-4" /> Сохранено
+              <Check className="w-4 h-4" /> {trLang(language, 'Сохранено', 'Сакталды', 'Saved')}
             </span>
           )}
           {error && <span className="text-sm text-red-600">{error}</span>}

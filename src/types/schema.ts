@@ -142,6 +142,9 @@ export interface TournamentScheduleItem {
 export interface Tournament {
   id: string;
   title: string;
+  /** Optional name in Kyrgyz / English (shown when the interface is in that language). */
+  titleKy?: string;
+  titleEn?: string;
   slug: string;
   rulesType: TournamentRules;
   organization: string;

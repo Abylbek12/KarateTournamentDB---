@@ -86,7 +86,7 @@ export const TournamentDivisionsPricingView: React.FC<TournamentDivisionsPricing
             <span>{language !== 'en' ? 'Главная' : 'Home'}</span>
           </button>
           <span>/</span>
-          <span className="text-slate-400 truncate max-w-[200px] sm:max-w-md">{tournament.title}</span>
+          <span translate="no" className="text-slate-400 truncate max-w-[200px] sm:max-w-md">{tournament.title}</span>
           <span>/</span>
           <span className="text-slate-800 font-semibold">{language !== 'en' ? 'Категории и цены' : 'Categories & Pricing'}</span>
         </div>

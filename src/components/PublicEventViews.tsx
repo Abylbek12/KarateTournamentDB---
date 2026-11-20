@@ -13,6 +13,7 @@ import { countryName, flagEmoji } from '../utils/countries';
 import { currentBoutOf, upcomingOf } from './TatamiScreens';
 import { sanitizePricing, currentPeriod, periodStartsOn, bishkekDate, categoryPrice, additionalPrice, isTeamDiscipline } from '../utils/pricing';
 import { streamTatamis, youtubeVideoId, youtubeEmbedUrl, youtubeCommand, fitVideoGrid } from '../utils/youtube';
+import { eventTitle } from '../utils/eventI18n';
 
 type Lang = 'ru' | 'ky' | 'en';
 
@@ -86,7 +87,7 @@ const EventHeader: React.FC<{
         <ArrowLeft className="w-4 h-4" /> {t(language, 'Все турниры', 'Бардык мелдештер', 'All tournaments')}
       </button>
       <div className="flex flex-wrap items-start gap-3">
-        <h1 className="flex-1 min-w-[220px] text-2xl font-bold text-[var(--app-text-primary)] leading-snug">{event.title}</h1>
+        <h1 translate="no" className="flex-1 min-w-[220px] text-2xl font-bold text-[var(--app-text-primary)] leading-snug">{eventTitle(event, language)}</h1>
         {printKind && (
           <a
             href={printUrl({ kind: printKind, eventId: event.id, categoryId: printKind === 'bracket' ? printCategoryId : undefined, lang: language })}
@@ -652,7 +653,7 @@ export const PublicLiveView: React.FC<BaseProps> = (props) => {
                     {side('ao')}
                     {b.status === 'completed' && b.winReason && (
                       <div className="px-4 py-2 text-sm text-[var(--app-text-secondary)]">
-                        {t(language, 'Победа', 'Жеңиш', 'Winner')}: {b.winnerId === b.akaParticipantId ? 'АКА' : 'АО'} · {E.winReasonLabel(b.winReason, language)}
+                        {t(language, 'Победа', 'Жеңиш', 'Winner')}: {b.winnerId === b.akaParticipantId ? t(language, 'АКА', 'АКА', 'AKA') : t(language, 'АО', 'АО', 'AO')} · {E.winReasonLabel(b.winReason, language)}
                       </div>
                     )}
                   </>

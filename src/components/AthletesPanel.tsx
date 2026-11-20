@@ -1,7 +1,7 @@
 import React from 'react';
 import { UserPlus, Search, Pencil, Archive, ArchiveRestore, Users, CheckCircle2, History, X } from 'lucide-react';
 import type { AuthenticatedUserProfile, BeltRank } from '../types/schema';
-import { BELT_CHOICES, BELT_LABELS, beltName } from '../utils/eventCategories';
+import { BELT_CHOICES, BELT_LABELS, beltName, beltLabel } from '../utils/eventCategories';
 import { formatBirthInput, parseBirthText, isoToBirthText } from '../utils/dateInput';
 import { transliterate } from '../utils/names';
 import { useApp } from '../context/AppContext';
@@ -121,7 +121,7 @@ const AthleteEditor: React.FC<{ initial?: ClubAthlete; onSave: (input: ClubAthle
           <label className={label} htmlFor={`ath-belt-${id}`}>{tl(language, 'Пояс', 'Кур', 'Belt')}</label>
           <select id={`ath-belt-${id}`} value={d.beltRank} onChange={(e) => set({ beltRank: e.target.value as BeltRank })} className={field}>
             {BELT_CHOICES.map((b) => (
-              <option key={b} value={b}>{BELT_LABELS[b]}</option>
+              <option key={b} value={b}>{beltLabel(b, language)}</option>
             ))}
           </select>
           {d.beltRank === 'other' && (
@@ -300,7 +300,7 @@ export const AthletesPanel: React.FC<{ user: AuthenticatedUserProfile; onNewEntr
                     {a.archived && <span className="ml-2 text-xs text-[var(--app-text-muted)]">{tl(language, 'в архиве', 'архивде', 'archived')}</span>}
                   </div>
                   <div className="text-xs text-[var(--app-text-muted)]">
-                    {isoToBirthText(a.birthDate)} · {a.gender === 'female' ? tl(language, 'жен.', 'аял', 'F') : tl(language, 'муж.', 'эркек', 'M')} · {beltName(a)}
+                    {isoToBirthText(a.birthDate)} · {a.gender === 'female' ? tl(language, 'жен.', 'аял', 'F') : tl(language, 'муж.', 'эркек', 'M')} · {beltName(a, language)}
                     {a.weightKg ? ` · ${a.weightKg} ${tl(language, 'кг', 'кг', 'kg')}` : ''}
                     {a.licenseNumber ? ` · ${tl(language, 'лиц.', 'лиц.', 'lic.')} ${a.licenseNumber}` : ''}
                   </div>

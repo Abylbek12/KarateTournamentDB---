@@ -93,6 +93,7 @@ import { getDeviceKey, setDeviceKey } from './utils/liveStream';
 import { startServerClock } from './utils/serverClock';
 import { hashForTab, tabFromHash, isEventTab, isPlainClick } from './utils/routes';
 import { pickCurrentTournament, localToday, readRememberedTournament, rememberTournament } from './utils/currentTournament';
+import { eventTitle } from './utils/eventI18n';
 import { TatamiDisplay, CallRoomDisplay, TatamiControl, upcomingOf } from './components/TatamiScreens';
 import { MyAccountPanel } from './components/MyAccountPanel';
 import { RoleGuide } from './components/RoleGuide';
@@ -612,12 +613,12 @@ function AppContent() {
   const getPageTitle = (tab: string) => {
     switch (tab) {
       case 'tournaments': return language === 'ru' ? 'События' : 'Events';
-      case 'event_info': return `${selectedEvent.title} — Информация`;
-      case 'event_categories_prices': return `${selectedEvent.title} — Категории и цены`;
-      case 'event_brackets': return `${selectedEvent.title} — Сетки`;
-      case 'event_medals': return `${selectedEvent.title} — Медали`;
-      case 'event_live_scoring': return `${selectedEvent.title} — Live Scoring`;
-      case 'event_results': return `${selectedEvent.title} — Результаты`;
+      case 'event_info': return `${eventTitle(selectedEvent, language)} — Информация`;
+      case 'event_categories_prices': return `${eventTitle(selectedEvent, language)} — Категории и цены`;
+      case 'event_brackets': return `${eventTitle(selectedEvent, language)} — Сетки`;
+      case 'event_medals': return `${eventTitle(selectedEvent, language)} — Медали`;
+      case 'event_live_scoring': return `${eventTitle(selectedEvent, language)} — Live Scoring`;
+      case 'event_results': return `${eventTitle(selectedEvent, language)} — Результаты`;
       case 'studios': return language === 'ru' ? 'Клубы' : 'Clubs';
       case 'virtual_studios': return language === 'ru' ? 'Сейчас на татами' : 'Live now';
       case 'about': return language === 'ru' ? 'О платформе Apsatarov' : language === 'ky' ? 'Apsatarov жөнүндө' : 'About Apsatarov';
@@ -985,6 +986,35 @@ function AppContent() {
 
           {/* Right: Clean Header Bar (Alerts, Training & Unified Profile Menu with Role, Theme & Language) */}
           <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 font-sans">
+
+            {/* Language switch RU / KG / EN: always visible on computers and tablets (phones keep it in the profile menu) */}
+            <div
+              className="hidden sm:inline-flex items-center p-0.5 rounded-full border border-slate-200/90 bg-white shadow-2xs"
+              role="radiogroup"
+              aria-label={tr('Язык сайта', 'Сайттын тили', 'Site language')}
+            >
+              {(
+                [
+                  ['ru', 'RU', 'Русский'],
+                  ['ky', 'KG', 'Кыргызча'],
+                  ['en', 'EN', 'English']
+                ] as const
+              ).map(([code, short, full]) => (
+                <button
+                  key={code}
+                  type="button"
+                  role="radio"
+                  aria-checked={language === code}
+                  title={full}
+                  onClick={() => setLanguage(code)}
+                  className={`h-7 min-w-[34px] px-2 rounded-full text-[11px] font-bold tracking-wide transition-colors cursor-pointer ${
+                    language === code ? 'bg-slate-800 text-white' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
+                  }`}
+                >
+                  {short}
+                </button>
+              ))}
+            </div>
 
             {/* ========================================================
                 UNIFIED PROFILE & SETTINGS MENU (Role RBAC, Theme, Language & Account)
@@ -1386,6 +1416,7 @@ function AppContent() {
                   </label>
                   <select
                     id="current-tournament"
+                    translate="no"
                     value={ev.id}
                     onChange={(e) => {
                       const next = tournaments.find((t) => t.id === e.target.value);
@@ -1396,10 +1427,10 @@ function AppContent() {
                     }}
                     className="flex-1 min-w-0 sm:flex-none sm:min-w-[320px] max-w-full h-10 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-text-primary)] px-2.5 text-sm font-medium"
                   >
-                    {!tournaments.some((t) => t.id === ev.id) && <option value={ev.id}>{ev.title}</option>}
+                    {!tournaments.some((t) => t.id === ev.id) && <option value={ev.id}>{eventTitle(ev, language)}</option>}
                     {tournaments.map((t) => (
                       <option key={t.id} value={t.id}>
-                        {t.title}
+                        {eventTitle(t, language)}
                         {t.startDate ? ` · ${t.startDate}` : ''}
                       </option>
                     ))}

@@ -21,11 +21,31 @@ export const BELT_LABELS: Record<BeltRank, string> = {
 /** Пояса для выпадающего списка: все по порядку, «Другое» — последним. */
 export const BELT_CHOICES: BeltRank[] = [...BELT_ORDER, 'other'];
 
+const BELT_LABELS_KY: Record<BeltRank, string> = {
+  white_10kyu: 'Ак (10 кю)', yellow_8kyu: 'Сары (8 кю)', orange_7kyu: 'Кызгылт сары (7 кю)', green_6kyu: 'Жашыл (6 кю)',
+  blue_4kyu: 'Көк (4 кю)', brown_3kyu: 'Күрөң (3 кю)', brown_1kyu: 'Күрөң (1 кю)', black_1dan: 'Кара (1 дан)',
+  black_2dan: 'Кара (2 дан)', black_3dan_plus: 'Кара (3 дан жана жогору)', other: 'Башка'
+};
+const BELT_LABELS_EN: Record<BeltRank, string> = {
+  white_10kyu: 'White (10 kyu)', yellow_8kyu: 'Yellow (8 kyu)', orange_7kyu: 'Orange (7 kyu)', green_6kyu: 'Green (6 kyu)',
+  blue_4kyu: 'Blue (4 kyu)', brown_3kyu: 'Brown (3 kyu)', brown_1kyu: 'Brown (1 kyu)', black_1dan: 'Black (1 dan)',
+  black_2dan: 'Black (2 dan)', black_3dan_plus: 'Black (3 dan and above)', other: 'Other'
+};
+
+/** Belt name in the interface language (ru / ky / en). */
+export function beltLabel(b: BeltRank | string, lang: string = 'ru'): string {
+  const map = lang === 'ky' ? BELT_LABELS_KY : lang === 'en' ? BELT_LABELS_EN : BELT_LABELS;
+  return map[b as BeltRank] || String(b);
+}
+
 /** Пояс для показа людям: «Другое: <что вписал спортсмен>». */
-export function beltName(p: { beltRank?: BeltRank | string; beltOther?: string }): string {
+export function beltName(p: { beltRank?: BeltRank | string; beltOther?: string }, lang: string = 'ru'): string {
   if (!p.beltRank) return '';
-  if (p.beltRank === 'other') return p.beltOther?.trim() ? `Другое: ${p.beltOther.trim()}` : 'Другое';
-  return BELT_LABELS[p.beltRank as BeltRank] || String(p.beltRank);
+  if (p.beltRank === 'other') {
+    const other = beltLabel('other', lang);
+    return p.beltOther?.trim() ? `${other}: ${p.beltOther.trim()}` : other;
+  }
+  return beltLabel(p.beltRank, lang);
 }
 
 export const DISCIPLINE_LABELS: Record<EventCategory['discipline'], string> = {

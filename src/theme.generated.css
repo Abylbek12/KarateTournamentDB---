@@ -76,8 +76,8 @@
 @scope (html.dark) to (.theme-keep) {
   .bg-\[\#f0f2f5\] { background-color: var(--app-bg); }
   .border-slate-200\/50 { border-color: var(--app-border); }
-  .bg-white { background-color: var(--app-surface); }
   .border-slate-200\/90 { border-color: var(--app-border); }
+  .bg-white { background-color: var(--app-surface); }
   .border-slate-200 { border-color: var(--app-border); }
   .bg-slate-50 { background-color: var(--app-surface); }
   .border-slate-200\/80 { border-color: var(--app-border); }
@@ -118,8 +118,8 @@
   .to-slate-100 { --tw-gradient-to: var(--app-surface-subtle); }
   .bg-white\/20 { background-color: var(--app-surface); }
   .hover\:bg-slate-200\/80:hover { background-color: var(--app-surface-muted); }
-  .hover\:bg-slate-50:hover { background-color: var(--app-surface); }
   .hover\:bg-slate-100:hover { background-color: var(--app-surface-subtle); }
+  .hover\:bg-slate-50:hover { background-color: var(--app-surface); }
   .hover\:bg-rose-100:hover { background-color: color-mix(in oklab, var(--color-rose-500) 14%, var(--app-surface)); }
   .hover\:bg-red-50:hover { background-color: color-mix(in oklab, var(--color-red-500) 10%, var(--app-surface)); }
   .hover\:bg-white\/10:hover { background-color: var(--app-surface); }
