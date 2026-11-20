@@ -25,7 +25,9 @@ import {
   X,
   QrCode,
   Lock,
-  Layers
+  Layers,
+  ChevronDown,
+  GripVertical
 } from 'lucide-react';
 import { hashForTab, isPlainClick } from '../utils/routes';
 import { canAccess, type AccessRole } from '../utils/access';
@@ -91,6 +93,35 @@ interface NavSection {
   key: string;
   title?: string;
   items: NavItem[];
+}
+
+// Per-browser menu preferences: which sections are closed, and the organizer's own order of items.
+const COLLAPSED_KEY = 'tatami_menu_collapsed';
+const ORDER_KEY = 'tatami_menu_order';
+function readJson<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+function writeJson(key: string, value: unknown) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    /* private mode: the choice simply is not remembered */
+  }
+}
+
+/** Items in the saved order; items the saved order does not know keep their place at the end. */
+function applyOrder(items: NavItem[], order: string[] | undefined): NavItem[] {
+  if (!order?.length) return items;
+  const pos = (id: string) => {
+    const i = order.indexOf(id);
+    return i === -1 ? Number.MAX_SAFE_INTEGER : i;
+  };
+  return items.map((item, i) => ({ item, i })).sort((a, b) => pos(a.item.id) - pos(b.item.id) || a.i - b.i).map((x) => x.item);
 }
 
 const EVENT_SUB_ROUTES = [
@@ -182,9 +213,120 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ]
     }
   ];
+  // Sections with a title open and close with the arrow (remembered in this browser).
+  const [closedSections, setClosedSections] = useState<string[]>(() => readJson<string[]>(COLLAPSED_KEY, []));
+  const toggleSection = (key: string) => {
+    const next = closedSections.includes(key) ? closedSections.filter((k) => k !== key) : [...closedSections, key];
+    setClosedSections(next);
+    writeJson(COLLAPSED_KEY, next);
+  };
+
+  // The organizer may drag items with the mouse to change their order inside a section.
+  const canReorder = isAdmin;
+  const [menuOrder, setMenuOrder] = useState<Record<string, string[]>>(() => readJson<Record<string, string[]>>(ORDER_KEY, {}));
+  const [dragging, setDragging] = useState<{ section: string; id: string } | null>(null);
+  const [dropTarget, setDropTarget] = useState<{ section: string; id: string; after: boolean } | null>(null);
+
   const sections = rawSections
-    .map((s) => ({ ...s, items: s.items.filter((i) => i.locked || canAccess(i.id, role)) }))
+    .map((s) => ({ ...s, items: applyOrder(s.items.filter((i) => i.locked || canAccess(i.id, role)), canReorder ? menuOrder[s.key] : undefined) }))
     .filter((s) => s.items.length > 0);
+
+  const moveItem = (sectionKey: string, fromId: string, toId: string, after: boolean) => {
+    const section = sections.find((x) => x.key === sectionKey);
+    if (!section || fromId === toId) return;
+    const ids = section.items.map((i) => i.id as string).filter((id) => id !== fromId);
+    const at = ids.indexOf(toId);
+    if (at === -1) return;
+    ids.splice(after ? at + 1 : at, 0, fromId);
+    const next = { ...menuOrder, [sectionKey]: ids };
+    setMenuOrder(next);
+    writeJson(ORDER_KEY, next);
+  };
+  const resetOrder = () => {
+    setMenuOrder({});
+    writeJson(ORDER_KEY, {});
+  };
+  const hasCustomOrder = canReorder && Object.keys(menuOrder).length > 0;
+
+  // Phone / tablet: press and hold an item, then move the finger. Items move only inside their own section,
+  // so «Категории и жеребьёвка» never lands among the referee items.
+  const touchDrag = React.useRef<{
+    section: string;
+    id: string;
+    startX: number;
+    startY: number;
+    timer: ReturnType<typeof setTimeout> | null;
+    active: boolean;
+    target: { section: string; id: string; after: boolean } | null;
+  } | null>(null);
+  const suppressClick = React.useRef(false);
+  const moveItemRef = React.useRef(moveItem);
+  moveItemRef.current = moveItem;
+
+  const endTouchDrag = () => {
+    const t = touchDrag.current;
+    if (t?.timer) clearTimeout(t.timer);
+    touchDrag.current = null;
+    setDragging(null);
+    setDropTarget(null);
+    // The click that follows a long press is skipped; if none comes, normal taps work again shortly.
+    if (suppressClick.current) setTimeout(() => (suppressClick.current = false), 400);
+  };
+
+  React.useEffect(() => {
+    if (!canReorder) return;
+    const onMove = (e: TouchEvent) => {
+      const t = touchDrag.current;
+      if (!t) return;
+      const touch = e.touches[0];
+      if (!t.active) {
+        // The finger moved before the hold finished: this is a scroll, not a drag.
+        if (Math.abs(touch.clientX - t.startX) > 8 || Math.abs(touch.clientY - t.startY) > 8) endTouchDrag();
+        return;
+      }
+      e.preventDefault(); // keep the menu from scrolling while an item is carried
+      const el = document.elementFromPoint(touch.clientX, touch.clientY)?.closest<HTMLElement>('[data-menu-id]');
+      if (!el || el.dataset.menuSection !== t.section || el.dataset.menuId === t.id) {
+        t.target = null;
+        setDropTarget(null);
+        return;
+      }
+      const box = el.getBoundingClientRect();
+      const target = { section: t.section, id: el.dataset.menuId!, after: touch.clientY > box.top + box.height / 2 };
+      t.target = target;
+      setDropTarget(target);
+    };
+    const onEnd = () => {
+      const t = touchDrag.current;
+      if (t?.active && t.target) moveItemRef.current(t.section, t.id, t.target.id, t.target.after);
+      endTouchDrag();
+    };
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onEnd);
+    document.addEventListener('touchcancel', endTouchDrag);
+    return () => {
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onEnd);
+      document.removeEventListener('touchcancel', endTouchDrag);
+    };
+  }, [canReorder]);
+
+  const startTouchDrag = (sectionKey: string, id: string, e: React.TouchEvent) => {
+    if (!canReorder || e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    const state = { section: sectionKey, id, startX: touch.clientX, startY: touch.clientY, timer: null as ReturnType<typeof setTimeout> | null, active: false, target: null };
+    state.timer = setTimeout(() => {
+      state.active = true;
+      suppressClick.current = true; // the finger lifts on the item: do not open the page
+      setDragging({ section: sectionKey, id });
+      try {
+        navigator.vibrate?.(25);
+      } catch {
+        /* no vibration on this device */
+      }
+    }, 450);
+    touchDrag.current = state;
+  };
 
   const compact = isCollapsed && !isMobileOpen;
 
@@ -249,11 +391,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {sections.map((section) => (
             <div key={section.key}>
               {section.title && !compact && (
-                <div className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
-                  {section.title}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => toggleSection(section.key)}
+                  aria-expanded={!closedSections.includes(section.key)}
+                  className="w-full flex items-center gap-1.5 px-3 pb-1.5 pt-0.5 rounded-md text-[11px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)] hover:text-[var(--app-text-primary)] cursor-pointer"
+                >
+                  <span className="flex-1 text-left">{section.title}</span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${closedSections.includes(section.key) ? '-rotate-90' : ''}`} aria-hidden="true" />
+                </button>
               )}
               {section.title && compact && <div className="mx-3 mb-2 border-t border-[var(--app-border)]" />}
+              {!(section.title && !compact && closedSections.includes(section.key)) && (
               <div className="space-y-0.5">
                 {section.items.map((item) => {
                   const Icon = item.icon;
@@ -280,15 +429,57 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <a
                       key={`${section.key}-${item.id}`}
                       href={hashForTab(item.id)}
+                      data-menu-id={item.id}
+                      data-menu-section={section.key}
+                      onTouchStart={(e) => startTouchDrag(section.key, item.id, e)}
+                      onContextMenu={(e) => {
+                        if (canReorder) e.preventDefault(); // a long press moves the item instead of opening the phone menu
+                      }}
+                      style={canReorder ? { WebkitTouchCallout: 'none' } : undefined}
+                      draggable={canReorder && !compact}
+                      onDragStart={(e) => {
+                        if (!canReorder) return;
+                        e.dataTransfer.effectAllowed = 'move';
+                        e.dataTransfer.setData('text/plain', item.id);
+                        setDragging({ section: section.key, id: item.id });
+                      }}
+                      onDragOver={(e) => {
+                        if (!dragging || dragging.section !== section.key || dragging.id === item.id) return;
+                        e.preventDefault();
+                        const box = e.currentTarget.getBoundingClientRect();
+                        const after = e.clientY > box.top + box.height / 2;
+                        if (dropTarget?.id !== item.id || dropTarget.after !== after) setDropTarget({ section: section.key, id: item.id, after });
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        if (dragging && dropTarget) moveItem(section.key, dragging.id, dropTarget.id, dropTarget.after);
+                        setDragging(null);
+                        setDropTarget(null);
+                      }}
+                      onDragEnd={() => {
+                        setDragging(null);
+                        setDropTarget(null);
+                      }}
                       onClick={(e) => {
+                        if (suppressClick.current) {
+                          suppressClick.current = false;
+                          e.preventDefault();
+                          return;
+                        }
                         if (!isPlainClick(e)) return; // Ctrl/Cmd-click opens a new tab
                         e.preventDefault();
                         select(item.id);
                       }}
                       title={item.label}
                       aria-current={active ? 'page' : undefined}
-                      className={`w-full flex items-center gap-3 rounded-lg text-left transition-colors cursor-pointer ${
+                      className={`group w-full flex items-center gap-3 rounded-lg text-left transition-colors cursor-pointer ${
                         compact ? 'justify-center p-2.5' : 'px-3 py-2 min-h-[40px]'
+                      } ${dragging?.id === item.id && dragging.section === section.key ? 'opacity-40' : ''} ${
+                        dropTarget?.id === item.id && dropTarget.section === section.key
+                          ? dropTarget.after
+                            ? 'shadow-[inset_0_-2px_0_var(--accent)]'
+                            : 'shadow-[inset_0_2px_0_var(--accent)]'
+                          : ''
                       } ${
                         active
                           ? 'bg-[var(--accent-soft)] text-[var(--accent)] font-semibold'
@@ -300,12 +491,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       {!compact && item.badge && (
                         <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-600 text-white">{item.badge}</span>
                       )}
+                      {canReorder && !compact && (
+                        <GripVertical
+                          className="w-3.5 h-3.5 shrink-0 opacity-0 group-hover:opacity-60 cursor-grab"
+                          aria-label={tr('Перетащите, чтобы поменять место', 'Ордун алмаштыруу үчүн сүйрөңүз', 'Drag to move')}
+                        />
+                      )}
                     </a>
                   );
                 })}
               </div>
+              )}
             </div>
           ))}
+          {hasCustomOrder && !compact && (
+            <button type="button" onClick={resetOrder} className="px-3 text-xs text-[var(--app-text-muted)] hover:text-[var(--app-text-primary)] cursor-pointer">
+              {tr('Вернуть обычный порядок меню', 'Менюнун кадимки тартибин кайтаруу', 'Restore the default menu order')}
+            </button>
+          )}
         </nav>
 
         {!compact && onOpenPrivacyModal && (
