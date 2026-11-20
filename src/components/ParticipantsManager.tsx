@@ -25,6 +25,8 @@ interface ParticipantsManagerProps {
   tournaments?: Tournament[];
   categories?: EventCategory[];
   defaultTournamentId?: string;
+  /** The tournament is chosen in the common «Турнир» bar at the top; hide this screen's own picker. */
+  hidePicker?: boolean;
 }
 
 export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
@@ -33,7 +35,8 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
   onNavigateToRegister,
   tournaments = [],
   categories = [],
-  defaultTournamentId
+  defaultTournamentId,
+  hidePicker
 }) => {
   const [tournamentId, setTournamentId] = useState(defaultTournamentId || tournaments[0]?.id || '');
   const inTournament = participants.filter((p) => p.status !== 'withdrawn' && (!tournamentId || belongsToEvent(p.tournamentId, tournamentId)));
@@ -96,7 +99,7 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
 
   return (
     <div className="space-y-6">
-      {tournaments.length > 0 && (
+      {tournaments.length > 0 && !hidePicker && (
         <div className="theme-keep flex flex-wrap items-center gap-2">
           <label htmlFor="weighin-tournament" className="text-sm text-[var(--app-text-secondary)]">Турнир:</label>
           <select id="weighin-tournament" value={tournamentId} onChange={(e) => setTournamentId(e.target.value)} className="rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-text-primary)] px-3 py-2 text-sm max-w-full">

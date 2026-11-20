@@ -9,6 +9,8 @@ import { WKF_AGE_GROUPS, buildWkfSet, categoryName, newCategoryId, activeEntries
 interface EventSetupPanelProps {
   tournaments: Tournament[];
   initialTournamentId?: string;
+  /** The tournament is chosen in the common «Турнир» bar at the top; hide this screen's own picker. */
+  hidePicker?: boolean;
   categories: EventCategory[];
   onChangeCategories: (next: EventCategory[]) => void;
   participants: Participant[];
@@ -27,6 +29,7 @@ const field = 'rounded-lg border border-[var(--app-border)] bg-[var(--app-surfac
 export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
   tournaments,
   initialTournamentId,
+  hidePicker,
   categories,
   onChangeCategories,
   participants,
@@ -102,7 +105,7 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
             Турниров пока нет. Сначала создайте турнир (кнопка «Создать турнир» на главной или раздел «Турниры и пользователи»), потом добавляйте категории.
           </p>
         )}
-        {tournaments.length > 0 && <select value={tid} onChange={(e) => setTid(e.target.value)} className={`${field} h-10 max-w-full`} aria-label="Турнир">
+        {tournaments.length > 0 && !hidePicker && <select value={tid} onChange={(e) => setTid(e.target.value)} className={`${field} h-10 max-w-full`} aria-label="Турнир">
           {tournaments.map((t) => (
             <option key={t.id} value={t.id}>
               {t.title}

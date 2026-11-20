@@ -92,6 +92,7 @@ import { activeEntries, categoryName } from './utils/eventCategories';
 import { getDeviceKey, setDeviceKey } from './utils/liveStream';
 import { startServerClock } from './utils/serverClock';
 import { hashForTab, tabFromHash, isEventTab, isPlainClick } from './utils/routes';
+import { pickCurrentTournament, localToday, readRememberedTournament, rememberTournament } from './utils/currentTournament';
 import { TatamiDisplay, CallRoomDisplay, TatamiControl, upcomingOf } from './components/TatamiScreens';
 import { MyAccountPanel } from './components/MyAccountPanel';
 import { RoleGuide } from './components/RoleGuide';
@@ -206,7 +207,11 @@ function AppContent() {
           if (data.events.length > 0) {
             // A tournament named in the link wins over the default one
             const linked = tabFromHash(window.location.hash)?.eventId;
-            setSelectedEvent((cur) => data.events.find((e: EventItem) => e.id === (linked || cur.id)) || data.events.find((e: EventItem) => e.id === cur.id) || data.events[0]);
+            // Otherwise the organizer's own choice, the tournament running today, or the nearest upcoming one
+            const linkedEvent = linked ? data.events.find((e: EventItem) => e.id === linked) : undefined;
+            const current = linkedEvent || pickCurrentTournament<EventItem>(data.events, localToday(), readRememberedTournament()) || data.events[0];
+            setSelectedEvent(current);
+            setSelectedTournament(current);
           }
         }
       })
@@ -1357,6 +1362,55 @@ function AppContent() {
           }`}
         >
           <React.Suspense fallback={<ScreenLoader />}>
+          {/* One «current tournament» for every working screen: chosen here, used by tatami, weigh-in, draw, screens, fees, documents */}
+          {canAccess(activeTab, effectiveRole) &&
+            tournaments.length > 0 &&
+            (['scoreboard', 'participants', 'event_setup', 'screens', 'exports'].includes(activeTab) || (activeTab === 'acquiring' && effectiveRole === 'admin')) &&
+            (() => {
+              const today = localToday();
+              const ev = selectedEvent;
+              const end = ev.endDate || ev.startDate;
+              const running = !!ev.startDate && ev.startDate <= today && !!end && end >= today;
+              const days = ev.startDate ? Math.round((new Date(ev.startDate).getTime() - new Date(today).getTime()) / 86400000) : null;
+              const badge = running
+                ? { text: tr('Идёт сегодня', 'Бүгүн өтүүдө', 'Running today'), cls: 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30' }
+                : end && end < today
+                  ? { text: tr('Завершён', 'Аяктады', 'Finished'), cls: 'bg-slate-500/10 text-slate-600 border-slate-500/30' }
+                  : days !== null && days > 0
+                    ? { text: tr(`Через ${days} дн.`, `${days} күндөн кийин`, `In ${days} days`), cls: 'bg-sky-500/10 text-sky-700 border-sky-500/30' }
+                    : null;
+              return (
+                <div className="theme-keep rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2.5 flex flex-wrap items-center gap-2">
+                  <label htmlFor="current-tournament" className="text-sm font-semibold text-[var(--app-text-primary)] shrink-0">
+                    {tr('Турнир:', 'Мелдеш:', 'Tournament:')}
+                  </label>
+                  <select
+                    id="current-tournament"
+                    value={ev.id}
+                    onChange={(e) => {
+                      const next = tournaments.find((t) => t.id === e.target.value);
+                      if (!next) return;
+                      setSelectedEvent(next);
+                      setSelectedTournament(next);
+                      rememberTournament(next.id);
+                    }}
+                    className="flex-1 min-w-0 sm:flex-none sm:min-w-[320px] max-w-full h-10 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-text-primary)] px-2.5 text-sm font-medium"
+                  >
+                    {!tournaments.some((t) => t.id === ev.id) && <option value={ev.id}>{ev.title}</option>}
+                    {tournaments.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.title}
+                        {t.startDate ? ` · ${t.startDate}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  {badge && <span className={`text-xs font-semibold px-2 py-1 rounded-full border ${badge.cls}`}>{badge.text}</span>}
+                  <span className="hidden md:inline text-xs text-[var(--app-text-muted)]">
+                    {tr('Один выбор для всех рабочих разделов', 'Бардык жумушчу бөлүмдөр үчүн бир тандоо', 'One choice for all working screens')}
+                  </span>
+                </div>
+              );
+            })()}
           {!canAccess(activeTab, effectiveRole) ? (
             <AccessGate
               role={effectiveRole}
@@ -1531,6 +1585,8 @@ function AppContent() {
 
           {activeTab === 'scoreboard' && (
             <TatamiOverview
+              key={selectedEvent.id}
+              hidePicker
               tournaments={tournaments}
               initialTournamentId={selectedEvent.id}
               bouts={bouts}
@@ -1550,8 +1606,10 @@ function AppContent() {
 
           {activeTab === 'acquiring' && effectiveRole === 'admin' && (
             <FeesPanel
+              key={selectedEvent.id}
+              hidePicker
               tournaments={tournaments}
-              initialTournamentId={selectedTournament?.id}
+              initialTournamentId={selectedEvent.id}
               categories={eventCategories}
               participants={participants}
               currency="сом"
@@ -1561,7 +1619,7 @@ function AppContent() {
 
           {/* 5.4 Официальный экспорт протоколов и результатов */}
           {activeTab === 'exports' && (
-            <DocumentsPanel tournaments={tournaments} initialTournamentId={selectedEvent.id} categories={eventCategories} bouts={bouts} />
+            <DocumentsPanel key={selectedEvent.id} hidePicker tournaments={tournaments} initialTournamentId={selectedEvent.id} categories={eventCategories} bouts={bouts} />
           )}
 
           {activeTab === 'admin' && effectiveRole === 'admin' && (
@@ -1611,8 +1669,10 @@ function AppContent() {
 
           {activeTab === 'event_setup' && (
             <EventSetupPanel
+              key={selectedEvent.id}
+              hidePicker
               tournaments={tournaments}
-              initialTournamentId={selectedTournament?.id}
+              initialTournamentId={selectedEvent.id}
               categories={eventCategories}
               onChangeCategories={setEventCategories}
               participants={participants}
@@ -1631,7 +1691,11 @@ function AppContent() {
               tournaments={tournaments}
               onSelectEvent={(id) => {
                 const ev = tournaments.find((x) => x.id === id);
-                if (ev) setSelectedEvent(ev);
+                if (ev) {
+                  setSelectedEvent(ev);
+                  setSelectedTournament(ev);
+                  rememberTournament(ev.id);
+                }
               }}
               onEventUpdated={(ev) => {
                 const merged = { ...selectedEvent, liveStreams: ev.liveStreams } as EventItem;
@@ -1646,10 +1710,12 @@ function AppContent() {
 
           {activeTab === 'participants' && (
             <ParticipantsManager
+              key={selectedEvent.id}
+              hidePicker
               participants={participants}
               tournaments={tournaments}
               categories={eventCategories}
-              defaultTournamentId={selectedTournament?.id}
+              defaultTournamentId={selectedEvent.id}
               onUpdateParticipant={handleUpdateParticipant}
               onNavigateToRegister={() => setActiveTab('admin')}
             />

@@ -126,13 +126,15 @@ export const MyEntriesPanel: React.FC<MyEntriesProps> = ({ user, tournaments, ca
 interface FeesProps {
   tournaments: Tournament[];
   initialTournamentId?: string;
+  /** The tournament is chosen in the common «Турнир» bar at the top; hide this screen's own picker. */
+  hidePicker?: boolean;
   categories: EventCategory[];
   participants: Participant[];
   currency: string;
   onSetFee: (participantId: string, status: FeeStatus) => void;
 }
 
-export const FeesPanel: React.FC<FeesProps> = ({ tournaments, initialTournamentId, categories, participants, currency, onSetFee }) => {
+export const FeesPanel: React.FC<FeesProps> = ({ tournaments, initialTournamentId, categories, participants, currency, onSetFee, hidePicker }) => {
   const [tid, setTid] = React.useState(initialTournamentId || tournaments[0]?.id || '');
   const [filter, setFilter] = React.useState<'all' | FeeStatus>('all');
   const [q, setQ] = React.useState('');
@@ -155,11 +157,13 @@ export const FeesPanel: React.FC<FeesProps> = ({ tournaments, initialTournamentI
             Отмечайте оплату взносов по заявкам. Онлайн-оплата картой на сайте не подключена: взносы принимаются по вашим реквизитам или на мандатной комиссии.
           </p>
         </div>
-        <select value={tid} onChange={(e) => setTid(e.target.value)} className={`${field} w-full sm:w-auto sm:min-w-[240px] max-w-full`}>
-          {tournaments.map((t) => (
-            <option key={t.id} value={t.id}>{t.title}</option>
-          ))}
-        </select>
+        {!hidePicker && (
+          <select value={tid} onChange={(e) => setTid(e.target.value)} className={`${field} w-full sm:w-auto sm:min-w-[240px] max-w-full`}>
+            {tournaments.map((t) => (
+              <option key={t.id} value={t.id}>{t.title}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">

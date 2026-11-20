@@ -9,6 +9,8 @@ import { printUrl, type PrintKind, type PrintRequest } from './PrintDocuments';
 interface DocumentsPanelProps {
   tournaments: Tournament[];
   initialTournamentId?: string;
+  /** The tournament is chosen in the common «Турнир» bar at the top; hide this screen's own picker. */
+  hidePicker?: boolean;
   categories: EventCategory[];
   bouts: Bout[];
 }
@@ -17,7 +19,7 @@ const field = 'rounded-lg border border-[var(--app-border)] bg-[var(--app-surfac
 const btn = 'inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-[var(--app-border)] text-sm text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)]';
 
 /** Organizer: official documents of a tournament — print or save as PDF. */
-export const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ tournaments, initialTournamentId, categories, bouts }) => {
+export const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ tournaments, initialTournamentId, categories, bouts, hidePicker }) => {
   const [tid, setTid] = React.useState(initialTournamentId || tournaments[0]?.id || '');
   const [lang, setLang] = React.useState<PrintRequest['lang']>('ru');
   const eventBouts = bouts.filter((b) => belongsToEvent(b.tournamentId, tid));
@@ -47,14 +49,16 @@ export const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ tournaments, ini
             Официальные документы турнира на листах A4. Откройте документ и нажмите «Печать / сохранить PDF» — в окне печати выберите принтер или «Сохранить как PDF».
           </p>
         </div>
-        <label className="text-sm text-[var(--app-text-secondary)] flex flex-col gap-1 min-w-0 max-w-full">
-          Турнир
-          <select value={tid} onChange={(e) => setTid(e.target.value)} className={`${field} w-full sm:w-auto sm:min-w-[240px] max-w-full`}>
-            {tournaments.map((t) => (
-              <option key={t.id} value={t.id}>{t.title}</option>
-            ))}
-          </select>
-        </label>
+        {!hidePicker && (
+          <label className="text-sm text-[var(--app-text-secondary)] flex flex-col gap-1 min-w-0 max-w-full">
+            Турнир
+            <select value={tid} onChange={(e) => setTid(e.target.value)} className={`${field} w-full sm:w-auto sm:min-w-[240px] max-w-full`}>
+              {tournaments.map((t) => (
+                <option key={t.id} value={t.id}>{t.title}</option>
+              ))}
+            </select>
+          </label>
+        )}
         <label className="text-sm text-[var(--app-text-secondary)] flex flex-col gap-1">
           Язык документов
           <select value={lang} onChange={(e) => setLang(e.target.value as PrintRequest['lang'])} className={field}>

@@ -14,6 +14,8 @@ import { displayName, participantFlag } from '../utils/names';
 interface TatamiOverviewProps {
   tournaments: Tournament[];
   initialTournamentId?: string;
+  /** The tournament is chosen in the common «Турнир» bar at the top; hide this screen's own picker. */
+  hidePicker?: boolean;
   bouts: Bout[];
   tatamiNumbers: number[];
   /** Officials who may score open the console; others (e.g. the doctor) only watch. */
@@ -28,7 +30,7 @@ const btn = 'inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-
 const name = (p?: Participant) => (p ? `${participantFlag(p)} ${displayName(p, 'local')}` : '—');
 
 /** Officials: what is on every tatami now, who is next, and quick links to consoles and screens. */
-export const TatamiOverview: React.FC<TatamiOverviewProps> = ({ tournaments, initialTournamentId, bouts, tatamiNumbers, canScore, onOpenConsole, onOpenLiveNow }) => {
+export const TatamiOverview: React.FC<TatamiOverviewProps> = ({ tournaments, initialTournamentId, bouts, tatamiNumbers, canScore, onOpenConsole, onOpenLiveNow, hidePicker }) => {
   const { language } = useApp();
   const [tid, setTid] = React.useState(initialTournamentId || tournaments[0]?.id || '');
   const [now, setNow] = React.useState(clockNow());
@@ -50,11 +52,13 @@ export const TatamiOverview: React.FC<TatamiOverviewProps> = ({ tournaments, ini
             Что идёт на каждом татами и кто следующий. Пульт можно открыть здесь или на отдельном устройстве по QR-коду («Экраны и QR-коды»).
           </p>
         </div>
-        <select value={tid} onChange={(e) => setTid(e.target.value)} className="h-10 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-text-primary)] px-2.5 text-sm w-full sm:w-auto sm:min-w-[240px] max-w-full">
-          {tournaments.map((t) => (
-            <option key={t.id} value={t.id}>{t.title}</option>
-          ))}
-        </select>
+        {!hidePicker && (
+          <select value={tid} onChange={(e) => setTid(e.target.value)} className="h-10 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-text-primary)] px-2.5 text-sm w-full sm:w-auto sm:min-w-[240px] max-w-full">
+            {tournaments.map((t) => (
+              <option key={t.id} value={t.id}>{t.title}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       <div className="text-sm text-[var(--app-text-muted)]">

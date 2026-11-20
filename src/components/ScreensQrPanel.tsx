@@ -196,22 +196,7 @@ export const ScreensQrPanel: React.FC<{
         </p>
       </div>
 
-      <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 space-y-2">
-        <label htmlFor="screens-event" className="text-sm font-semibold text-[var(--app-text-primary)]">
-          {t(lang, 'Турнир', 'Мелдеш', 'Tournament')}
-        </label>
-        <select
-          id="screens-event"
-          value={event.id}
-          onChange={(e) => onSelectEvent(e.target.value)}
-          className="block w-full sm:w-auto sm:min-w-[320px] max-w-full h-10 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-text-primary)] px-2.5 text-sm"
-        >
-          {!tournaments.some((x) => x.id === event.id) && <option value={event.id}>{event.title}</option>}
-          {tournaments.map((x) => (
-            <option key={x.id} value={x.id}>{x.title}</option>
-          ))}
-        </select>
-      </section>
+      {/* The tournament is chosen in the common «Турнир» bar at the top of the page */}
 
       <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 space-y-2">
         <div className="flex items-center gap-2 text-sm font-semibold text-[var(--app-text-primary)]">

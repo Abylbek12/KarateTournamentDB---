@@ -25,7 +25,7 @@
 npm install
 npm run dev          # http://localhost:3000 (сервер + Vite в одном процессе)
 npm run lint         # проверка типов: tsc --noEmit
-npm test             # test:draw + test:bouts + test:categories + test:intl + test:youtube
+npm test             # все проверки из scripts/ (draw, bouts, categories, intl, youtube, pricing, athletes, current)
 npm run build        # vite build + сборка API в api/_server.mjs
 npm start            # боевой режим (после build)
 ```
@@ -117,7 +117,9 @@ Vercel сам обновляет сайт при каждом пуше в `main`
 без прокрутки (`fitVideoGrid` в `youtube.ts`, проверки в `test-youtube.ts`).
 20.11.2026: нижняя панель на телефоне своя для каждой роли (App.tsx, блок «Five buttons chosen for the role»); у гостя «Идут бои»
 вместо «Табло»; тренерам/спортсменам в боковом меню одна строка «Для организаторов 🔒» вместо 8 закрытых пунктов.
-Дальше по совету владельцу (он одобрил порядок): 4) один «текущий турнир» для организатора (по умолчанию идущий сегодня);
+Сделано 4) один «текущий турнир»: плашка «Турнир:» над рабочими разделами (App.tsx), правило выбора в `src/utils/currentTournament.ts`
+(выбор организатора → идёт сегодня → ближайший), тест `test:current`; у разделов `hidePicker` и `key={selectedEvent.id}`.
+Дальше по совету владельцу:
 5) одинаковые названия (Турниры/События, Табло/Татами, «Экраны…»); 6) убрать дублирующую ☰ сверху на телефоне;
 7) меню организатора по группам «До / День турнира / После». Также можно: кнопка «Видеоповтор (VR)» в пульте секретаря.
 19.11.2026: цены как у Uventex (шаг 1 из `replica/architecture.md`). `src/utils/pricing.ts` + тест `scripts/test-pricing.ts`:
