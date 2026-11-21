@@ -112,7 +112,7 @@ export const TatamiDisplay: React.FC<{
   const next = upcomingOf(bouts, tatamiNumber, bout?.id, 2);
 
   React.useEffect(() => {
-    document.title = `Татами ${tatamiNumber} · Apsatarov`;
+    document.title = `${tr(lang, 'Татами', 'Татами', 'Tatami')} ${tatamiNumber} · Apsatarov`;
   }, [tatamiNumber]);
 
   if (!bout) {
@@ -221,7 +221,7 @@ export const CallRoomDisplay: React.FC<{ bouts: Bout[]; tatamiNumbers: number[] 
   useWakeLock();
   const { lang, name, cat } = useScreenLocale(bouts);
   React.useEffect(() => {
-    document.title = 'Зона разминки · Apsatarov';
+    document.title = `${tr(lang, 'Зона разминки', 'Жылытуу аймагы', 'Warm-up area')} · Apsatarov`;
   }, []);
   return (
     <div className="theme-keep fixed inset-0 bg-[#0b1220] text-white flex flex-col">
@@ -267,7 +267,7 @@ export const TatamiControl: React.FC<{
   onChange: (b: Bout) => void;
 }> = ({ tatamiNumber, bouts, rules, deviceOk, onChange }) => {
   useWakeLock();
-  const { name } = useScreenLocale(bouts);
+  const { name, lang } = useScreenLocale(bouts);
   const [selected, setSelected] = React.useState<string | null>(null);
   const [showList, setShowList] = React.useState(false);
   const current = currentBoutOf(bouts, tatamiNumber);
@@ -281,8 +281,8 @@ export const TatamiControl: React.FC<{
       <div className="theme-keep fixed inset-0 bg-[var(--app-bg)] flex items-center justify-center p-6">
         <div className="max-w-md text-center space-y-3">
           <Tv className="w-10 h-10 mx-auto text-[var(--app-text-muted)]" />
-          <h1 className="text-xl font-semibold text-[var(--app-text-primary)]">Ссылка пульта недействительна</h1>
-          <p className="text-[var(--app-text-secondary)]">Срок действия QR-кода истёк или организатор создал новый. Попросите новый QR-код на странице «Экраны и QR».</p>
+          <h1 className="text-xl font-semibold text-[var(--app-text-primary)]">{tr(lang, 'Ссылка пульта недействительна', 'Пульттун шилтемеси жараксыз', 'The console link is not valid')}</h1>
+          <p className="text-[var(--app-text-secondary)]">{tr(lang, 'Срок действия QR-кода истёк или организатор создал новый. Попросите новый QR-код на странице «Экраны, QR-коды и видео».', 'QR-коддун мөөнөтү бүттү же уюштуруучу жаңысын түздү. «Экрандар, QR жана видео» барагынан жаңы QR-код сураңыз.', 'The QR code expired or the organizer made a new one. Ask for a new QR code from «Screens, QR codes & video».')}</p>
         </div>
       </div>
     );
@@ -291,8 +291,8 @@ export const TatamiControl: React.FC<{
   if (!bout || showList) {
     return (
       <div className="theme-keep min-h-screen bg-[var(--app-bg)] p-4 space-y-3">
-        <h1 className="text-xl font-semibold text-[var(--app-text-primary)]">Татами {tatamiNumber} · выберите бой</h1>
-        {list.length === 0 && <p className="text-[var(--app-text-muted)]">На этом татами пока нет поединков.</p>}
+        <h1 className="text-xl font-semibold text-[var(--app-text-primary)]">{tr(lang, 'Татами', 'Татами', 'Tatami')} {tatamiNumber} · {tr(lang, 'выберите бой', 'беттешти тандаңыз', 'choose a bout')}</h1>
+        {list.length === 0 && <p className="text-[var(--app-text-muted)]">{tr(lang, 'На этом татами пока нет поединков.', 'Бул татамиде азырынча беттеш жок.', 'No bouts on this tatami yet.')}</p>}
         {list.map((b) => (
           <button
             key={b.id}
@@ -303,7 +303,7 @@ export const TatamiControl: React.FC<{
             className="w-full text-left rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 cursor-pointer hover:border-[var(--accent)]"
           >
             <div className="text-xs text-[var(--app-text-muted)]">
-              #{b.boutNumber} · {b.scheduledTime} · {stageLabel(b.roundStage)} · {b.status === 'completed' ? 'завершён' : b.status === 'in_progress' ? 'идёт' : 'ожидает'}
+              #{b.boutNumber} · {b.scheduledTime} · {stageLabel(b.roundStage, lang)} · {b.status === 'completed' ? tr(lang, 'завершён', 'аяктады', 'finished') : b.status === 'in_progress' ? tr(lang, 'идёт', 'жүрүүдө', 'in progress') : tr(lang, 'ожидает', 'күтүүдө', 'waiting')}
             </div>
             <div className="text-[var(--app-text-primary)]">
               <span className="text-red-600">{name(b.akaParticipant)}</span> — <span className="text-blue-600">{name(b.aoParticipant)}</span>

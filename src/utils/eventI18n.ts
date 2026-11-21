@@ -110,7 +110,12 @@ const DISCIPLINES: Record<string, [ky: string, en: string]> = {
   'кумитэ': ['Кумитэ', 'Kumite'],
   'кумитэ индивидуальное (wkf)': ['Жеке кумитэ (WKF)', 'Individual kumite (WKF)'],
   'ката индивидуальное (wkf)': ['Жеке ката (WKF)', 'Individual kata (WKF)'],
-  'другие дисциплины': ['Башка дисциплиналар', 'Other disciplines']
+  'другие дисциплины': ['Башка дисциплиналар', 'Other disciplines'],
+  'командное кумитэ (wkf)': ['Командалык кумитэ (WKF)', 'Team kumite (WKF)'],
+  'сётокан shobu ippon': ['Сётокан Shobu Ippon', 'Shotokan Shobu Ippon'],
+  'сётокан shobu sanbon': ['Сётокан Shobu Sanbon', 'Shotokan Shobu Sanbon'],
+  'кёкусинкай весовой нокдаун': ['Кёкусинкай салмак боюнча нокдаун', 'Kyokushin knockdown by weight'],
+  'абсолютная весовая категория': ['Абсолюттук салмак категориясы', 'Open weight category']
 };
 
 export function disciplineLabel(name: string, lang: string): string {

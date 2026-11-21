@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { disciplineLabel } from '../utils/eventI18n';
 import { 
   Trophy, 
   Calendar, 
@@ -262,7 +263,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
       const isWebp = normalizedType.includes('webp') || /\.webp$/i.test(file.name);
       const effectiveMime = isWebp ? 'image/webp' : 'image/jpeg';
       const formatLabel = isWebp ? 'WebP' : 'JPG';
-      const sizeKbLabel = `${Math.max(0.1, file.size / 1024).toFixed(1)} КБ`;
+      const sizeKbLabel = `${Math.max(0.1, file.size / 1024).toFixed(1)} ${language === 'en' ? 'KB' : 'КБ'}`;
 
       // Ensure dataUrl header matches image/jpeg or image/webp even if browser omitted file.type
       const normalizedDataUrl = rawDataUrl.startsWith('data:image/')
@@ -1138,7 +1139,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                       }`}
                     >
                       <Check className={`w-3.5 h-3.5 ${isChecked ? 'opacity-100' : 'opacity-0'}`} />
-                      <span>{disc}</span>
+                      <span>{disciplineLabel(disc, language)}</span>
                     </button>
                   );
                 })}

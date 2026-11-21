@@ -8,7 +8,7 @@ import { clockNow } from '../utils/serverClock';
 import { stageLabel } from '../utils/bracketProgression';
 import { refereeAudio } from '../utils/refereeAudio';
 import { useApp } from '../context/AppContext';
-import { displayName, participantFlag, participantNoc } from '../utils/names';
+import { displayName, participantFlag, participantNoc, localizeCategoryName } from '../utils/names';
 
 interface BoutConsoleProps {
   bout: Bout;
@@ -141,7 +141,7 @@ export const BoutConsole: React.FC<BoutConsoleProps> = ({ bout, rules, onChange,
               disabled={finished}
               onClick={() => {
                 const target = level === lv ? lv - 1 : lv;
-                if (target === 4) ask(`${isAka ? 'АКА' : 'АО'}: Хансоку (${cat.toUpperCase()}) — поражение. Подтвердить?`, () => apply(E.setPenalty(bout, side, cat, 4)));
+                if (target === 4) ask(`${isAka ? AKA : AO}: ${tr('Хансоку', 'Хансоку', 'Hansoku')} (${cat.toUpperCase()}) — ${tr('поражение. Подтвердить?', 'жеңилүү. Ырастайсызбы?', 'loss. Confirm?')}`, () => apply(E.setPenalty(bout, side, cat, 4)));
                 else apply(E.setPenalty(bout, side, cat, target));
               }}
               title={E.PENALTY_LEVELS[lv]}
@@ -227,14 +227,14 @@ export const BoutConsole: React.FC<BoutConsoleProps> = ({ bout, rules, onChange,
         <div className="grid grid-cols-2 gap-2">
           <button
             disabled={finished || !ready}
-            onClick={() => ask(`${isAka ? 'АКА' : 'АО'}: Кикен (отказ / травма) — победа сопернику. Подтвердить?`, () => apply(E.kiken(bout, side)))}
+            onClick={() => ask(`${isAka ? AKA : AO}: ${tr('Кикен (отказ / травма) — победа сопернику. Подтвердить?', 'Кикен (баш тартуу / жаракат) — атаандашка жеңиш. Ырастайсызбы?', 'Kiken (withdrawal / injury) — the opponent wins. Confirm?')}`, () => apply(E.kiken(bout, side)))}
             className={ghost}
           >
             {tr('Кикен', 'Кикен', 'Kiken')}
           </button>
           <button
             disabled={finished || !ready}
-            onClick={() => ask(`${isAka ? 'АКА' : 'АО'}: Шиккаку (дисквалификация) — победа сопернику. Подтвердить?`, () => apply(E.shikkaku(bout, side)))}
+            onClick={() => ask(`${isAka ? AKA : AO}: ${tr('Шиккаку (дисквалификация) — победа сопернику. Подтвердить?', 'Шиккаку (дисквалификация) — атаандашка жеңиш. Ырастайсызбы?', 'Shikkaku (disqualification) — the opponent wins. Confirm?')}`, () => apply(E.shikkaku(bout, side)))}
             className={ghost}
           >
             {tr('Шиккаку', 'Шиккаку', 'Shikkaku')}
@@ -266,7 +266,7 @@ export const BoutConsole: React.FC<BoutConsoleProps> = ({ bout, rules, onChange,
   }
 
   return (
-    <div className="theme-keep fixed inset-0 z-50 bg-black/60 flex items-stretch sm:items-center justify-center p-0 sm:p-4" role="dialog" aria-label="Пульт боя">
+    <div className="theme-keep fixed inset-0 z-50 bg-black/60 flex items-stretch sm:items-center justify-center p-0 sm:p-4" role="dialog" aria-label={tr('Пульт боя', 'Беттеш пульту', 'Bout console')}>
       <div className="w-full max-w-6xl max-h-full overflow-y-auto bg-[var(--app-bg)] sm:rounded-2xl shadow-2xl">
         {/* Header */}
         <div className="sticky top-0 z-10 flex flex-wrap items-center gap-3 px-4 py-3 bg-[var(--app-surface)] border-b border-[var(--app-border)]">
@@ -274,7 +274,7 @@ export const BoutConsole: React.FC<BoutConsoleProps> = ({ bout, rules, onChange,
             <div className="text-xs text-[var(--app-text-muted)]">
               {tr('Бой', 'Беттеш', 'Bout')} #{bout.boutNumber} · {tr('Татами', 'Татами', 'Tatami')} {bout.tatamiNumber ?? '–'} · {stageLabel(bout.roundStage, lang)}
             </div>
-            <div className="font-semibold text-[var(--app-text-primary)] truncate">{bout.categoryName || 'Категория'}</div>
+            <div className="font-semibold text-[var(--app-text-primary)] truncate">{localizeCategoryName(bout.categoryName, lang) || tr('Категория', 'Категория', 'Category')}</div>
           </div>
           <button
             onClick={() => setSolo(true)}
@@ -292,16 +292,16 @@ export const BoutConsole: React.FC<BoutConsoleProps> = ({ bout, rules, onChange,
               apply(v === 'wkf' ? { ...bout, ruleSystem: 'wkf' } : { ...bout, ruleSystem: 'skif', skifFormat: v.split(':')[1] as Bout['skifFormat'] });
             }}
             className="h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] text-sm text-[var(--app-text-primary)] px-2"
-            title="Правила боя (можно сменить только до начала)"
+            title={tr('Правила боя (можно сменить только до начала)', 'Беттештин эрежелери (башталганга чейин гана өзгөртүлөт)', 'Bout rules (can be changed only before the start)')}
           >
             <option value="wkf">WKF</option>
             <option value="skif:shobu_ippon">SKIF · Shobu Ippon</option>
             <option value="skif:shobu_sanbon">SKIF · Shobu Sanbon</option>
           </select>
-          <button onClick={() => setSound(!sound)} className="p-2 rounded-lg text-[var(--app-text-muted)] hover:bg-[var(--app-surface-subtle)] cursor-pointer" title={sound ? 'Выключить звук' : 'Включить звук'}>
+          <button onClick={() => setSound(!sound)} className="p-2 rounded-lg text-[var(--app-text-muted)] hover:bg-[var(--app-surface-subtle)] cursor-pointer" title={sound ? tr('Выключить звук', 'Үндү өчүрүү', 'Sound off') : tr('Включить звук', 'Үндү күйгүзүү', 'Sound on')}>
             {sound ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
           </button>
-          <button onClick={onClose} className="p-2 rounded-lg text-[var(--app-text-muted)] hover:bg-[var(--app-surface-subtle)] cursor-pointer" title="Закрыть (Esc)">
+          <button onClick={onClose} className="p-2 rounded-lg text-[var(--app-text-muted)] hover:bg-[var(--app-surface-subtle)] cursor-pointer" title={tr('Закрыть (Esc)', 'Жабуу (Esc)', 'Close (Esc)')}>
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -326,23 +326,23 @@ export const BoutConsole: React.FC<BoutConsoleProps> = ({ bout, rules, onChange,
                 {running ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
                 {running ? tr('Стоп (Yame)', 'Токтот (Yame)', 'Stop (Yame)') : tr('Старт (Hajime)', 'Баштоо (Hajime)', 'Start (Hajime)')}
               </button>
-              <button onClick={() => apply(E.adjustClock(bout, -1))} disabled={finished} className="h-14 w-14 rounded-xl border border-[var(--app-border)] text-[var(--app-text-primary)] cursor-pointer disabled:opacity-40" title="−1 секунда">
+              <button onClick={() => apply(E.adjustClock(bout, -1))} disabled={finished} className="h-14 w-14 rounded-xl border border-[var(--app-border)] text-[var(--app-text-primary)] cursor-pointer disabled:opacity-40" title={tr('−1 секунда', '−1 секунд', '−1 second')}>
                 <Minus className="w-5 h-5 mx-auto" />
               </button>
-              <button onClick={() => apply(E.adjustClock(bout, 1))} disabled={finished} className="h-14 w-14 rounded-xl border border-[var(--app-border)] text-[var(--app-text-primary)] cursor-pointer disabled:opacity-40" title="+1 секунда">
+              <button onClick={() => apply(E.adjustClock(bout, 1))} disabled={finished} className="h-14 w-14 rounded-xl border border-[var(--app-border)] text-[var(--app-text-primary)] cursor-pointer disabled:opacity-40" title={tr('+1 секунда', '+1 секунд', '+1 second')}>
                 <Plus className="w-5 h-5 mx-auto" />
               </button>
               <button
-                onClick={() => ask('Вернуть время к началу боя?', () => apply(E.resetClock(bout)))}
+                onClick={() => ask(tr('Вернуть время к началу боя?', 'Убакытты беттештин башына кайтарасызбы?', 'Reset the clock to the start of the bout?'), () => apply(E.resetClock(bout)))}
                 disabled={finished || running}
                 className="h-14 w-14 rounded-xl border border-[var(--app-border)] text-[var(--app-text-primary)] cursor-pointer disabled:opacity-40"
-                title="Сбросить время"
+                title={tr('Сбросить время', 'Убакытты баштапкы абалга', 'Reset clock')}
               >
                 <RotateCcw className="w-5 h-5 mx-auto" />
               </button>
             </div>
           </div>
-          {!finished && low && running && <div className="text-center text-sm text-red-600 font-semibold">Последние секунды</div>}
+          {!finished && low && running && <div className="text-center text-sm text-red-600 font-semibold">{tr('Последние секунды', 'Акыркы секунддар', 'Last seconds')}</div>}
           <div className="text-xs text-center text-[var(--app-text-muted)]">{tr(`Пробел — старт/стоп. Сигнал за ${E.WARNING_AT_SECONDS} секунд до конца и гонг в конце боя.`, `Боштук — баштоо/токтотуу. Аягына ${E.WARNING_AT_SECONDS} секунд калганда сигнал.`, `Space — start/stop. Signal ${E.WARNING_AT_SECONDS} seconds before the end, gong at the end.`)}</div>
 
           {/* Decision / result banners */}
@@ -366,7 +366,7 @@ export const BoutConsole: React.FC<BoutConsoleProps> = ({ bout, rules, onChange,
                 <div className="text-sm text-[var(--app-text-muted)]">{bout.winReason ? E.winReasonLabel(bout.winReason, lang) : ''}</div>
               </div>
               <button
-                onClick={() => ask('Открыть бой заново для исправления? Победитель будет снят.', () => apply(E.reopenBout(bout)))}
+                onClick={() => ask(tr('Открыть бой заново для исправления? Победитель будет снят.', 'Оңдоо үчүн беттешти кайра ачасызбы? Жеңүүчү алынып салынат.', 'Reopen the bout to correct it? The winner will be removed.'), () => apply(E.reopenBout(bout)))}
                 className="h-10 px-4 rounded-lg border border-[var(--app-border)] text-sm text-[var(--app-text-primary)] cursor-pointer"
               >
                 {tr('Исправить результат', 'Жыйынтыкты оңдоо', 'Correct result')}
@@ -393,8 +393,8 @@ export const BoutConsole: React.FC<BoutConsoleProps> = ({ bout, rules, onChange,
             <details className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 text-sm">
               <summary className="cursor-pointer text-[var(--app-text-secondary)]">{tr('Завершить бой вручную (решение судьи)', 'Беттешти кол менен бүтүрүү', 'Finish bout manually (referee decision)')}</summary>
               <div className="mt-3 flex flex-wrap gap-2">
-                <button onClick={() => ask('Объявить победу АКА решением судей?', () => apply(E.hantei(bout, 'aka')))} className="h-10 px-4 rounded-lg bg-red-600 text-white cursor-pointer">Победа АКА</button>
-                <button onClick={() => ask('Объявить победу АО решением судей?', () => apply(E.hantei(bout, 'ao')))} className="h-10 px-4 rounded-lg bg-blue-600 text-white cursor-pointer">Победа АО</button>
+                <button onClick={() => ask(tr('Объявить победу АКА решением судей?', 'Калыстардын чечими менен АКАнын жеңишин жарыялайсызбы?', 'Declare AKA the winner by decision?'), () => apply(E.hantei(bout, 'aka')))} className="h-10 px-4 rounded-lg bg-red-600 text-white cursor-pointer">{tr('Победа АКА', 'АКА жеңди', 'AKA wins')}</button>
+                <button onClick={() => ask(tr('Объявить победу АО решением судей?', 'Калыстардын чечими менен АОнун жеңишин жарыялайсызбы?', 'Declare AO the winner by decision?'), () => apply(E.hantei(bout, 'ao')))} className="h-10 px-4 rounded-lg bg-blue-600 text-white cursor-pointer">{tr('Победа АО', 'АО жеңди', 'AO wins')}</button>
               </div>
             </details>
           )}

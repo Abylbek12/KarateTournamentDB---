@@ -9,7 +9,7 @@ import { clockNow } from '../utils/serverClock';
 import { stageLabel } from '../utils/bracketProgression';
 import { belongsToEvent } from '../data/sampleTournamentData';
 import { currentBoutOf, upcomingOf } from './TatamiScreens';
-import { displayName, participantFlag } from '../utils/names';
+import { displayName, participantFlag, localizeCategoryName } from '../utils/names';
 
 interface TatamiOverviewProps {
   tournaments: Tournament[];
@@ -32,6 +32,7 @@ const name = (p?: Participant) => (p ? `${participantFlag(p)} ${displayName(p, '
 /** Officials: what is on every tatami now, who is next, and quick links to consoles and screens. */
 export const TatamiOverview: React.FC<TatamiOverviewProps> = ({ tournaments, initialTournamentId, bouts, tatamiNumbers, canScore, onOpenConsole, onOpenLiveNow, hidePicker }) => {
   const { language } = useApp();
+  const tl = (ru: string, ky: string, en: string) => trLang(language, ru, ky, en);
   const [tid, setTid] = React.useState(initialTournamentId || tournaments[0]?.id || '');
   const [now, setNow] = React.useState(clockNow());
   React.useEffect(() => {
@@ -46,10 +47,10 @@ export const TatamiOverview: React.FC<TatamiOverviewProps> = ({ tournaments, ini
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex-1 min-w-[240px]">
           <h1 className="text-2xl font-bold text-[var(--app-text-primary)] flex items-center gap-2">
-            <MonitorPlay className="w-6 h-6 text-[var(--accent)]" /> Татами
+            <MonitorPlay className="w-6 h-6 text-[var(--accent)]" /> {tl('Татами', 'Татами', 'Tatami')}
           </h1>
           <p className="text-[15px] text-[var(--app-text-secondary)] mt-1">
-            Что идёт на каждом татами и кто следующий. Пульт можно открыть здесь или на отдельном устройстве по QR-коду («Экраны и QR-коды»).
+            {tl('Что идёт на каждом татами и кто следующий. Пульт можно открыть здесь или на отдельном устройстве по QR-коду («Экраны, QR-коды и видео»).', 'Ар бир татамиде эмне жүрүп жатат жана ким кийинки. Пультту ушул жерден же QR-код аркылуу башка түзмөктөн ачса болот («Экрандар, QR жана видео»).', 'What is on each tatami and who is next. Open the console here or on another device with a QR code («Screens, QR codes & video»).')}
           </p>
         </div>
         {!hidePicker && (
@@ -62,7 +63,7 @@ export const TatamiOverview: React.FC<TatamiOverviewProps> = ({ tournaments, ini
       </div>
 
       <div className="text-sm text-[var(--app-text-muted)]">
-        Поединков: {eventBouts.length} · завершено: {finished}
+        {tl('Поединков', 'Беттештер', 'Bouts')}: {eventBouts.length} · {tl('завершено', 'аяктады', 'finished')}: {finished}
       </div>
 
       {streamTatamis(tournaments.find((x) => x.id === tid)?.liveStreams).length > 0 && (
@@ -86,7 +87,7 @@ export const TatamiOverview: React.FC<TatamiOverviewProps> = ({ tournaments, ini
 
       {eventBouts.length === 0 ? (
         <div className={`${card} border-dashed p-10 text-center text-sm text-[var(--app-text-muted)]`}>
-          Поединков пока нет. Проведите жеребьёвку в разделе «Категории и жеребьёвка».
+          {tl('Поединков пока нет. Проведите жеребьёвку в разделе «Категории и жеребьёвка».', 'Азырынча беттештер жок. «Категориялар жана чүчүкулак» бөлүмүндө чүчүкулак өткөрүңүз.', 'No bouts yet. Run the draw in «Categories & draw».')}
         </div>
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
@@ -98,16 +99,16 @@ export const TatamiOverview: React.FC<TatamiOverviewProps> = ({ tournaments, ini
             return (
               <section key={t} className={`${card} p-4 space-y-3`}>
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-lg font-bold text-[var(--app-text-primary)] flex-1">Татами {t}</h2>
-                  <a className={btn} href={`/?screen=tatami&t=${t}`} target="_blank" rel="noreferrer" title="Открыть табло для зрителей (телевизор, проектор)">
-                    <Tv className="w-4 h-4" /> Табло на экран
+                  <h2 className="text-lg font-bold text-[var(--app-text-primary)] flex-1">{tl('Татами', 'Татами', 'Tatami')} {t}</h2>
+                  <a className={btn} href={`/?screen=tatami&t=${t}`} target="_blank" rel="noreferrer" title={tl('Открыть табло для зрителей (телевизор, проектор)', 'Көрүүчүлөр үчүн табло (телевизор, проектор)', 'Open the spectator scoreboard (TV, projector)')}>
+                    <Tv className="w-4 h-4" /> {tl('Табло на экран', 'Табло экранга', 'Scoreboard on screen')}
                   </a>
                 </div>
 
                 {live ? (
                   <div className="rounded-xl border border-[var(--app-border)] p-3">
                     <div className="text-xs text-[var(--app-text-muted)]">
-                      #{live.boutNumber} · {live.categoryName} · {stageLabel(live.roundStage)} · {live.status === 'in_progress' ? (E.isRunning(live) ? 'идёт бой' : 'пауза') : 'ожидает'}
+                      #{live.boutNumber} · {localizeCategoryName(live.categoryName, language as 'ru' | 'ky' | 'en')} · {stageLabel(live.roundStage, language)} · {live.status === 'in_progress' ? (E.isRunning(live) ? tl('идёт бой', 'беттеш жүрүүдө', 'in progress') : tl('пауза', 'тыныгуу', 'paused')) : tl('ожидает', 'күтүүдө', 'waiting')}
                     </div>
                     <div className="mt-1 flex items-center gap-3">
                       <div className="flex-1 min-w-0">
@@ -121,18 +122,18 @@ export const TatamiOverview: React.FC<TatamiOverviewProps> = ({ tournaments, ini
                     </div>
                     {canScore && (
                       <button onClick={() => onOpenConsole(live)} className="mt-3 inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white text-sm font-semibold cursor-pointer">
-                        <Gamepad2 className="w-4 h-4" /> Открыть пульт
+                        <Gamepad2 className="w-4 h-4" /> {tl('Открыть пульт', 'Пультту ачуу', 'Open console')}
                       </button>
                     )}
                   </div>
                 ) : (
-                  <div className="text-sm text-[var(--app-text-muted)]">Сейчас на этом татами поединков нет.</div>
+                  <div className="text-sm text-[var(--app-text-muted)]">{tl('Сейчас на этом татами поединков нет.', 'Азыр бул татамиде беттеш жок.', 'No bout on this tatami right now.')}</div>
                 )}
 
                 {queue.length > 0 && (
                   <div>
                     <div className="text-xs uppercase tracking-wide text-[var(--app-text-muted)] mb-1 flex items-center gap-1">
-                      <ListOrdered className="w-3.5 h-3.5" /> Далее
+                      <ListOrdered className="w-3.5 h-3.5" /> {tl('Далее', 'Кийинки', 'Next')}
                     </div>
                     <ul className="space-y-1">
                       {queue.map((b) => (
@@ -144,11 +145,11 @@ export const TatamiOverview: React.FC<TatamiOverviewProps> = ({ tournaments, ini
                                 <span className="text-red-600">{name(b.akaParticipant as Participant)}</span> — <span className="text-blue-600">{name(b.aoParticipant as Participant)}</span>
                               </>
                             ) : (
-                              <span className="text-[var(--app-text-muted)]">{stageLabel(b.roundStage)} · ждёт победителей</span>
+                              <span className="text-[var(--app-text-muted)]">{stageLabel(b.roundStage, language)} · {tl('ждёт победителей', 'жеңүүчүлөрдү күтөт', 'waiting for winners')}</span>
                             )}
                           </span>
                           {canScore && b.akaParticipantId && b.aoParticipantId && (
-                            <button onClick={() => onOpenConsole(b)} className="text-xs text-[var(--accent)] hover:underline cursor-pointer">пульт</button>
+                            <button onClick={() => onOpenConsole(b)} className="text-xs text-[var(--accent)] hover:underline cursor-pointer">{tl('пульт', 'пульт', 'console')}</button>
                           )}
                         </li>
                       ))}
@@ -162,7 +163,7 @@ export const TatamiOverview: React.FC<TatamiOverviewProps> = ({ tournaments, ini
       )}
 
       <a className={btn} href="/?screen=calls" target="_blank" rel="noreferrer">
-        <ListOrdered className="w-4 h-4" /> Экран вызова спортсменов (зона разминки)
+        <ListOrdered className="w-4 h-4" /> {tl('Экран вызова спортсменов (зона разминки)', 'Спортчуларды чакыруу экраны (жылытуу аймагы)', 'Athlete call screen (warm-up area)')}
       </a>
     </div>
   );

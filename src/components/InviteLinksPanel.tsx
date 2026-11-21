@@ -1,7 +1,8 @@
 import React from 'react';
 import { NumberField } from './NumberField';
 import { Link2, Copy, Check, Trash2, Plus, ShieldCheck, Users, Award } from 'lucide-react';
-import { ROLE_LABELS, type AccessRole } from '../utils/access';
+import { roleLabel, type AccessRole } from '../utils/access';
+import { useApp } from '../context/AppContext';
 
 interface InviteRow {
   token: string;
@@ -17,6 +18,8 @@ interface InviteRow {
 const STAFF_ROLES: AccessRole[] = ['tatami_referee', 'scorekeeper', 'chief_referee', 'medical_officer', 'club_coach'];
 
 const CopyButton: React.FC<{ text: string }> = ({ text }) => {
+  const { language } = useApp();
+  const tl = (ru: string, ky: string, en: string) => (language === 'ky' ? ky : language === 'en' ? en : ru);
   const [copied, setCopied] = React.useState(false);
   return (
     <button
@@ -30,13 +33,15 @@ const CopyButton: React.FC<{ text: string }> = ({ text }) => {
       }`}
     >
       {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-      {copied ? 'Скопировано' : 'Копировать'}
+      {copied ? tl('Скопировано', 'Көчүрүлдү', 'Copied') : tl('Копировать', 'Көчүрүү', 'Copy')}
     </button>
   );
 };
 
 /** Admin-only: public sign-up links (athlete / coach) and secret staff invitations. */
 export const InviteLinksPanel: React.FC = () => {
+  const { language } = useApp();
+  const tl = (ru: string, ky: string, en: string) => (language === 'ky' ? ky : language === 'en' ? en : ru);
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const [invites, setInvites] = React.useState<InviteRow[]>([]);
   const [role, setRole] = React.useState<AccessRole>('tatami_referee');
@@ -65,7 +70,7 @@ export const InviteLinksPanel: React.FC = () => {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      setError(data.error || 'Не удалось создать приглашение');
+      setError(data.error || tl('Не удалось создать приглашение', 'Чакырууну түзүү мүмкүн болгон жок', 'Could not create the invitation'));
       return;
     }
     setJustCreated(data.token);
@@ -74,7 +79,7 @@ export const InviteLinksPanel: React.FC = () => {
   };
 
   const revoke = async (token: string) => {
-    if (!window.confirm('Отозвать эту ссылку? Ею больше нельзя будет зарегистрироваться.')) return;
+    if (!window.confirm(tl('Отозвать эту ссылку? Ею больше нельзя будет зарегистрироваться.', 'Бул шилтемени кайтарып аласызбы? Аны менен мындан ары катталууга болбойт.', 'Revoke this link? Nobody will be able to sign up with it.'))) return;
     await fetch(`/api/admin/invites/${encodeURIComponent(token)}`, { method: 'DELETE' });
     load();
   };
@@ -90,9 +95,9 @@ export const InviteLinksPanel: React.FC = () => {
           <Link2 className="w-5 h-5" />
         </div>
         <div className="min-w-0">
-          <h2 className="text-lg font-bold text-[var(--app-text-primary)]">Ссылки для регистрации</h2>
+          <h2 className="text-lg font-bold text-[var(--app-text-primary)]">{tl('Ссылки для регистрации', 'Катталуу шилтемелери', 'Sign-up links')}</h2>
           <p className="text-sm text-[var(--app-text-muted)]">
-            По ссылке человек регистрируется только в той роли, которая в ней указана. Стать администратором по ссылке нельзя.
+            {tl('Общие ссылки заранее выбирают роль спортсмена или тренера (её можно сменить). Секретная ссылка задаёт роль судьи, секретаря или врача. Стать администратором по ссылке нельзя.', 'Жалпы шилтемелер спортчу же машыктыруучу ролун алдын ала тандайт (аны өзгөртсө болот). Жашыруун шилтеме калыс, катчы же дарыгер ролун берет. Шилтеме аркылуу администратор болууга болбойт.', 'Public links pre-select the athlete or coach role (it can be changed). A secret link sets the referee, scorekeeper or doctor role. Nobody can become an administrator by a link.')}
           </p>
         </div>
       </div>
@@ -100,8 +105,8 @@ export const InviteLinksPanel: React.FC = () => {
       {/* Public links */}
       <div className="grid gap-3 sm:grid-cols-2">
         {[
-          { title: 'Спортсмены и родители', desc: 'Для чатов, соцсетей и афиши турнира.', url: `${origin}/?join=athlete`, Icon: Users },
-          { title: 'Тренеры и клубы', desc: 'Тренер подаёт заявки за своих учеников.', url: `${origin}/?join=coach`, Icon: Award }
+          { title: tl('Спортсмены и родители', 'Спортчулар жана ата-энелер', 'Athletes and parents'), desc: tl('Для чатов, соцсетей и афиши турнира.', 'Чаттар, соцтармактар жана мелдештин афишасы үчүн.', 'For chats, social media and the tournament poster.'), url: `${origin}/?join=athlete`, Icon: Users },
+          { title: tl('Тренеры и клубы', 'Машыктыруучулар жана клубдар', 'Coaches and clubs'), desc: tl('Тренер подаёт заявки за своих учеников.', 'Машыктыруучу өз окуучулары үчүн табыштама берет.', 'A coach enters their own athletes.'), url: `${origin}/?join=coach`, Icon: Award }
         ].map(({ title, desc, url, Icon }) => (
           <div key={url} className="min-w-0 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-subtle)] p-4">
             <div className="flex items-center gap-2.5">
@@ -124,39 +129,39 @@ export const InviteLinksPanel: React.FC = () => {
       {/* Staff invites */}
       <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-subtle)] p-4">
         <div className="flex items-center gap-2 text-sm font-bold text-[var(--app-text-primary)]">
-          <ShieldCheck className="w-4 h-4 text-[var(--accent)]" /> Секретная ссылка для судей, секретарей и врачей
+          <ShieldCheck className="w-4 h-4 text-[var(--accent)]" /> {tl('Секретная ссылка для судей, секретарей и врачей', 'Калыстар, катчылар жана дарыгерлер үчүн жашыруун шилтеме', 'Secret link for referees, scorekeepers and doctors')}
         </div>
         <p className="text-xs text-[var(--app-text-muted)] mt-1">
-          Отправьте её лично (WhatsApp, Telegram). Ссылка работает ограниченное время и ограниченное число раз.
+          {tl('Отправьте её лично (WhatsApp, Telegram). Ссылка работает ограниченное время и ограниченное число раз.', 'Аны жеке жөнөтүңүз (WhatsApp, Telegram). Шилтеме чектелген убакытта жана чектелген санда иштейт.', 'Send it personally (WhatsApp, Telegram). The link works for a limited time and a limited number of people.')}
         </p>
         <div className="mt-3 flex flex-wrap items-end gap-2">
           <label className="text-xs text-[var(--app-text-secondary)] flex flex-col gap-1">
-            Роль
+            {tl('Роль', 'Роль', 'Role')}
             <select value={role} onChange={(e) => setRole(e.target.value as AccessRole)} className={fieldCls}>
               {STAFF_ROLES.map((r) => (
                 <option key={r} value={r}>
-                  {ROLE_LABELS[r]}
+                  {roleLabel(r, language)}
                 </option>
               ))}
             </select>
           </label>
           <label className="text-xs text-[var(--app-text-secondary)] flex flex-col gap-1">
-            Действует, дней
+            {tl('Действует, дней', 'Жарактуу, күн', 'Valid, days')}
             <NumberField value={days} emptyValue={7} onValueChange={(n) => setDays(Math.min(60, Math.max(1, n)))} className={`${fieldCls} w-24`} />
           </label>
           <label className="text-xs text-[var(--app-text-secondary)] flex flex-col gap-1">
-            Сколько человек
+            {tl('Сколько человек', 'Канча адам', 'How many people')}
             <NumberField value={maxUses} emptyValue={1} onValueChange={(n) => setMaxUses(Math.min(100, Math.max(1, n)))} className={`${fieldCls} w-24`} />
           </label>
           <label className="text-xs text-[var(--app-text-secondary)] flex flex-col gap-1 flex-1 min-w-[160px]">
-            Для кого (заметка)
-            <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="напр. судьи Кубка Бишкека" className={fieldCls} />
+            {tl('Для кого (заметка)', 'Ким үчүн (белги)', 'For whom (note)')}
+            <input value={note} onChange={(e) => setNote(e.target.value)} placeholder={tl('напр. судьи Кубка Бишкека', 'мис. Бишкек Кубогунун калыстары', 'e.g. Bishkek Cup referees')} className={fieldCls} />
           </label>
           <button
             onClick={create}
             className="inline-flex items-center gap-1.5 h-10 px-5 rounded-full bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white text-sm font-semibold cursor-pointer"
           >
-            <Plus className="w-4 h-4" /> Создать ссылку
+            <Plus className="w-4 h-4" /> {tl('Создать ссылку', 'Шилтеме түзүү', 'Create link')}
           </button>
         </div>
         {error && <div className="mt-2 text-sm text-red-700">{error}</div>}
@@ -172,28 +177,28 @@ export const InviteLinksPanel: React.FC = () => {
             <table className="w-full text-sm">
               <thead className="bg-[var(--app-surface-subtle)] text-xs text-[var(--app-text-secondary)]">
                 <tr>
-                  <th className="text-left px-3 py-2">Роль</th>
-                  <th className="text-left px-3 py-2">Для кого</th>
-                  <th className="text-left px-3 py-2">Использовано</th>
-                  <th className="text-left px-3 py-2">До</th>
+                  <th className="text-left px-3 py-2">{tl('Роль', 'Роль', 'Role')}</th>
+                  <th className="text-left px-3 py-2">{tl('Для кого', 'Ким үчүн', 'For whom')}</th>
+                  <th className="text-left px-3 py-2">{tl('Использовано', 'Колдонулду', 'Used')}</th>
+                  <th className="text-left px-3 py-2">{tl('До', 'Чейин', 'Until')}</th>
                   <th className="px-3 py-2" />
                 </tr>
               </thead>
               <tbody>
                 {invites.map((i) => (
                   <tr key={i.token} className={`border-t border-[var(--app-border)] ${i.active ? '' : 'opacity-50'}`}>
-                    <td className="px-3 py-2 text-[var(--app-text-primary)]">{ROLE_LABELS[i.role] || i.role}</td>
+                    <td className="px-3 py-2 text-[var(--app-text-primary)]">{roleLabel(i.role, language)}</td>
                     <td className="px-3 py-2 text-[var(--app-text-secondary)]">{i.note || '—'}</td>
                     <td className="px-3 py-2 text-[var(--app-text-secondary)]">
-                      {i.uses} из {i.maxUses}
+                      {i.uses} / {i.maxUses}
                     </td>
                     <td className="px-3 py-2 text-[var(--app-text-secondary)]">
-                      {i.active ? new Date(i.expiresAt).toLocaleDateString('ru-RU') : 'неактивна'}
+                      {i.active ? new Date(i.expiresAt).toLocaleDateString(language === 'en' ? 'en-GB' : 'ru-RU') : tl('неактивна', 'активдүү эмес', 'inactive')}
                     </td>
                     <td className="px-3 py-2">
                       <div className="flex items-center justify-end gap-1.5">
                         {i.active && <CopyButton text={linkFor(i.token)} />}
-                        <button onClick={() => revoke(i.token)} className="p-1.5 rounded-lg text-[var(--app-text-muted)] hover:text-red-600 cursor-pointer" title="Отозвать">
+                        <button onClick={() => revoke(i.token)} className="p-1.5 rounded-lg text-[var(--app-text-muted)] hover:text-red-600 cursor-pointer" title={tl('Отозвать', 'Кайтарып алуу', 'Revoke')}>
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>

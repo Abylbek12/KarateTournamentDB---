@@ -1,3 +1,4 @@
+import { localizeCategoryName } from '../utils/names';
 import { eventTitle, placeName } from '../utils/eventI18n';
 import { useApp } from '../context/AppContext';
 import React from 'react';
@@ -34,9 +35,9 @@ const field = 'h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-su
 const card = 'rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]';
 const feeOf = (p: Participant) => p.feePaymentStatus || 'pending';
 
-const catTitle = (categories: EventCategory[], id?: string) => {
+const catTitle = (categories: EventCategory[], id?: string, lang: string = 'ru') => {
   const def = categories.find((c) => c.id === id);
-  return def ? categoryName(def) : id || '—';
+  return def ? localizeCategoryName(categoryName(def), lang as 'ru' | 'ky' | 'en') : id || '—';
 };
 
 const Badge: React.FC<{ s: FeeStatus }> = ({ s }) => {
@@ -110,7 +111,7 @@ export const MyEntriesPanel: React.FC<MyEntriesProps> = ({ user, tournaments, ca
                     <li key={p.id} className={`px-4 py-2.5 flex flex-wrap items-center gap-2 text-sm ${withdrawn ? 'opacity-50' : ''}`}>
                       <div className="flex-1 min-w-[200px]">
                         <div className="text-[var(--app-text-primary)]">{p.teamName || `${p.lastName} ${p.firstName}`}</div>
-                        <div className="text-xs text-[var(--app-text-muted)]">{catTitle(categories, p.categoryId)}</div>
+                        <div className="text-xs text-[var(--app-text-muted)]">{catTitle(categories, p.categoryId, language)}</div>
                       </div>
                       <span className="text-xs text-[var(--app-text-muted)] w-28">
                         {withdrawn ? tl(language, 'отозвана', 'кайтарылды', 'withdrawn') : drawn ? tl(language, 'в сетке', 'торчодо', 'in bracket') : p.isWeighedIn ? tl(language, 'прошёл взвешивание', 'таразадан өттү', 'weighed in') : tl(language, 'принята', 'кабыл алынды', 'accepted')}
@@ -153,7 +154,10 @@ interface FeesProps {
   onSetFee: (participantId: string, status: FeeStatus) => void;
 }
 
-export const FeesPanel: React.FC<FeesProps> = ({ tournaments, initialTournamentId, categories, participants, currency, onSetFee, hidePicker }) => {
+export const FeesPanel: React.FC<FeesProps> = ({ tournaments, initialTournamentId, categories, participants, currency: currencyRu, onSetFee, hidePicker }) => {
+  const { language } = useApp();
+  const tl = (ru: string, ky: string, en: string) => (language === 'ky' ? ky : language === 'en' ? en : ru);
+  const currency = language === 'en' && currencyRu === 'сом' ? 'KGS' : currencyRu;
   const [tid, setTid] = React.useState(initialTournamentId || tournaments[0]?.id || '');
   const [filter, setFilter] = React.useState<'all' | FeeStatus>('all');
   const [q, setQ] = React.useState('');
@@ -170,10 +174,10 @@ export const FeesPanel: React.FC<FeesProps> = ({ tournaments, initialTournamentI
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex-1 min-w-[240px]">
           <h1 className="text-2xl font-bold text-[var(--app-text-primary)] flex items-center gap-2">
-            <Wallet className="w-6 h-6 text-[var(--accent)]" /> Взносы
+            <Wallet className="w-6 h-6 text-[var(--accent)]" /> {tl('Взносы', 'Төгүмдөр', 'Entry fees')}
           </h1>
           <p className="text-[15px] text-[var(--app-text-secondary)] mt-1">
-            Отмечайте оплату взносов по заявкам. Онлайн-оплата картой на сайте не подключена: взносы принимаются по вашим реквизитам или на мандатной комиссии.
+            {tl('Отмечайте оплату взносов по заявкам. Онлайн-оплата картой на сайте не подключена: взносы принимаются по вашим реквизитам или на мандатной комиссии.', 'Табыштамалар боюнча төгүмдөрдүн төлөнүшүн белгилеңиз. Сайтта карта менен онлайн төлөө туташтырылган эмес: төгүмдөр реквизиттериңиз боюнча же мандаттык комиссияда кабыл алынат.', 'Mark entry fee payments. Online card payment is not connected: fees are paid to your bank details or at the registration desk.')}
           </p>
         </div>
         {!hidePicker && (
@@ -186,11 +190,11 @@ export const FeesPanel: React.FC<FeesProps> = ({ tournaments, initialTournamentI
       </div>
 
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-        {([['paid', 'Оплачено'], ['pending', 'Ожидается'], ['exempt', 'Освобождены'], ['refunded', 'Возвращено']] as [FeeStatus, string][]).map(([s, label]) => (
+        {([['paid', tl('Оплачено', 'Төлөндү', 'Paid')], ['pending', tl('Ожидается', 'Күтүлүүдө', 'Pending')], ['exempt', tl('Освобождены', 'Бошотулган', 'Exempt')], ['refunded', tl('Возвращено', 'Кайтарылды', 'Refunded')]] as [FeeStatus, string][]).map(([s, label]) => (
           <div key={s} className={`${card} p-4`}>
             <div className="text-xs text-[var(--app-text-muted)]">{label}</div>
             <div className="text-xl font-bold text-[var(--app-text-primary)]">{sum(s)} {currency}</div>
-            <div className="text-xs text-[var(--app-text-muted)]">{entries.filter((p) => feeOf(p) === s).length} заявок</div>
+            <div className="text-xs text-[var(--app-text-muted)]">{entries.filter((p) => feeOf(p) === s).length} {tl('заявок', 'табыштама', 'entries')}</div>
           </div>
         ))}
       </div>
@@ -199,29 +203,29 @@ export const FeesPanel: React.FC<FeesProps> = ({ tournaments, initialTournamentI
         <div className="px-4 py-3 border-b border-[var(--app-border)] flex flex-wrap gap-2 items-center">
           <label className="relative flex-1 min-w-[200px]">
             <Search className="w-4 h-4 absolute left-2.5 top-2.5 text-[var(--app-text-muted)]" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Спортсмен или клуб" className={`${field} w-full pl-8`} />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tl('Спортсмен или клуб', 'Спортчу же клуб', 'Athlete or club')} className={`${field} w-full pl-8`} />
           </label>
           <select value={filter} onChange={(e) => setFilter(e.target.value as 'all' | FeeStatus)} className={field}>
-            <option value="all">Все</option>
+            <option value="all">{tl('Все', 'Баары', 'All')}</option>
             {(Object.keys(FEE_LABEL) as FeeStatus[]).map((s) => (
-              <option key={s} value={s}>{FEE_LABEL[s]}</option>
+              <option key={s} value={s}>{feeLabel(s, language)}</option>
             ))}
           </select>
         </div>
         {shown.length === 0 ? (
-          <div className="p-8 text-center text-sm text-[var(--app-text-muted)]">Заявок нет.</div>
+          <div className="p-8 text-center text-sm text-[var(--app-text-muted)]">{tl('Заявок нет.', 'Табыштама жок.', 'No entries.')}</div>
         ) : (
           <ul className="divide-y divide-[var(--app-border)]">
             {shown.map((p) => (
               <li key={p.id} className="px-4 py-2.5 flex flex-wrap items-center gap-2 text-sm">
                 <div className="flex-1 min-w-[220px]">
                   <div className="text-[var(--app-text-primary)]">{p.teamName || `${p.lastName} ${p.firstName}`} <span className="text-[var(--app-text-muted)]">· {p.clubName || '—'}</span></div>
-                  <div className="text-xs text-[var(--app-text-muted)]">{catTitle(categories, p.categoryId)}</div>
+                  <div className="text-xs text-[var(--app-text-muted)]">{catTitle(categories, p.categoryId, language)}</div>
                 </div>
                 <span className="w-24 text-right text-[var(--app-text-secondary)]">{fee(p)} {currency}</span>
                 <select value={feeOf(p)} onChange={(e) => onSetFee(p.id, e.target.value as FeeStatus)} className={`${field} h-8`}>
                   {(Object.keys(FEE_LABEL) as FeeStatus[]).map((s) => (
-                    <option key={s} value={s}>{FEE_LABEL[s]}</option>
+                    <option key={s} value={s}>{feeLabel(s, language)}</option>
                   ))}
                 </select>
               </li>

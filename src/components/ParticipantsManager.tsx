@@ -15,7 +15,9 @@ import {
 } from 'lucide-react';
 import { Participant, Club, BeltRank, EventCategory, Tournament } from '../types/schema';
 import { belongsToEvent } from '../data/sampleTournamentData';
-import { categoryName, weighInFits, findCategoryForWeight, beltName } from '../utils/eventCategories';
+import { useApp } from '../context/AppContext';
+import { placeName, countryLabel } from '../utils/eventI18n';
+import { categoryName, weighInFits, findCategoryForWeight, beltName, beltLabel } from '../utils/eventCategories';
 import { SAMPLE_PARTICIPANTS, SAMPLE_CLUBS } from '../data/sampleTournamentData';
 
 interface ParticipantsManagerProps {
@@ -39,6 +41,8 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
   hidePicker
 }) => {
   const [tournamentId, setTournamentId] = useState(defaultTournamentId || tournaments[0]?.id || '');
+  const { language } = useApp();
+  const tl = (ru: string, ky: string, en: string) => (language === 'ky' ? ky : language === 'en' ? en : ru);
   const inTournament = participants.filter((p) => p.status !== 'withdrawn' && (!tournamentId || belongsToEvent(p.tournamentId, tournamentId)));
   const catOf = (p: Participant) => categories.find((c) => c.id === p.categoryId);
   const flagged = inTournament.filter((p) => p.eligibilityNote);
@@ -78,30 +82,18 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
       isWeighedIn: true,
       isMedicalCleared: medicalClearedInput,
       status: medicalClearedInput ? 'weighed_in' : 'disqualified',
-      eligibilityNote: fits || !cat ? undefined : `Вес ${actualWeightInput} кг не подходит для «${categoryName(cat)}»`
+      eligibilityNote: fits || !cat ? undefined : `${tl('Вес', 'Салмак', 'Weight')} ${actualWeightInput} ${tl('кг не подходит для', 'кг ылайык келбейт:', 'kg does not fit')} «${categoryName(cat)}»`
     };
     onUpdateParticipant(updated);
     setWeighInAthlete(null);
   };
 
-  const beltLabels: Record<string, string> = {
-    'white_10kyu': 'Белый (10 кю)',
-    'yellow_8kyu': 'Желтый (8 кю)',
-    'orange_7kyu': 'Оранжевый (7 кю)',
-    'green_6kyu': 'Зеленый (6 кю)',
-    'blue_4kyu': 'Синий (4 кю)',
-    'brown_3kyu': 'Коричневый (3 кю)',
-    'brown_1kyu': 'Коричневый (1 кю)',
-    'black_1dan': 'Черный 1 Дан',
-    'black_2dan': 'Черный 2 Дан',
-    'black_3dan_plus': 'Черный 3+ Дан'
-  };
 
   return (
     <div className="space-y-6">
       {tournaments.length > 0 && !hidePicker && (
         <div className="theme-keep flex flex-wrap items-center gap-2">
-          <label htmlFor="weighin-tournament" className="text-sm text-[var(--app-text-secondary)]">Турнир:</label>
+          <label htmlFor="weighin-tournament" className="text-sm text-[var(--app-text-secondary)]">{tl('Турнир:', 'Мелдеш:', 'Tournament:')}</label>
           <select id="weighin-tournament" value={tournamentId} onChange={(e) => setTournamentId(e.target.value)} className="rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-text-primary)] px-3 py-2 text-sm max-w-full">
             {tournaments.map((t) => (
               <option key={t.id} value={t.id}>{t.title}</option>
@@ -111,7 +103,7 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
       )}
       {flagged.length > 0 && (
         <div className="theme-keep rounded-2xl border-2 border-amber-500 bg-[var(--app-surface)] p-4 space-y-2">
-          <div className="font-semibold text-[var(--app-text-primary)] flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-amber-600" /> Не прошли по весу ({flagged.length})</div>
+          <div className="font-semibold text-[var(--app-text-primary)] flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-amber-600" /> {tl('Не прошли по весу', 'Салмагы туура келген жок', 'Failed the weigh-in')} ({flagged.length})</div>
           {flagged.map((p) => {
             const cat = catOf(p);
             const target = cat && p.actualWeightKg != null ? findCategoryForWeight(categories, cat, p.actualWeightKg) : undefined;
@@ -120,11 +112,11 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
                 <span className="flex-1 min-w-[200px] text-[var(--app-text-primary)]">{p.lastName} {p.firstName}: {p.eligibilityNote}</span>
                 {target && (
                   <button onClick={() => onUpdateParticipant({ ...p, categoryId: target.id, eligibilityNote: undefined })} className="h-8 px-3 rounded-lg bg-[var(--accent)] text-white text-xs font-semibold cursor-pointer">
-                    Перевести в «{categoryName(target)}»
+                    {tl('Перевести в', 'Которуу:', 'Move to')} «{categoryName(target)}»
                   </button>
                 )}
                 <button onClick={() => onUpdateParticipant({ ...p, status: 'withdrawn', eligibilityNote: undefined })} className="h-8 px-3 rounded-lg border border-[var(--app-border)] text-xs text-[var(--app-text-secondary)] cursor-pointer">
-                  Снять с турнира
+                  {tl('Снять с турнира', 'Мелдештен чыгаруу', 'Withdraw from tournament')}
                 </button>
               </div>
             );
@@ -137,23 +129,22 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
           <div>
             <div className="flex items-center gap-2 text-xs tabular-nums uppercase tracking-wider text-rose-400">
               <Users className="w-3.5 h-3.5" />
-              <span>Таблица participants & category_entries</span>
+              <span>{tl('Взвешивание и допуск', 'Таразалоо жана уруксат', 'Weigh-in & clearance')}</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-white mt-1">
-              Реестр участников и мандатная комиссия
+              {tl('Реестр участников и мандатная комиссия', 'Катышуучулардын тизмеси жана мандаттык комиссия', 'Participants and registration desk')}
             </h2>
             <p className="text-sm text-slate-400 mt-1 max-w-2xl">
-              Учет спортсменов, клубов, спортивной квалификации (кю/дан), 
-              контрольное взвешивание перед поединками и медицинский допуск.
+              {tl('Учёт спортсменов, клубов, квалификации (кю/дан), контрольное взвешивание перед поединками и медицинский допуск.', 'Спортчуларды, клубдарды, квалификацияны (кю/дан) эсепке алуу, беттештин алдындагы таразалоо жана медициналык уруксат.', 'Athletes, clubs, grades (kyu/dan), official weigh-in before bouts and medical clearance.')}
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs tabular-nums">
             <div className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800">
-              Всего заявлено: <span className="font-bold text-white">{participants.length}</span>
+              {tl('Всего заявлено', 'Бардыгы катталган', 'Total entered')}: <span className="font-bold text-white">{participants.length}</span>
             </div>
             <div className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800">
-              Взвешено: <span className="font-bold text-emerald-400">{participants.filter(p => p.isWeighedIn).length}</span>
+              {tl('Взвешено', 'Таразаланган', 'Weighed in')}: <span className="font-bold text-emerald-400">{participants.filter(p => p.isWeighedIn).length}</span>
             </div>
             {onNavigateToRegister && (
               <button
@@ -161,7 +152,7 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
                 className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold flex items-center gap-1.5 transition-colors shadow-sm"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>Зарегистрировать</span>
+                <span>{tl('Зарегистрировать', 'Каттоо', 'Register')}</span>
               </button>
             )}
           </div>
@@ -175,7 +166,7 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Поиск по фамилии или лицензии..."
+                placeholder={tl('Поиск по фамилии или лицензии...', 'Фамилия же лицензия боюнча издөө...', 'Search by surname or licence...')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-9 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
@@ -188,7 +179,7 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
               onChange={(e) => setSelectedClub(e.target.value)}
               className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-rose-500"
             >
-              <option value="all">Все клубы</option>
+              <option value="all">{tl('Все клубы', 'Бардык клубдар', 'All clubs')}</option>
               {SAMPLE_CLUBS.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name} ({c.city})
@@ -202,9 +193,9 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
               onChange={(e) => setStatusFilter(e.target.value)}
               className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-rose-500"
             >
-              <option value="all">Все статусы комиссии</option>
-              <option value="weighed">Взвешивание пройдено</option>
-              <option value="pending">Ожидают взвешивания</option>
+              <option value="all">{tl('Все статусы комиссии', 'Комиссиянын бардык абалдары', 'All statuses')}</option>
+              <option value="weighed">{tl('Взвешивание пройдено', 'Таразадан өттү', 'Weighed in')}</option>
+              <option value="pending">{tl('Ожидают взвешивания', 'Таразалоону күтүүдө', 'Waiting for weigh-in')}</option>
             </select>
           </div>
         </div>
@@ -216,14 +207,14 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-950 text-slate-400 uppercase tabular-nums text-[11px] border-b border-slate-800">
               <tr>
-                <th className="px-5 py-3.5">Спортсмен</th>
-                <th className="px-5 py-3.5">Клуб / Город</th>
-                <th className="px-5 py-3.5">Квалификация</th>
-                <th className="px-5 py-3.5 text-right">Заявленный вес</th>
-                <th className="px-5 py-3.5 text-right">Факт. вес</th>
-                <th className="px-5 py-3.5 text-center">Мед. допуск</th>
-                <th className="px-5 py-3.5 text-center">Статус</th>
-                <th className="px-5 py-3.5 text-right">Действие</th>
+                <th className="px-5 py-3.5">{tl('Спортсмен', 'Спортчу', 'Athlete')}</th>
+                <th className="px-5 py-3.5">{tl('Клуб / Город', 'Клуб / Шаар', 'Club / City')}</th>
+                <th className="px-5 py-3.5">{tl('Квалификация', 'Квалификация', 'Grade')}</th>
+                <th className="px-5 py-3.5 text-right">{tl('Заявленный вес', 'Көрсөтүлгөн салмак', 'Declared weight')}</th>
+                <th className="px-5 py-3.5 text-right">{tl('Факт. вес', 'Чыныгы салмак', 'Actual weight')}</th>
+                <th className="px-5 py-3.5 text-center">{tl('Мед. допуск', 'Мед. уруксат', 'Medical')}</th>
+                <th className="px-5 py-3.5 text-center">{tl('Статус', 'Абалы', 'Status')}</th>
+                <th className="px-5 py-3.5 text-right">{tl('Действие', 'Аракет', 'Action')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
@@ -237,7 +228,7 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
                         {p.lastName} {p.firstName}
                       </div>
                       <div className="text-[11px] text-slate-500 tabular-nums mt-0.5">
-                        Лицензия: {p.licenseNumber} · {p.gender === 'male' ? 'Мужской' : 'Женский'}
+                        {tl('Лицензия', 'Лицензия', 'Licence')}: {p.licenseNumber} · {p.gender === 'male' ? tl('Мужской', 'Эркек', 'Male') : tl('Женский', 'Аял', 'Female')}
                       </div>
                     </td>
 
@@ -247,27 +238,27 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
                         {p.clubName || club?.name}
                       </div>
                       <div className="text-[11px] text-sky-400 tabular-nums">
-                        {p.city || club?.city || 'г. Бишкек'} · {p.country || 'Кыргызстан'}
+                        {placeName(p.city || club?.city || 'Бишкек', language)} · {countryLabel(p.country || 'Кыргызстан', language)}
                       </div>
                     </td>
 
                     {/* Belt */}
                     <td className="px-5 py-4 tabular-nums">
                       <span className="px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-300 text-[11px]">
-                        {p.beltRank === 'other' ? beltName(p) : beltLabels[p.beltRank] || p.beltRank}
+                        {beltName(p, language)}
                       </span>
                     </td>
 
                     {/* Declared weight */}
                     <td className="px-5 py-4 text-right tabular-nums text-slate-400 tabular-nums">
-                      {p.declaredWeightKg} кг
+                      {p.declaredWeightKg} {tl('кг', 'кг', 'kg')}
                     </td>
 
                     {/* Actual weight */}
                     <td className="px-5 py-4 text-right tabular-nums tabular-nums">
                       {p.actualWeightKg !== null ? (
                         <span className="font-bold text-white">
-                          {p.actualWeightKg} кг
+                          {p.actualWeightKg} {tl('кг', 'кг', 'kg')}
                         </span>
                       ) : (
                         <span className="text-slate-600">—</span>
@@ -278,11 +269,11 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
                     <td className="px-5 py-4 text-center">
                       {p.isMedicalCleared ? (
                         <span className="inline-flex items-center gap-1 text-emerald-400 tabular-nums text-[11px]">
-                          <CheckCircle2 className="w-3.5 h-3.5" /> Допущен
+                          <CheckCircle2 className="w-3.5 h-3.5" /> {tl('Допущен', 'Уруксат берилди', 'Cleared')}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-rose-400 tabular-nums text-[11px]">
-                          <XCircle className="w-3.5 h-3.5" /> Отказ
+                          <XCircle className="w-3.5 h-3.5" /> {tl('Отказ', 'Баш тартылды', 'Refused')}
                         </span>
                       )}
                     </td>
@@ -291,11 +282,11 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
                     <td className="px-5 py-4 text-center tabular-nums text-[11px]">
                       {p.isWeighedIn ? (
                         <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800">
-                          Взвешен
+                          {tl('Взвешен', 'Таразаланды', 'Weighed')}
                         </span>
                       ) : (
                         <span className="px-2 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-800">
-                          Ожидает
+                          {tl('Ожидает', 'Күтүүдө', 'Waiting')}
                         </span>
                       )}
                     </td>
@@ -307,7 +298,7 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
                         className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-xs font-medium transition-colors inline-flex items-center gap-1.5"
                       >
                         <Scale className="w-3.5 h-3.5 text-rose-400" />
-                        <span>Взвешивание</span>
+                        <span>{tl('Взвешивание', 'Таразалоо', 'Weigh-in')}</span>
                       </button>
                     </td>
                   </tr>
@@ -326,31 +317,31 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
               <div className="flex items-center gap-2 text-rose-400">
                 <Scale className="w-5 h-5" />
                 <h3 className="text-base font-bold text-white">
-                  Контрольное взвешивание
+                  {tl('Контрольное взвешивание', 'Текшерүү таразалоосу', 'Official weigh-in')}
                 </h3>
               </div>
               <button
                 onClick={() => setWeighInAthlete(null)}
                 className="text-slate-400 hover:text-white text-xs tabular-nums"
               >
-                Закрыть
+                {tl('Закрыть', 'Жабуу', 'Close')}
               </button>
             </div>
 
             <div className="space-y-3">
               <div>
-                <span className="text-xs text-slate-500 tabular-nums">Спортсмен:</span>
+                <span className="text-xs text-slate-500 tabular-nums">{tl('Спортсмен:', 'Спортчу:', 'Athlete:')}</span>
                 <div className="text-base font-bold text-white">
                   {weighInAthlete.lastName} {weighInAthlete.firstName}
                 </div>
                 <div className="text-xs text-slate-400">
-                  {weighInAthlete.clubName} · Заявленный вес: {weighInAthlete.declaredWeightKg} кг
+                  {weighInAthlete.clubName} · {tl('Заявленный вес', 'Көрсөтүлгөн салмак', 'Declared weight')}: {weighInAthlete.declaredWeightKg} {tl('кг', 'кг', 'kg')}
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-slate-300 mb-1">
-                  Фактический вес на весах (кг):
+                  {tl('Фактический вес на весах (кг):', 'Таразадагы чыныгы салмак (кг):', 'Actual weight on the scales (kg):')}
                 </label>
                 <NumberField
                   decimals
@@ -369,7 +360,7 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
                   className="w-4 h-4 rounded bg-slate-950 border-slate-700 text-rose-600 focus:ring-0"
                 />
                 <label htmlFor="medClear" className="text-xs text-slate-300 cursor-pointer">
-                  Медицинский допуск врача соревнований подтвержден
+                  {tl('Медицинский допуск врача соревнований подтверждён', 'Мелдештин дарыгеринин медициналык уруксаты ырасталды', 'Medical clearance by the tournament doctor confirmed')}
                 </label>
               </div>
             </div>
@@ -379,13 +370,13 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
                 onClick={() => setWeighInAthlete(null)}
                 className="px-4 py-2 text-xs text-slate-400 hover:text-white bg-slate-800 rounded-lg"
               >
-                Отмена
+                {tl('Отмена', 'Жокко чыгаруу', 'Cancel')}
               </button>
               <button
                 onClick={handleSaveWeighIn}
                 className="px-5 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 rounded-lg shadow-sm"
               >
-                Зафиксировать вес в БД
+                {tl('Сохранить вес', 'Салмакты сактоо', 'Save weight')}
               </button>
             </div>
           </div>
