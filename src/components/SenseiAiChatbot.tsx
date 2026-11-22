@@ -11,7 +11,10 @@ import {
   Volume2,
   VolumeX,
   Download,
-  Trophy
+  Trophy,
+  Pause,
+  Play,
+  Square
 } from 'lucide-react';
 import { Tournament, TournamentRules } from '../types/schema';
 import { ChatMarkdown } from './ChatMarkdown';
@@ -144,6 +147,9 @@ export const SenseiAiChatbot: React.FC<SenseiAiChatbotProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  // Which answer is being read aloud, and whether it is paused
+  const [speech, setSpeech] = useState<{ id: string; paused: boolean } | null>(null);
+  const speechToken = useRef(0);
   const [messages, setMessages] = useState<Message[]>(loadHistory);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -177,7 +183,26 @@ export const SenseiAiChatbot: React.FC<SenseiAiChatbotProps> = ({
     return () => window.removeEventListener('keydown', onKey);
   }, [isOpen]);
 
-  const speakText = (text: string, force = false) => {
+  const stopSpeech = () => {
+    speechToken.current++;
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    setSpeech(null);
+  };
+
+  const togglePause = () => {
+    if (!speech || !('speechSynthesis' in window)) return;
+    if (speech.paused) window.speechSynthesis.resume();
+    else window.speechSynthesis.pause();
+    setSpeech({ ...speech, paused: !speech.paused });
+  };
+
+  // Stop reading when the window closes or the page goes away
+  useEffect(() => {
+    if (!isOpen) stopSpeech();
+  }, [isOpen]);
+  useEffect(() => () => window.speechSynthesis?.cancel(), []);
+
+  const speakText = (id: string, text: string, force = false) => {
     if ((isMuted && !force) || !('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
     const cleanSpeech = text
@@ -187,6 +212,14 @@ export const SenseiAiChatbot: React.FC<SenseiAiChatbotProps> = ({
     const utterance = new SpeechSynthesisUtterance(cleanSpeech);
     utterance.lang = lang === 'en' ? 'en-US' : lang === 'ky' ? 'ky-KG' : 'ru-RU';
     utterance.rate = 1.05;
+    // A cancelled earlier utterance also fires onend/onerror later: only the current one clears the state
+    const token = ++speechToken.current;
+    const done = () => {
+      if (speechToken.current === token) setSpeech(null);
+    };
+    utterance.onend = done;
+    utterance.onerror = done;
+    setSpeech({ id, paused: false });
     window.speechSynthesis.speak(utterance);
   };
 
@@ -199,7 +232,7 @@ export const SenseiAiChatbot: React.FC<SenseiAiChatbotProps> = ({
   const handleClearHistory = () => {
     if (window.confirm(tl('Очистить историю диалога?', 'Маектин тарыхын тазалайсызбы?', 'Clear the conversation?'))) {
       setMessages([WELCOME]);
-      window.speechSynthesis?.cancel();
+      stopSpeech();
     }
   };
 
@@ -254,11 +287,12 @@ export const SenseiAiChatbot: React.FC<SenseiAiChatbotProps> = ({
       if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
 
       const botReply = data.reply || tl('Не удалось получить ответ. Попробуйте ещё раз.', 'Жооп алуу мүмкүн болгон жок. Дагы аракет кылыңыз.', 'Could not get an answer. Please try again.');
+      const botId = 'bot_' + Date.now();
       setMessages((prev) => [
         ...prev,
-        { id: 'bot_' + Date.now(), role: 'model', text: botReply, timestamp: nowTime(), source: data.source }
+        { id: botId, role: 'model', text: botReply, timestamp: nowTime(), source: data.source }
       ]);
-      speakText(botReply);
+      speakText(botId, botReply);
     } catch (err: any) {
       const reason = err?.message && !String(err.message).startsWith('HTTP') ? err.message : tl('Проверьте подключение к серверу и попробуйте ещё раз.', 'Серверге туташууну текшерип, кайра аракет кылыңыз.', 'Check the connection and try again.');
       setMessages((prev) => [
@@ -314,7 +348,7 @@ export const SenseiAiChatbot: React.FC<SenseiAiChatbotProps> = ({
               </div>
             </div>
             <div className="flex items-center">
-              <button onClick={() => setIsMuted(!isMuted)} className={iconBtn} title={isMuted ? tl('Озвучивать ответы', 'Жоопторду үн менен окуу', 'Read answers aloud') : tl('Не озвучивать', 'Үн менен окубоо', 'Stop reading aloud')}>
+              <button onClick={() => { if (!isMuted) stopSpeech(); setIsMuted(!isMuted); }} className={iconBtn} title={isMuted ? tl('Озвучивать ответы', 'Жоопторду үн менен окуу', 'Read answers aloud') : tl('Не озвучивать', 'Үн менен окубоо', 'Stop reading aloud')}>
                 {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4 text-[var(--accent)]" />}
               </button>
               <button onClick={handleExportChat} className={`${iconBtn} hidden sm:block`} title={tl('Скачать диалог', 'Маекти жүктөө', 'Download conversation')}>
@@ -377,9 +411,20 @@ export const SenseiAiChatbot: React.FC<SenseiAiChatbotProps> = ({
                       <div className="flex items-center gap-1 mt-1 px-1 text-[11px] text-[var(--app-text-muted)]">
                         {sourceLabel(msg.source, lang) && <span>{sourceLabel(msg.source, lang)}</span>}
                         {msg.timestamp && <span>· {msg.timestamp}</span>}
-                        <button onClick={() => speakText(msg.text, true)} className="ml-1 p-1 rounded hover:text-[var(--app-text-primary)] cursor-pointer" title={tl('Озвучить', 'Үн менен окуу', 'Read aloud')}>
-                          <Volume2 className="w-3.5 h-3.5" />
-                        </button>
+                        {speech?.id === msg.id ? (
+                          <>
+                            <button onClick={togglePause} className="ml-1 p-1 rounded text-[var(--accent)] hover:text-[var(--app-text-primary)] cursor-pointer" title={speech.paused ? tl('Продолжить', 'Улантуу', 'Continue') : tl('Пауза', 'Тыным', 'Pause')} aria-label={speech.paused ? tl('Продолжить', 'Улантуу', 'Continue') : tl('Пауза', 'Тыным', 'Pause')}>
+                              {speech.paused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+                            </button>
+                            <button onClick={stopSpeech} className="p-1 rounded text-[var(--accent)] hover:text-[var(--app-text-primary)] cursor-pointer" title={tl('Остановить звук', 'Үндү токтотуу', 'Stop sound')} aria-label={tl('Остановить звук', 'Үндү токтотуу', 'Stop sound')}>
+                              <Square className="w-3.5 h-3.5 fill-current" />
+                            </button>
+                          </>
+                        ) : (
+                          <button onClick={() => speakText(msg.id, msg.text, true)} className="ml-1 p-1 rounded hover:text-[var(--app-text-primary)] cursor-pointer" title={tl('Озвучить', 'Үн менен окуу', 'Read aloud')} aria-label={tl('Озвучить', 'Үн менен окуу', 'Read aloud')}>
+                            <Volume2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                         <button onClick={() => handleCopyText(msg.id, msg.text)} className="p-1 rounded hover:text-[var(--app-text-primary)] cursor-pointer" title={tl('Копировать', 'Көчүрүү', 'Copy')}>
                           {copiedId === msg.id ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                         </button>
