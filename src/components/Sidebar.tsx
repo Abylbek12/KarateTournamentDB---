@@ -27,7 +27,8 @@ import {
   Lock,
   Layers,
   ChevronDown,
-  GripVertical
+  GripVertical,
+  ListChecks
 } from 'lucide-react';
 import { hashForTab, isPlainClick } from '../utils/routes';
 import { canAccess, type AccessRole } from '../utils/access';
@@ -59,7 +60,8 @@ export type NavTabId =
   | 'admin'
   | 'registration'
   | 'screens'
-  | 'event_setup';
+  | 'event_setup'
+  | 'plan';
 
 interface SidebarProps {
   activeTab: string;
@@ -185,7 +187,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { id: 'scoreboard' as NavTabId, label: tr('Татами: бои и пульты', 'Татами: беттештер', 'Tatami: bouts & consoles'), icon: Tv },
         { id: 'participants' as NavTabId, label: tr('Взвешивание и допуск', 'Таразалоо жана уруксат', 'Weigh-in & clearance'), icon: Scale },
         // Chief referee runs the draw too (admins have it under «Организатор»)
-        ...(isAdmin ? [] : [{ id: 'event_setup' as NavTabId, label: tr('Категории и жеребьёвка', 'Категориялар жана чүчүкулак', 'Categories & draw'), icon: Layers }])
+        ...(isAdmin ? [] : [{ id: 'event_setup' as NavTabId, label: tr('Категории и жеребьёвка', 'Категориялар жана чүчүкулак', 'Categories & draw'), icon: Layers }]),
+        ...(isAdmin ? [] : [{ id: 'plan' as NavTabId, label: tr('План турнира', 'Мелдештин планы', 'Tournament plan'), icon: ListChecks }])
       ]
     },
     {
@@ -203,6 +206,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           ]
         : isAdmin
           ? [
+              { id: 'plan' as NavTabId, label: tr('План турнира', 'Мелдештин планы', 'Tournament plan'), icon: ListChecks },
               { id: 'admin' as NavTabId, label: tr('Турниры и пользователи', 'Мелдештер жана колдонуучулар', 'Events & users'), icon: ShieldCheck },
               { id: 'event_setup' as NavTabId, label: tr('Категории и жеребьёвка', 'Категориялар жана чүчүкулак', 'Categories & draw'), icon: Layers },
               ...(isAdmin ? [{ id: 'athletes' as NavTabId, label: tr('Мои спортсмены', 'Менин спортчуларым', 'My athletes'), icon: Users }] : []),

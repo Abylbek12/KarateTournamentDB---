@@ -109,6 +109,7 @@ const TournamentInfoDetailView = React.lazy(() => import('./components/Tournamen
 const TournamentDivisionsPricingView = React.lazy(() => import('./components/TournamentDivisionsPricingView').then((m) => ({ default: m.TournamentDivisionsPricingView })));
 
 const ScreensQrPanel = React.lazy(() => import('./components/ScreensQrPanel').then((m) => ({ default: m.ScreensQrPanel })));
+const TournamentPlan = React.lazy(() => import('./components/TournamentPlan').then((m) => ({ default: m.TournamentPlan })));
 
 const ScreenLoader = () => (
   <div className="flex items-center justify-center py-16 text-sm text-slate-500">Загрузка…</div>
@@ -431,9 +432,9 @@ function AppContent() {
   // How often each screen asks the server for changes (the free hosting has a monthly request limit):
   // every second only where bouts are live; slower on bracket and result pages; rarely everywhere else.
   const LIVE_TABS = ['scoreboard', 'virtual_studios', 'event_live_scoring'];
-  const SLOW_LIVE_TABS = ['event_brackets', 'event_results', 'event_medals', 'participants', 'event_setup', 'screens', 'exports'];
+  const SLOW_LIVE_TABS = ['plan', 'event_brackets', 'event_results', 'event_medals', 'participants', 'event_setup', 'screens', 'exports'];
   const boutsPollMs = standaloneScreen || LIVE_TABS.includes(activeTab) ? 1000 : SLOW_LIVE_TABS.includes(activeTab) ? 5000 : 30_000;
-  const entriesTabs = ['participants', 'event_setup', 'registration', 'acquiring', 'athletes', 'exports', 'scoreboard'];
+  const entriesTabs = ['plan', 'participants', 'event_setup', 'registration', 'acquiring', 'athletes', 'exports', 'scoreboard'];
   const dataPollMs = standaloneScreen ? 60_000 : entriesTabs.includes(activeTab) ? 5000 : 30_000;
   const [bouts, setBoutsState, boutSync] = useServerSyncedState<Bout[]>('bouts', [], { ...sharedStateOptions, autoSave: false, pollMs: boutsPollMs });
   // Tatami of the selected tournament (at least the ones bouts are already assigned to)
@@ -1402,7 +1403,7 @@ function AppContent() {
           {/* One «current tournament» for every working screen: chosen here, used by tatami, weigh-in, draw, screens, fees, documents */}
           {canAccess(activeTab, effectiveRole) &&
             tournaments.length > 0 &&
-            (['scoreboard', 'participants', 'event_setup', 'screens', 'exports'].includes(activeTab) || (activeTab === 'acquiring' && effectiveRole === 'admin')) &&
+            (['plan', 'scoreboard', 'participants', 'event_setup', 'screens', 'exports'].includes(activeTab) || (activeTab === 'acquiring' && effectiveRole === 'admin')) &&
             (() => {
               const today = localToday();
               const ev = selectedEvent;
@@ -1722,6 +1723,10 @@ function AppContent() {
             />
           )}
 
+          {activeTab === 'plan' && (
+            <TournamentPlan event={selectedEvent} categories={eventCategories} participants={participants} bouts={bouts} onGo={(tab) => navigateWithHash(tab)} />
+          )}
+
           {activeTab === 'screens' && (
             <ScreensQrPanel
               tatamiNumbers={tatamiNumbers}
@@ -2031,7 +2036,7 @@ function AppContent() {
                   menu
                 ]
               : role === 'admin'
-                ? [events, tatami, go('event_setup', tr('Жеребьёвка', 'Чүчүкулак', 'Draw'), Layers), go('screens', tr('Экраны', 'Экрандар', 'Screens'), QrCode), menu]
+                ? [go('plan', tr('План', 'План', 'Plan'), ClipboardList), events, tatami, go('screens', tr('Экраны', 'Экрандар', 'Screens'), QrCode), menu]
                 : role === 'club_coach' || role === 'athlete'
                   ? [events, go('registration', tr('Заявка', 'Табыштама', 'Enter'), ClipboardList), go('athletes', tr('Спортсмены', 'Спортчулар', 'Athletes'), Users), liveNow, menu]
                   : [
