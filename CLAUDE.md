@@ -17,6 +17,8 @@
 - Клиент: React 19 + Vite 8 + Tailwind CSS 4, TypeScript. Иконки `lucide-react`, анимации `motion`.
 - Сервер: Express 4 (`server.ts`, ~1500 строк), запускается через `tsx`. Хранилище — `server/store.ts`.
 - ИИ «Сенсей»: Anthropic SDK, модель из `CLAUDE_MODEL` (по умолчанию `claude-opus-5-5`), маршрут `POST /api/chat`.
+  Если ключа Claude нет, но есть `GEMINI_API_KEY` — бесплатный Google Gemini (`server/geminiSensei.ts`, `@google/genai` 3.0.0,
+  модель `GEMINI_MODEL`, по умолчанию `gemini-3.5-flash-lite`); при лимите 429 — встроенные ответы. Окно «Сенсея» переведено на ru/ky/en.
 - Хостинг: Vercel (регион `fra1`). Node 22.x.
 
 ## Команды

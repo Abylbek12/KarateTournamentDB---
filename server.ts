@@ -79,6 +79,7 @@ app.use(databaseMiddleware(() => ensureAdminAccount(true)));
 import { DEMO_EVENTS } from './src/data/eventsData';
 import { sanitizeLiveStreams } from './src/utils/youtube';
 import { cleanTitleTranslation } from './src/utils/eventI18n';
+import { askGemini, hasGeminiKey } from './server/geminiSensei';
 import { sanitizePricing, quoteEntries, countPaidBefore, athleteKey, bishkekDate } from './src/utils/pricing';
 import {
   sanitizeAthlete,
@@ -93,7 +94,9 @@ import {
 } from './src/utils/athletes';
 import { SAMPLE_BOUTS, SAMPLE_PARTICIPANTS } from './src/data/sampleTournamentData';
 
-const hasAiKey = () => !!process.env.ANTHROPIC_API_KEY?.trim();
+const hasClaudeKey = () => !!process.env.ANTHROPIC_API_KEY?.trim();
+// «Сенсей» is shown when either Claude (paid) or Gemini (free tier) is configured; Claude wins if both are set
+const hasAiKey = () => hasClaudeKey() || hasGeminiKey();
 
 // Health Check API
 app.get('/api/health', (_req: Request, res: Response) => {
@@ -1582,6 +1585,27 @@ app.post('/api/chat', aiLimiter, async (req: Request, res: Response) => {
 Сайт Apsatarov умеет: заявки («Подать заявку», тренер — сразу на всех учеников), «Мои заявки и оплата», категории и жеребьёвку с разведением одноклубников (организатор), пульт боя и табло по QR-коду, режим «Один экран» с клавишами, печать сеток, протоколов и дипломов в PDF, рейтинги и клубы по результатам. Онлайн-оплаты картой нет: взносы принимает организатор.
 Не выдумывай функции сайта, цифры, даты и правила. Если не уверен — так и скажи и посоветуй уточнить у организатора или в действующем регламенте федерации.
 Текущий турнир на экране пользователя: ${String(context.tournamentTitle || 'не выбран').slice(0, 200)}.`;
+
+    // Free Google Gemini when there is no Claude key
+    if (!hasClaudeKey()) {
+      const result = await askGemini(system, history, message);
+      if (result.ok) {
+        res.json({ reply: result.reply, source: 'gemini', status: 'ok' });
+      } else {
+        // Daily free limit reached or no answer: built-in answers so the visitor is never left without a reply
+        const lang = context?.language === 'ky' || context?.language === 'en' ? context.language : 'ru';
+        const note =
+          result.reason !== 'limit'
+            ? ''
+            : lang === 'ky'
+              ? '\n\n_ИИге бүгүнкү акысыз суроолордун чеги бүттү, ошондуктан кыскача жооп берем. Эртең кайра кеңири жооп берем._'
+              : lang === 'en'
+                ? '\n\n_Today’s free AI question limit is used up, so this is a short answer. Full answers again tomorrow._'
+                : '\n\n_Лимит бесплатных вопросов к ИИ на сегодня исчерпан, поэтому отвечаю коротко. Завтра снова отвечу подробно._';
+        res.json({ reply: generateExpertFallbackResponse(message, context) + note, source: 'sensei-knowledge-engine', status: 'ok' });
+      }
+      return;
+    }
 
     // Conversation: the page sends {role: 'user' | 'model', text}; Claude needs user/assistant, starting with user
     const messages: Anthropic.MessageParam[] = [];
