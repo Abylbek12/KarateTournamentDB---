@@ -49,7 +49,8 @@ export function formatClock(seconds: number): string {
   return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
 }
 
-const canPlay = (b: Bout) => b.status !== 'completed' && !b.awaitingDecision && !!b.akaParticipantId && !!b.aoParticipantId;
+// The clock does not start while a video review is being looked at
+const canPlay = (b: Bout) => b.status !== 'completed' && !b.awaitingDecision && !b.vrReviewActive && !!b.akaParticipantId && !!b.aoParticipantId;
 
 export function startClock(b: Bout, now = clockNow()): Bout {
   if (!canPlay(b) || isRunning(b) || remainingSeconds(b, now) <= 0) return b;
@@ -143,6 +144,35 @@ export function addScore(b: Bout, side: Side, points: number, now = clockNow()):
   }
   return next;
 }
+
+/**
+ * Video review (VR): a coach asks to look at a moment again. The clock stops, the scoreboard shows
+ * «VIDEO REVIEW», and the referees decide. Points, if given, are added with the usual score buttons.
+ */
+export function requestVideoReview(b: Bout, side: Side, now = clockNow()): Bout {
+  if (b.status === 'completed' || b.vrReviewActive) return b;
+  const stopped = stopClock(b, now);
+  const full = b.durationSeconds ?? 180;
+  const matchSecond = Math.max(0, Math.round(full - remainingSeconds(stopped, now)));
+  return {
+    ...stopped,
+    vrReviewActive: true,
+    vrReviewSide: side,
+    videoReviews: [...(b.videoReviews || []), { side, matchSecond, requestedAt: new Date(now).toISOString() }]
+  };
+}
+
+/** Closes the open video review with the referees' decision. */
+export function decideVideoReview(b: Bout, result: 'awarded' | 'rejected' | 'cancelled', now = clockNow()): Bout {
+  if (!b.vrReviewActive) return b;
+  const list = [...(b.videoReviews || [])];
+  const i = list.map((r) => !r.result).lastIndexOf(true);
+  if (i >= 0) list[i] = { ...list[i], result, decidedAt: new Date(now).toISOString() };
+  return { ...b, vrReviewActive: false, vrReviewSide: undefined, videoReviews: list };
+}
+
+/** How many reviews a side asked for in this bout (withdrawn requests do not count). */
+export const videoReviewCount = (b: Bout, side: Side) => (b.videoReviews || []).filter((r) => r.side === side && r.result !== 'cancelled').length;
 
 /** Senshu can be given or withdrawn manually by the referee (e.g. withdrawal rules). */
 export function setSenshu(b: Bout, side: Side, value: boolean): Bout {

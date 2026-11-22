@@ -633,6 +633,11 @@ export const PublicLiveView: React.FC<BaseProps> = (props) => {
                       <Radio className="w-3.5 h-3.5" /> LIVE
                     </span>
                   )}
+                  {b?.vrReviewActive && b.status !== 'completed' && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-1.5 py-0.5 rounded bg-violet-600 text-white">
+                      VIDEO REVIEW
+                    </span>
+                  )}
                   {videoTatamis.includes(tn) && (
                     <button
                       onClick={() => watchTatami(tn)}

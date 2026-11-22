@@ -414,6 +414,27 @@ export const PrintDocuments: React.FC<PrintDocumentsProps> = ({ request, tournam
                 {tr(lang, 'длительность боя', 'беттештин узактыгы', 'bout length')} {E.formatClock(b.durationSeconds ?? 180)}
               </td>
             </tr>
+            {/* Video reviews: who asked, at which second of the bout, and the decision */}
+            <tr>
+              <th>{tr(lang, 'Видеоповтор (VR)', 'Видеокайталоо (VR)', 'Video review (VR)')}</th>
+              <td>
+                {(b.videoReviews || []).filter((r) => r.result !== 'cancelled').length === 0
+                  ? tr(lang, 'не было', 'болгон жок', 'none')
+                  : (b.videoReviews || [])
+                      .filter((r) => r.result !== 'cancelled')
+                      .map(
+                        (r) =>
+                          `${r.side === 'aka' ? tr(lang, 'АКА', 'АКА', 'AKA') : tr(lang, 'АО', 'АО', 'AO')}, ${E.formatClock(r.matchSecond)} — ${
+                            r.result === 'awarded'
+                              ? tr(lang, 'очко дано', 'упай берилди', 'score given')
+                              : r.result === 'rejected'
+                                ? tr(lang, 'без изменений', 'өзгөрүүсүз', 'no change')
+                                : tr(lang, 'решение не внесено', 'чечим киргизилген жок', 'no decision recorded')
+                          }`
+                      )
+                      .join('; ')}
+              </td>
+            </tr>
           </tbody>
         </table>
         <Signatures roles={[tr(lang, 'Рефери (Shushin)', 'Рефери (Shushin)', 'Referee (Shushin)'), tr(lang, 'Секретарь татами', 'Татами катчысы', 'Tatami Secretary'), chief]} />

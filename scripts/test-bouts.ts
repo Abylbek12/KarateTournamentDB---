@@ -101,5 +101,23 @@ const bout = (extra: Partial<Bout> = {}): Bout =>
   check('8 athletes: 7 elimination + 2 repechage bouts', bouts.length === 9, `bouts=${bouts.length}`);
 }
 
+// Video review (VR)
+{
+  const t0 = 2_000_000;
+  let b = E.startClock(bout(), t0);
+  b = E.requestVideoReview(b, 'ao', t0 + 30_000);
+  check('VR: request stops the clock', !E.isRunning(b) && Math.abs(b.timerSecondsRemaining - 150) < 1e-9);
+  check('VR: review is open for AO', !!b.vrReviewActive && b.vrReviewSide === 'ao' && b.videoReviews?.length === 1);
+  check('VR: moment of the request is kept', b.videoReviews?.[0].matchSecond === 30, String(b.videoReviews?.[0].matchSecond));
+  check('VR: clock cannot start during the review', !E.isRunning(E.startClock(b, t0 + 31_000)));
+  check('VR: second request while open is ignored', E.requestVideoReview(b, 'aka', t0 + 32_000).videoReviews?.length === 1);
+  b = E.decideVideoReview(b, 'rejected', t0 + 40_000);
+  check('VR: decision closes the review', !b.vrReviewActive && b.videoReviews?.[0].result === 'rejected');
+  check('VR: clock starts again after the decision', E.isRunning(E.startClock(b, t0 + 41_000)));
+  b = E.decideVideoReview(E.requestVideoReview(b, 'aka', t0 + 50_000), 'cancelled', t0 + 51_000);
+  check('VR: withdrawn request does not count', E.videoReviewCount(b, 'aka') === 0 && E.videoReviewCount(b, 'ao') === 1);
+  check('VR: finished bout cannot be reviewed', !E.requestVideoReview({ ...bout(), status: 'completed' } as Bout, 'aka').vrReviewActive);
+}
+
 console.log(failures ? `\n${failures} check(s) failed` : '\nAll bout checks passed');
 process.exit(failures ? 1 : 0);

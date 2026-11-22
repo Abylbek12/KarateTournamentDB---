@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Play, Pause, RotateCcw, Minus, Plus, Undo2, Volume2, VolumeX, Gavel, Printer, Monitor } from 'lucide-react';
+import { X, Play, Pause, RotateCcw, Minus, Plus, Undo2, Volume2, VolumeX, Gavel, Printer, Monitor, Video } from 'lucide-react';
 import { SoloScoreboard } from './SoloScoreboard';
 import { printUrl } from './PrintDocuments';
 import type { Bout, Participant, TournamentRules } from '../types/schema';
@@ -320,7 +320,7 @@ export const BoutConsole: React.FC<BoutConsoleProps> = ({ bout, rules, onChange,
             <div className="flex-1 flex flex-wrap items-center justify-center sm:justify-end gap-2">
               <button
                 onClick={toggleClock}
-                disabled={finished || !ready || bout.awaitingDecision}
+                disabled={finished || !ready || bout.awaitingDecision || !!bout.vrReviewActive}
                 className={`h-14 px-6 rounded-xl text-white font-semibold inline-flex items-center gap-2 disabled:opacity-40 cursor-pointer ${running ? 'bg-amber-600' : 'bg-emerald-600'}`}
               >
                 {running ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
@@ -344,6 +344,38 @@ export const BoutConsole: React.FC<BoutConsoleProps> = ({ bout, rules, onChange,
           </div>
           {!finished && low && running && <div className="text-center text-sm text-red-600 font-semibold">{tr('Последние секунды', 'Акыркы секунддар', 'Last seconds')}</div>}
           <div className="text-xs text-center text-[var(--app-text-muted)]">{tr(`Пробел — старт/стоп. Сигнал за ${E.WARNING_AT_SECONDS} секунд до конца и гонг в конце боя.`, `Боштук — баштоо/токтотуу. Аягына ${E.WARNING_AT_SECONDS} секунд калганда сигнал.`, `Space — start/stop. Signal ${E.WARNING_AT_SECONDS} seconds before the end, gong at the end.`)}</div>
+
+          {/* Video review (VR): open review — the referees decide */}
+          {bout.vrReviewActive && !finished && (
+            <div className="rounded-2xl border-2 border-violet-600 bg-[var(--app-surface)] p-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <Video className="w-6 h-6 text-violet-600 shrink-0" />
+                <div className="flex-1 min-w-0 text-[var(--app-text-primary)]">
+                  <div className="font-semibold">
+                    {tr('Видеоповтор — запрос', 'Видеокайталоо — сурам', 'Video review — requested by')} {bout.vrReviewSide === 'aka' ? AKA : AO}
+                  </div>
+                  <div className="text-sm text-[var(--app-text-muted)]">
+                    {tr(
+                      'Время остановлено, на табло — «VIDEO REVIEW». Судьи смотрят запись (телефон на штативе или перемотка эфира YouTube). Если очко дано — добавьте его кнопками +1 / +2 / +3.',
+                      'Убакыт токтотулду, таблодо — «VIDEO REVIEW». Калыстар жазууну карашат (штативдеги телефон же YouTube эфирин артка түрүү). Упай берилсе — +1 / +2 / +3 баскычтары менен кошуңуз.',
+                      'The clock is stopped and the scoreboard shows «VIDEO REVIEW». The referees watch the recording (a phone on a tripod or rewinding the YouTube stream). If a score is given, add it with +1 / +2 / +3.'
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button onClick={() => apply(E.decideVideoReview(bout, 'awarded'))} className="h-11 px-4 rounded-xl bg-emerald-600 text-white font-semibold cursor-pointer">
+                  {tr('Очко дано', 'Упай берилди', 'Score given')}
+                </button>
+                <button onClick={() => apply(E.decideVideoReview(bout, 'rejected'))} className="h-11 px-4 rounded-xl bg-slate-700 text-white font-semibold cursor-pointer">
+                  {tr('Без изменений', 'Өзгөрүүсүз', 'No change')}
+                </button>
+                <button onClick={() => apply(E.decideVideoReview(bout, 'cancelled'))} className="h-11 px-4 rounded-xl border border-[var(--app-border)] text-[var(--app-text-primary)] cursor-pointer">
+                  {tr('Отменить запрос', 'Сурамды жокко чыгаруу', 'Withdraw request')}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Decision / result banners */}
           {bout.awaitingDecision && !finished && (
@@ -388,6 +420,36 @@ export const BoutConsole: React.FC<BoutConsoleProps> = ({ bout, rules, onChange,
             {sideColumn('aka')}
             {sideColumn('ao')}
           </div>
+
+          {/* Video review request: the coach of AKA or AO asks to look at a moment again */}
+          {!finished && ready && !bout.vrReviewActive && (
+            <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 flex flex-wrap items-center gap-2 text-sm">
+              <span className="inline-flex items-center gap-1.5 font-semibold text-[var(--app-text-primary)] mr-1">
+                <Video className="w-4 h-4 text-violet-600" /> {tr('Видеоповтор (VR)', 'Видеокайталоо (VR)', 'Video review (VR)')}
+              </span>
+              {(['aka', 'ao'] as const).map((side) => (
+                <button
+                  key={side}
+                  onClick={() => {
+                    if (sound) refereeAudio.playVrChallenge();
+                    apply(E.requestVideoReview(bout, side));
+                  }}
+                  className={`h-9 px-3 rounded-lg text-white font-semibold cursor-pointer ${side === 'aka' ? 'bg-red-600' : 'bg-blue-600'}`}
+                >
+                  {tr('Запрос', 'Сурам', 'Request')} {side === 'aka' ? AKA : AO}
+                  {E.videoReviewCount(bout, side) > 0 && <span className="ml-1.5 text-white/80">({E.videoReviewCount(bout, side)})</span>}
+                </button>
+              ))}
+              {(bout.videoReviews || []).filter((r) => r.result && r.result !== 'cancelled').length > 0 && (
+                <span className="text-xs text-[var(--app-text-muted)]">
+                  {(bout.videoReviews || [])
+                    .filter((r) => r.result && r.result !== 'cancelled')
+                    .map((r) => `${r.side === 'aka' ? AKA : AO} ${E.formatClock(r.matchSecond)}: ${r.result === 'awarded' ? tr('очко дано', 'упай берилди', 'score given') : tr('без изменений', 'өзгөрүүсүз', 'no change')}`)
+                    .join(' · ')}
+                </span>
+              )}
+            </div>
+          )}
 
           {!finished && ready && !bout.awaitingDecision && (
             <details className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 text-sm">

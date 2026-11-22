@@ -398,6 +398,18 @@ export interface Bout {
   vrReviewActive?: boolean;
   vrReviewSide?: 'aka' | 'ao';
   vrReviewReason?: string;
+  /** Every video review of the bout: who asked, when, and what the referees decided (for the protocol). */
+  videoReviews?: VideoReview[];
+}
+
+export interface VideoReview {
+  side: 'aka' | 'ao';
+  /** Seconds since the start of the bout when the review was asked for. */
+  matchSecond: number;
+  requestedAt: string;
+  /** awarded = the score was given; rejected = no change; cancelled = request withdrawn. */
+  result?: 'awarded' | 'rejected' | 'cancelled';
+  decidedAt?: string;
 }
 
 export interface RefereeProtocol {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Maximize, Tv, Gavel, ListOrdered } from 'lucide-react';
+import { Maximize, Tv, Gavel, ListOrdered, Video } from 'lucide-react';
 import type { Bout, Participant, TournamentRules } from '../types/schema';
 import * as E from '../utils/boutEngine';
 import { clockNow } from '../utils/serverClock';
@@ -182,6 +182,11 @@ export const TatamiDisplay: React.FC<{
           <div className={`text-[13vh] font-black tabular-nums leading-none ${left <= E.WARNING_AT_SECONDS && !finished && left > 0 ? 'text-amber-300' : ''}`}>
             {E.formatClock(left)}
           </div>
+          {bout.vrReviewActive && !finished && (
+            <div className="mt-[1.2vh] rounded-[1.2vh] bg-violet-600 px-[2vh] py-[0.8vh] text-[3.2vh] font-black tracking-wider inline-flex items-center gap-[1vh] animate-pulse">
+              <Video className="w-[3.4vh] h-[3.4vh]" /> VIDEO REVIEW · {sideLabel(lang, bout.vrReviewSide || 'aka')}
+            </div>
+          )}
           {bout.awaitingDecision && !finished && (
             <div className="mt-[1vh] text-[2.4vh] font-bold text-amber-300 inline-flex items-center gap-2">
               <Gavel className="w-[2.6vh] h-[2.6vh]" /> {tr(lang, 'Хантей — решение судей', 'Хантей — калыстардын чечими', 'Hantei — judges’ decision')}
