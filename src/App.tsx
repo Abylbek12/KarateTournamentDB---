@@ -428,7 +428,14 @@ function AppContent() {
     }
   };
   // Bouts are saved one by one (PUT /api/bouts) so several tatami can work at the same time.
-  const [bouts, setBoutsState, boutSync] = useServerSyncedState<Bout[]>('bouts', [], { ...sharedStateOptions, autoSave: false, pollMs: 1000 });
+  // How often each screen asks the server for changes (the free hosting has a monthly request limit):
+  // every second only where bouts are live; slower on bracket and result pages; rarely everywhere else.
+  const LIVE_TABS = ['scoreboard', 'virtual_studios', 'event_live_scoring'];
+  const SLOW_LIVE_TABS = ['event_brackets', 'event_results', 'event_medals', 'participants', 'event_setup', 'screens', 'exports'];
+  const boutsPollMs = standaloneScreen || LIVE_TABS.includes(activeTab) ? 1000 : SLOW_LIVE_TABS.includes(activeTab) ? 5000 : 30_000;
+  const entriesTabs = ['participants', 'event_setup', 'registration', 'acquiring', 'athletes', 'exports', 'scoreboard'];
+  const dataPollMs = standaloneScreen ? 60_000 : entriesTabs.includes(activeTab) ? 5000 : 30_000;
+  const [bouts, setBoutsState, boutSync] = useServerSyncedState<Bout[]>('bouts', [], { ...sharedStateOptions, autoSave: false, pollMs: boutsPollMs });
   // Tatami of the selected tournament (at least the ones bouts are already assigned to)
   const tatamiNumbers = React.useMemo(() => {
     const ev = selectedEvent as EventItem & { tatamiCount?: number };
@@ -475,15 +482,15 @@ function AppContent() {
   );
   const [participants, setParticipants] = useServerSyncedState<Participant[]>('participants', [], {
     ...sharedStateOptions,
-    pollMs: standaloneScreen ? 60_000 : 3000,
+    pollMs: dataPollMs,
     // Athletes and coaches submit entries through /api/entries; only officials edit the list.
     canWrite: !!currentUser && ['admin', 'chief_referee', 'scorekeeper', 'medical_officer'].includes(currentUser.role)
   });
-  const [protocols, setProtocols] = useServerSyncedState<RefereeProtocol[]>('protocols', [], { ...sharedStateOptions, pollMs: standaloneScreen ? 60_000 : 10_000 });
+  const [protocols, setProtocols] = useServerSyncedState<RefereeProtocol[]>('protocols', [], { ...sharedStateOptions, pollMs: standaloneScreen ? 60_000 : ['exports', 'scoreboard'].includes(activeTab) ? 10_000 : 60_000 });
   // Tournament categories created by the organizer (server-stored).
   const [eventCategories, setEventCategories] = useServerSyncedState<EventCategory[]>('categories', [], {
     ...sharedStateOptions,
-    pollMs: standaloneScreen ? 60_000 : 5000,
+    pollMs: dataPollMs,
     canWrite: !!currentUser && ['admin', 'chief_referee'].includes(currentUser.role)
   });
   const [activeScoreboardBout, setActiveScoreboardBout] = useState<Bout | null>(null);

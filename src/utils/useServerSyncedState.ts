@@ -78,21 +78,34 @@ export function useServerSyncedState<T>(key: string, initial: T, options: Option
       if (event.type === 'hello') pull(false);
     });
     // Ticks every second. With instant updates: a safety check every 15 s.
-    // Without them (Vercel): poll every pollMs (default 3 s; the bouts list uses 1 s).
-    let ticks = 0;
-    const every = Math.max(1, Math.round((options.pollMs ?? 3000) / 1000));
+    // Without them (Vercel): poll every pollMs. The page changes pollMs as the visitor moves between screens
+    // (fast only where bouts are live), so it is read on every tick instead of restarting the loop.
+    // A tab nobody looks at (hidden or minimised) does not ask the server at all.
+    let sinceLastPull = 0;
     const timer = setInterval(() => {
-      ticks++;
-      if (ticks % (isLiveConnected() ? 15 : every) !== 0) return;
-      if (typeof document === 'undefined' || document.visibilityState === 'visible') pull(false);
+      sinceLastPull++;
+      const every = isLiveConnected() ? 15 : Math.max(1, Math.round((optionsRef.current.pollMs ?? 3000) / 1000));
+      if (sinceLastPull < every) return;
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+      sinceLastPull = 0;
+      pull(false);
     }, 1000);
+    // Coming back to the tab: fresh data right away
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        sinceLastPull = 0;
+        pull(false);
+      }
+    };
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisible);
 
     return () => {
       cancelled = true;
       clearInterval(timer);
       unsubscribe();
+      if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [key, adopt, options.pollMs]);
+  }, [key, adopt]);
 
   // Save local changes.
   React.useEffect(() => {
