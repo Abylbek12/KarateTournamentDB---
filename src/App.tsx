@@ -760,12 +760,27 @@ function AppContent() {
     const params = new URLSearchParams(window.location.search);
     const join = params.get('join');
     const token = params.get('invite');
+    if (!join && !token) return;
+    // Read the link once and take it out of the address bar: otherwise every page reload
+    // reopened the sign-up window (and the secret invitation stayed in the browser history).
+    params.delete('join');
+    params.delete('invite');
+    const rest = params.toString();
+    window.history.replaceState(null, '', `${window.location.pathname}${rest ? '?' + rest : ''}${window.location.hash}`);
+
+    const openFor = async (open: () => void) => {
+      // Already signed in: no sign-up window
+      const me = await fetch('/api/auth/me').then((r) => r.json()).catch(() => null);
+      if (!me?.authenticated) open();
+    };
     if (join === 'athlete' || join === 'coach') {
-      setInviteRole(join === 'coach' ? 'club_coach' : 'athlete');
-      setAuthModalMode('register');
-      setIsAuthModalOpen(true);
+      openFor(() => {
+        setInviteRole(join === 'coach' ? 'club_coach' : 'athlete');
+        setAuthModalMode('register');
+        setIsAuthModalOpen(true);
+      });
     } else if (token) {
-      fetch(`/api/invites/${encodeURIComponent(token)}`)
+      openFor(() => fetch(`/api/invites/${encodeURIComponent(token)}`)
         .then((r) => r.json())
         .then((data) => {
           if (data.valid) {
@@ -778,7 +793,7 @@ function AppContent() {
             setTimeout(() => setGlobalSystemToast(null), 6000);
           }
         })
-        .catch(() => {});
+        .catch(() => {}));
     }
   }, []);
 
