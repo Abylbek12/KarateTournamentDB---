@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Trophy, Radio, Medal, Printer, Youtube, ExternalLink, Volume2, VolumeX, Maximize2, Maximize, Minimize } from 'lucide-react';
+import { ArrowLeft, Trophy, Radio, Medal, Printer, Youtube, ExternalLink, Volume2, VolumeX, Maximize2, Maximize, Minimize, ChevronLeft, ChevronRight, ChevronDown, Search } from 'lucide-react';
 import { printUrl } from './PrintDocuments';
 import type { Bout, Participant, TournamentCategory, EventCategory } from '../types/schema';
 import { categoryName, activeEntries, DISCIPLINE_LABELS } from '../utils/eventCategories';
@@ -172,6 +172,165 @@ const BoutCard: React.FC<{ bout: Bout; language: Lang }> = ({ bout, language }) 
   );
 };
 
+type PickerKind = 'all' | 'kata' | 'kumite' | 'team';
+const kindOf = (name: string): Exclude<PickerKind, 'all'> => (/team|команд/i.test(name) ? 'team' : /kata|ката/i.test(name) ? 'kata' : 'kumite');
+const norm = (x: string) => x.toLowerCase().replace(/ё/g, 'е');
+
+/**
+ * Category choice for big tournaments (Uventex-size: 100+ categories): arrows to go one by one,
+ * and a list with search by category, athlete or club plus a kata / kumite / teams filter.
+ * Small tournaments (up to 8 categories) keep the simple row of buttons.
+ */
+const CategoryPicker: React.FC<{
+  cats: { id: string; name: string }[];
+  bouts: Bout[];
+  active?: string;
+  onPick: (id: string) => void;
+  language: Lang;
+}> = ({ cats, bouts, active, onPick, language }) => {
+  const [open, setOpen] = React.useState(false);
+  const [query, setQuery] = React.useState('');
+  const [kind, setKind] = React.useState<PickerKind>('all');
+  const boxRef = React.useRef<HTMLDivElement>(null);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  const info = React.useMemo(
+    () =>
+      cats.map((c) => {
+        const cb = bouts.filter((b) => b.categoryId === c.id);
+        const people = new Map<string, Participant>();
+        for (const b of cb) for (const p of [b.akaParticipant, b.aoParticipant] as (Participant | undefined)[]) if (p) people.set(p.id, p);
+        const label = localizeCategoryName(c.name, language);
+        return { ...c, label, kind: kindOf(c.name), tatami: cb[0]?.tatamiNumber, people: [...people.values()] };
+      }),
+    [cats, bouts, language]
+  );
+
+  React.useEffect(() => {
+    if (!open) return;
+    setTimeout(() => inputRef.current?.focus(), 30);
+    const onDown = (e: MouseEvent) => !boxRef.current?.contains(e.target as Node) && setOpen(false);
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  const chip = (on: boolean) =>
+    `px-3 py-1.5 rounded-full text-sm border cursor-pointer ${on ? 'bg-[var(--accent)] border-[var(--accent)] text-white' : 'border-[var(--app-border)] text-[var(--app-text-secondary)] hover:border-[var(--accent)]'}`;
+
+  if (cats.length <= 8)
+    return (
+      <div className="flex flex-wrap gap-2">
+        {info.map((c) => (
+          <button key={c.id} onClick={() => onPick(c.id)} className={chip(c.id === active)}>
+            {c.label}
+          </button>
+        ))}
+      </div>
+    );
+
+  const idx = Math.max(0, info.findIndex((c) => c.id === active));
+  const current = info[idx];
+  const q = norm(query.trim());
+  const matches = info
+    .filter((c) => kind === 'all' || c.kind === kind)
+    .map((c) => {
+      if (!q) return { c, who: '' };
+      if (norm(c.label).includes(q) || norm(c.name).includes(q)) return { c, who: '' };
+      const p = c.people.find((x) => norm(`${fullName(x)} ${x.clubName || ''} ${x.teamName || ''}`).includes(q));
+      return p ? { c, who: `${fullName(p)}${p.clubName ? ` · ${p.clubName}` : ''}` } : null;
+    })
+    .filter(Boolean) as { c: (typeof info)[number]; who: string }[];
+  const kinds: [PickerKind, string][] = [
+    ['all', t(language, 'Все', 'Баары', 'All')],
+    ['kata', t(language, 'Ката', 'Ката', 'Kata')],
+    ['kumite', t(language, 'Кумитэ', 'Кумитэ', 'Kumite')],
+    ['team', t(language, 'Команды', 'Командалар', 'Teams')]
+  ];
+  const arrow = 'h-10 w-10 shrink-0 inline-flex items-center justify-center rounded-xl border border-[var(--app-border)] text-[var(--app-text-primary)] hover:border-[var(--accent)] disabled:opacity-40 cursor-pointer disabled:cursor-default';
+
+  return (
+    <div ref={boxRef} className="relative">
+      <div className="flex items-center gap-2">
+        <button className={arrow} disabled={idx === 0} onClick={() => onPick(info[idx - 1].id)} aria-label={t(language, 'Предыдущая категория', 'Мурунку категория', 'Previous category')}>
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <button
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          className="flex-1 min-w-0 min-h-10 py-1.5 px-3 rounded-xl border border-[var(--accent)] bg-[var(--app-surface)] text-left flex items-center gap-2 cursor-pointer"
+        >
+          <span className="flex-1 min-w-0 line-clamp-2 sm:truncate text-sm sm:text-base leading-snug font-semibold text-[var(--app-text-primary)]" translate="no">{current?.label}</span>
+          <span className="shrink-0 text-xs text-[var(--app-text-muted)]">
+            {idx + 1} / {info.length}
+          </span>
+          <ChevronDown className={`w-4 h-4 shrink-0 text-[var(--app-text-muted)] transition-transform ${open ? 'rotate-180' : ''}`} />
+        </button>
+        <button className={arrow} disabled={idx === info.length - 1} onClick={() => onPick(info[idx + 1].id)} aria-label={t(language, 'Следующая категория', 'Кийинки категория', 'Next category')}>
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </div>
+
+      {open && (
+        <div className="absolute z-30 left-0 right-0 mt-2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-xl p-3 space-y-3">
+          <label className="flex items-center gap-2 h-10 px-3 rounded-xl border border-[var(--app-border)] focus-within:border-[var(--accent)]">
+            <Search className="w-4 h-4 text-[var(--app-text-muted)] shrink-0" />
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && matches[0]) {
+                  onPick(matches[0].c.id);
+                  setOpen(false);
+                }
+              }}
+              placeholder={t(language, 'Категория, спортсмен или клуб…', 'Категория, спортчу же клуб…', 'Category, athlete or club…')}
+              className="flex-1 min-w-0 bg-transparent outline-none text-sm text-[var(--app-text-primary)]"
+            />
+          </label>
+          <div className="flex flex-wrap gap-1.5">
+            {kinds.map(([k, label]) => (
+              <button key={k} onClick={() => setKind(k)} className={chip(kind === k)}>
+                {label}
+              </button>
+            ))}
+          </div>
+          <ul className="max-h-[55vh] overflow-y-auto divide-y divide-[var(--app-border)] -mx-1">
+            {matches.length === 0 && (
+              <li className="px-2 py-6 text-center text-sm text-[var(--app-text-muted)]">{t(language, 'Ничего не найдено', 'Эч нерсе табылган жок', 'Nothing found')}</li>
+            )}
+            {matches.map(({ c, who }) => (
+              <li key={c.id}>
+                <button
+                  onClick={() => {
+                    onPick(c.id);
+                    setOpen(false);
+                  }}
+                  className={`w-full text-left px-2 py-2 rounded-lg flex items-start gap-2 cursor-pointer hover:bg-[var(--app-surface-subtle)] ${c.id === active ? 'bg-[var(--app-surface-subtle)]' : ''}`}
+                >
+                  <span className="flex-1 min-w-0">
+                    <span className={`block text-sm ${c.id === active ? 'font-semibold text-[var(--accent)]' : 'text-[var(--app-text-primary)]'}`} translate="no">{c.label}</span>
+                    {who && <span className="block text-xs text-[var(--app-text-muted)]" translate="no">{who}</span>}
+                  </span>
+                  <span className="shrink-0 text-xs text-[var(--app-text-muted)] whitespace-nowrap">
+                    {c.tatami ? `${t(language, 'Тат.', 'Тат.', 'Tat.')} ${c.tatami} · ` : ''}
+                    {c.people.length} {t(language, 'уч.', 'катыш.', 'ent.')}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+};
+
 /** Public bracket of each category, built from the real bouts. */
 export const PublicBracketsView: React.FC<BaseProps> = (props) => {
   const { event, bouts, categories, language } = props;
@@ -192,21 +351,7 @@ export const PublicBracketsView: React.FC<BaseProps> = (props) => {
         <EmptyState language={language} text={['Сетки ещё не опубликованы', 'Торчолор али жарыялана элек', 'Brackets are not published yet']} />
       ) : (
         <>
-          <div className="flex flex-wrap gap-2">
-            {cats.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => setCatId(c.id)}
-                className={`px-3 py-1.5 rounded-full text-sm border cursor-pointer ${
-                  c.id === active
-                    ? 'bg-[var(--accent)] border-[var(--accent)] text-white'
-                    : 'border-[var(--app-border)] text-[var(--app-text-secondary)] hover:border-[var(--accent)]'
-                }`}
-              >
-                {localizeCategoryName(c.name, language)}
-              </button>
-            ))}
-          </div>
+          <CategoryPicker cats={cats} bouts={eventBouts} active={active} onPick={setCatId} language={language} />
           <div className="overflow-x-auto">
             <div className="flex gap-4 min-w-max pb-2">
               {rounds.map((stage) => (
