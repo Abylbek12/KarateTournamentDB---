@@ -71,7 +71,9 @@ const EventHeader: React.FC<{
   onBack: () => void;
   onNavigateAction: (a: EventActionType) => void;
   printCategoryId?: string;
-}> = ({ event, language, active, onBack, onNavigateAction, printCategoryId }) => {
+  /** Brackets: number of categories, for the «all brackets» PDF button. */
+  printAllCount?: number;
+}> = ({ event, language, active, onBack, onNavigateAction, printCategoryId, printAllCount }) => {
   const printKind = active === 'brackets' ? 'bracket' : active === 'results' ? 'results' : active === 'medals' ? 'medals' : null;
   const tabs: { id: EventActionType; label: string }[] = [
     { id: 'info', label: t(language, 'Информация', 'Маалымат', 'Info') },
@@ -89,14 +91,30 @@ const EventHeader: React.FC<{
       <div className="flex flex-wrap items-start gap-3">
         <h1 translate="no" className="flex-1 min-w-[220px] text-2xl font-bold text-[var(--app-text-primary)] leading-snug">{eventTitle(event, language)}</h1>
         {printKind && (
-          <a
-            href={printUrl({ kind: printKind, eventId: event.id, categoryId: printKind === 'bracket' ? printCategoryId : undefined, lang: language })}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-[var(--app-border)] text-sm text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)]"
-          >
-            <Printer className="w-4 h-4" /> {t(language, 'Печать / PDF', 'Басып чыгаруу / PDF', 'Print / PDF')}
-          </a>
+          <div className="flex flex-wrap gap-2">
+            <a
+              href={printUrl({ kind: printKind, eventId: event.id, categoryId: printKind === 'bracket' ? printCategoryId : undefined, lang: language })}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-[var(--app-border)] text-sm text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)]"
+            >
+              <Printer className="w-4 h-4" />{' '}
+              {printKind === 'bracket' && printCategoryId
+                ? t(language, 'Эта сетка / PDF', 'Бул торчо / PDF', 'This bracket / PDF')
+                : t(language, 'Печать / PDF', 'Басып чыгаруу / PDF', 'Print / PDF')}
+            </a>
+            {/* All brackets of the tournament in one PDF (one category per page) */}
+            {printKind === 'bracket' && printCategoryId && (printAllCount ?? 0) > 1 && (
+              <a
+                href={printUrl({ kind: 'bracket', eventId: event.id, lang: language })}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-[var(--accent)] text-sm font-semibold text-[var(--accent)] hover:bg-[var(--app-surface-subtle)]"
+              >
+                <Printer className="w-4 h-4" /> {t(language, `Все сетки (${printAllCount}) / PDF`, `Бардык торчолор (${printAllCount}) / PDF`, `All brackets (${printAllCount}) / PDF`)}
+              </a>
+            )}
+          </div>
         )}
       </div>
       <div className="flex gap-1.5 overflow-x-auto no-scrollbar border-b border-[var(--app-border)]">
@@ -346,7 +364,7 @@ export const PublicBracketsView: React.FC<BaseProps> = (props) => {
 
   return (
     <div className="theme-keep space-y-5 pb-8">
-      <EventHeader {...props} active="brackets" printCategoryId={active} />
+      <EventHeader {...props} active="brackets" printCategoryId={active} printAllCount={cats.length} />
       {cats.length === 0 ? (
         <EmptyState language={language} text={['Сетки ещё не опубликованы', 'Торчолор али жарыялана элек', 'Brackets are not published yet']} />
       ) : (
