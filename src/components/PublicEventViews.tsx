@@ -25,6 +25,8 @@ interface BaseProps {
   language: Lang;
   onBack: () => void;
   onNavigateAction: (action: EventActionType) => void;
+  /** Bouts are still on their way from the server: show «loading», not «nothing yet». */
+  loading?: boolean;
 }
 
 const t = (lang: Lang, ru: string, ky: string, en: string) => (lang === 'ky' ? ky : lang === 'en' ? en : ru);
@@ -136,6 +138,13 @@ const EventHeader: React.FC<{
   );
 };
 
+const LoadingState: React.FC<{ language: Lang; text: [string, string, string] }> = ({ language, text }) => (
+  <div className="rounded-2xl border border-[var(--app-border)] p-10 flex flex-col items-center gap-3 text-[var(--app-text-muted)]">
+    <span className="w-7 h-7 rounded-full border-2 border-[var(--app-border)] border-t-[var(--accent)] animate-spin" />
+    <span className="text-sm">{t(language, ...text)}</span>
+  </div>
+);
+
 const EmptyState: React.FC<{ language: Lang; text: [string, string, string] }> = ({ language, text }) => (
   <div className="rounded-2xl border border-dashed border-[var(--app-border)] p-10 text-center">
     <Trophy className="w-8 h-8 mx-auto text-[var(--app-text-muted)]" />
@@ -155,7 +164,8 @@ const BoutCard: React.FC<{ bout: Bout; language: Lang }> = ({ bout, language }) 
     const won = !!bout.winnerId && bout.winnerId === id;
     return (
       <div className={`flex items-center gap-2 px-3 py-1.5 ${won ? 'font-semibold' : ''}`}>
-        <span className={`w-1.5 self-stretch rounded-full ${side === 'aka' ? 'bg-red-600' : 'bg-blue-600'}`} />
+        {/* Brackets: red (AKA) and white (SHIRO / AO) like traditional karate; white is outlined in gray to stay visible */}
+        <span className={`w-2 self-stretch rounded-full ${side === 'aka' ? 'bg-red-600' : 'bg-white ring-1 ring-inset ring-slate-400'}`} />
         <span className="flex-1 min-w-0">
           <span className={`block truncate text-sm ${p ? 'text-[var(--app-text-primary)]' : 'text-[var(--app-text-muted)] italic'}`}>
             {p ? fullName(p) : t(language, 'ожидается', 'күтүлүүдө', 'TBD')}
@@ -365,7 +375,9 @@ export const PublicBracketsView: React.FC<BaseProps> = (props) => {
   return (
     <div className="theme-keep space-y-5 pb-8">
       <EventHeader {...props} active="brackets" printCategoryId={active} printAllCount={cats.length} />
-      {cats.length === 0 ? (
+      {cats.length === 0 && props.loading ? (
+        <LoadingState language={language} text={['Загружаем сетки…', 'Торчолор жүктөлүүдө…', 'Loading brackets…']} />
+      ) : cats.length === 0 ? (
         <EmptyState language={language} text={['Сетки ещё не опубликованы', 'Торчолор али жарыялана элек', 'Brackets are not published yet']} />
       ) : (
         <>
@@ -474,7 +486,9 @@ export const PublicResultsView: React.FC<BaseProps & { mode: 'results' | 'medals
   return (
     <div className="theme-keep space-y-5 pb-8">
       <EventHeader {...props} active={mode} />
-      {!anyMedal ? (
+      {!anyMedal && props.loading ? (
+        <LoadingState language={language} text={['Загружаем результаты…', 'Жыйынтыктар жүктөлүүдө…', 'Loading results…']} />
+      ) : !anyMedal ? (
         <EmptyState
           language={language}
           text={

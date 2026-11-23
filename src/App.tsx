@@ -141,6 +141,8 @@ function AppContent() {
   });
   useGlobalDomTranslator(language, activeTab);
   const [tournaments, setTournaments] = useState<EventItem[]>([]);
+  // Until the server list arrives, tournament pages show «loading», not the demo placeholder tournament
+  const [tournamentsLoaded, setTournamentsLoaded] = useState(false);
   const [selectedTournament, setSelectedTournament] = useState<Tournament>(DEMO_EVENTS[0]);
   const [selectedEvent, setSelectedEvent] = useState<EventItem>(DEMO_EVENTS[0]);
   const [tournamentRules, setTournamentRules] = useState<TournamentRules>('wkf');
@@ -217,7 +219,8 @@ function AppContent() {
           }
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setTournamentsLoaded(true));
   }, []);
 
   // Verify and fetch authenticated session on mount
@@ -437,6 +440,7 @@ function AppContent() {
   const entriesTabs = ['plan', 'participants', 'event_setup', 'registration', 'acquiring', 'athletes', 'exports', 'scoreboard'];
   const dataPollMs = standaloneScreen ? 60_000 : entriesTabs.includes(activeTab) ? 5000 : 30_000;
   const [bouts, setBoutsState, boutSync] = useServerSyncedState<Bout[]>('bouts', [], { ...sharedStateOptions, autoSave: false, pollMs: boutsPollMs });
+  const eventLoading = isEventTab(activeTab) && activeTab !== 'event_setup' && !tournamentsLoaded;
   // Tatami of the selected tournament (at least the ones bouts are already assigned to)
   const tatamiNumbers = React.useMemo(() => {
     const ev = selectedEvent as EventItem & { tatamiCount?: number };
@@ -1510,8 +1514,16 @@ function AppContent() {
             />
           )}
 
+          {/* Tournament pages wait for the tournament list (slow mobile internet) */}
+          {eventLoading && (
+            <div className="py-24 flex flex-col items-center gap-3 text-[var(--app-text-muted)]">
+              <span className="w-8 h-8 rounded-full border-2 border-[var(--app-border)] border-t-[var(--accent)] animate-spin" />
+              <span className="text-sm">{tr('Загружаем турнир…', 'Мелдеш жүктөлүүдө…', 'Loading the tournament…')}</span>
+            </div>
+          )}
+
           {/* 1.1 Информация о событии (Matching video at 00:27-00:30) */}
-          {activeTab === 'event_info' && (
+          {activeTab === 'event_info' && !eventLoading && (
             <TournamentInfoDetailView
               tournament={selectedEvent}
               onBack={() => setActiveTab('tournaments')}
@@ -1533,7 +1545,7 @@ function AppContent() {
           )}
 
           {/* 1.2 Категории и цены (Matching video at 00:32-00:36) */}
-          {activeTab === 'event_categories_prices' && eventCategories.some((c) => c.tournamentId === selectedEvent.id) && (
+          {activeTab === 'event_categories_prices' && !eventLoading && eventCategories.some((c) => c.tournamentId === selectedEvent.id) && (
             <PublicCategoriesView
               event={selectedEvent}
               bouts={bouts}
@@ -1549,7 +1561,7 @@ function AppContent() {
               }}
             />
           )}
-          {activeTab === 'event_categories_prices' && !eventCategories.some((c) => c.tournamentId === selectedEvent.id) && (
+          {activeTab === 'event_categories_prices' && !eventLoading && !eventCategories.some((c) => c.tournamentId === selectedEvent.id) && (
             <TournamentDivisionsPricingView
               tournament={selectedEvent}
               onBack={() => setActiveTab('tournaments')}
@@ -1558,9 +1570,10 @@ function AppContent() {
           )}
 
           {/* 1.3 Сетки по площадкам и времени (Matching video at 01:40-01:54) */}
-          {activeTab === 'event_brackets' && (
+          {activeTab === 'event_brackets' && !eventLoading && (
             <PublicBracketsView
               event={selectedEvent}
+              loading={!boutSync.loaded}
               bouts={bouts}
               participants={participants}
               categories={SAMPLE_TOURNAMENT_CATEGORIES}
@@ -1571,9 +1584,10 @@ function AppContent() {
           )}
 
           {/* 1.4 Медали (Matching video at 01:27) */}
-          {activeTab === 'event_medals' && (
+          {activeTab === 'event_medals' && !eventLoading && (
             <PublicResultsView mode="medals"
               event={selectedEvent}
+              loading={!boutSync.loaded}
               bouts={bouts}
               participants={participants}
               categories={SAMPLE_TOURNAMENT_CATEGORIES}
@@ -1584,9 +1598,10 @@ function AppContent() {
           )}
 
           {/* 1.5 Результаты поединков и пьедестал */}
-          {activeTab === 'event_results' && (
+          {activeTab === 'event_results' && !eventLoading && (
             <PublicResultsView mode="results"
               event={selectedEvent}
+              loading={!boutSync.loaded}
               bouts={bouts}
               participants={participants}
               categories={SAMPLE_TOURNAMENT_CATEGORIES}
@@ -1597,7 +1612,7 @@ function AppContent() {
           )}
 
           {/* 1.6 Live Scoring Настройки & 4-Татами Монитор (Matching video at 00:48 & 01:13) */}
-          {activeTab === 'event_live_scoring' && (
+          {activeTab === 'event_live_scoring' && !eventLoading && (
             <PublicLiveView
               event={selectedEvent}
               bouts={bouts}

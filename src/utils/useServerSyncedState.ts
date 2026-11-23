@@ -17,6 +17,8 @@ interface Options {
 export interface SyncControls {
   /** Skip pulls for a moment after an optimistic local change saved elsewhere. */
   holdPulls: (ms: number) => void;
+  /** true once the first answer from the server has arrived (or failed): before that, «empty» does not mean «no data». */
+  loaded: boolean;
 }
 
 /**
@@ -37,7 +39,8 @@ export function useServerSyncedState<T>(key: string, initial: T, options: Option
   const optionsRef = React.useRef(options);
   optionsRef.current = options;
   const holdUntilRef = React.useRef(0);
-  const controls = React.useMemo<SyncControls>(() => ({ holdPulls: (ms) => (holdUntilRef.current = Date.now() + ms) }), []);
+  const [loaded, setLoaded] = React.useState(false);
+  const controls = React.useMemo<SyncControls>(() => ({ holdPulls: (ms) => (holdUntilRef.current = Date.now() + ms), loaded }), [loaded]);
 
   const adopt = React.useCallback((serverValue: unknown, version: number) => {
     versionRef.current = version;
@@ -67,7 +70,10 @@ export function useServerSyncedState<T>(key: string, initial: T, options: Option
       } catch {
         // offline: keep working with local data
       } finally {
-        if (initialLoad) loadedRef.current = true;
+        if (initialLoad) {
+          loadedRef.current = true;
+          if (!cancelled) setLoaded(true);
+        }
       }
     };
 

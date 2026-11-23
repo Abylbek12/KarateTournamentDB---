@@ -183,8 +183,8 @@ export const PrintDocuments: React.FC<PrintDocumentsProps> = ({ request, tournam
           const id = s === 'aka' ? b.akaParticipantId : b.aoParticipantId;
           const won = b.winnerId && b.winnerId === id;
           return (
-            <div key={s} style={{ display: 'flex', gap: 4, padding: '2px 4px', borderTop: s === 'ao' ? '1px solid #ccc' : undefined, fontWeight: won ? 700 : 400 }}>
-              <span style={{ width: 6, background: s === 'aka' ? '#c0392b' : '#1f5fa8' }} />
+            <div key={s} style={{ display: 'flex', gap: 4, padding: '2px 4px', borderBottom: `1.5px solid ${s === 'aka' ? '#c0392b' : '#9aa3ad'}`, fontWeight: won ? 700 : 400 }}>
+              <span style={{ width: 6, background: s === 'aka' ? '#c0392b' : '#fff', boxShadow: s === 'aka' ? undefined : 'inset 0 0 0 1px #8a939c' }} />
               <span style={{ flex: 1, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{p ? `${name(p)} ${participantNoc(p)}` : '—'}</span>
               <span>{b.status !== 'scheduled' ? (s === 'aka' ? b.akaScore : b.aoScore) : ''}</span>
             </div>
