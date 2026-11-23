@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { disciplineLabel } from '../utils/eventI18n';
+import { disciplineLabel, normalizeDiscipline } from '../utils/eventI18n';
 import { 
   Trophy, 
   Calendar, 
@@ -106,11 +106,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
   const [rulesLabel, setRulesLabel] = useState<string>('');
   const [customDiscipline, setCustomDiscipline] = useState<string>('');
   const [description, setDescription] = useState('');
-  const [selectedDisciplines, setSelectedDisciplines] = useState<string[]>([
-    'Кумитэ Индивидуальное (WKF)',
-    'Ката Индивидуальное (WKF)',
-    'Командное Кумитэ'
-  ]);
+  const [selectedDisciplines, setSelectedDisciplines] = useState<string[]>(['Индивидуальное ката', 'Индивидуальное кумитэ']);
 
   // Image Upload State & Ref
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -145,16 +141,10 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
     setTimeout(() => setNotification(null), 5000);
   };
 
-  const availableDisciplinesList = [
-    'Кумитэ Индивидуальное (WKF)',
-    'Ката Индивидуальное (WKF)',
-    'Командное Кумитэ',
-    'Командное Ката',
-    'Сётокан Shobu Ippon',
-    'Сётокан Shobu Sanbon',
-    'Кёкусинкай весовой нокдаун',
-    'Абсолютная весовая категория'
-  ];
+  // What is competed (no federation in the name) and, separately, the style / rules
+  const disciplineChips = ['Индивидуальное ката', 'Индивидуальное кумитэ', 'Командное ката', 'Командное кумитэ'];
+  const styleChips = ['SKIF · Shobu Ippon', 'SKIF · Shobu Sanbon', 'WKF', 'Кёкусинкай', 'Абсолютная весовая категория'];
+  const availableDisciplinesList = [...disciplineChips, ...styleChips];
 
   const toggleDiscipline = (disc: string) => {
     if (selectedDisciplines.includes(disc)) {
@@ -184,11 +174,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
     setRulesLabel('');
     setCustomDiscipline('');
     setDescription('');
-    setSelectedDisciplines([
-      'Кумитэ Индивидуальное (WKF)',
-      'Ката Индивидуальное (WKF)',
-      'Командное Кумитэ'
-    ]);
+    setSelectedDisciplines(['Индивидуальное ката', 'Индивидуальное кумитэ']);
     setImageUrl('');
     setImageFileInfo(null);
     setImageUploadError(null);
@@ -361,8 +347,8 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
     setDescription(t.description || '');
     setSelectedDisciplines(
       t.disciplines && t.disciplines.length > 0
-        ? t.disciplines
-        : ['Кумитэ Индивидуальное (WKF)', 'Ката Индивидуальное (WKF)']
+        ? Array.from(new Set(t.disciplines.map(normalizeDiscipline)))
+        : ['Индивидуальное ката', 'Индивидуальное кумитэ']
     );
     setImageUrl(t.imageUrl || '');
     setImageFileInfo(
@@ -415,12 +401,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
           'International WKF tournament with an electronic scoreboard on every tatami and live results online.'
         )
       );
-      setSelectedDisciplines([
-        'Кумитэ Индивидуальное (WKF)',
-        'Ката Индивидуальное (WKF)',
-        'Командное Кумитэ',
-        'Командное Ката'
-      ]);
+      setSelectedDisciplines(['Индивидуальное ката', 'Индивидуальное кумитэ', 'Командное ката', 'Командное кумитэ', 'WKF']);
     } else if (templateType === 'skif_cup') {
       setTitle(tr('Открытый Кубок Сётокан SKIF 2026', 'Сётокан SKIF Ачык Кубогу 2026', 'Shotokan SKIF Open Cup 2026'));
       setOrganization('Shotokan Karate-Do International Federation');
@@ -440,11 +421,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
           'Traditional championship governed by SKIF Shobu Ippon and Shobu Sanbon rules.'
         )
       );
-      setSelectedDisciplines([
-        'Сётокан Shobu Ippon',
-        'Сётокан Shobu Sanbon',
-        'Ката Индивидуальное (WKF)'
-      ]);
+      setSelectedDisciplines(['Индивидуальное ката', 'Индивидуальное кумитэ', 'Командное ката', 'Командное кумитэ', 'SKIF · Shobu Ippon']);
     } else {
       setTitle(tr('Юношеский турнир «Надежды Каратэ» U10-U16', '«Каратэ Үмүттөрү» U10-U16 өспүрүмдөр мелдеши', 'Youth Karate Hopes Open U10-U16'));
       setOrganization('Youth Karate Federation');
@@ -464,10 +441,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
           'Youth competition for U10, U12, and Cadet 14-15 age divisions.'
         )
       );
-      setSelectedDisciplines([
-        'Кумитэ Индивидуальное (WKF)',
-        'Ката Индивидуальное (WKF)'
-      ]);
+      setSelectedDisciplines(['Индивидуальное ката', 'Индивидуальное кумитэ', 'WKF']);
     }
   };
 
@@ -797,17 +771,17 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                 </span>
                 <button
                   type="button"
-                  onClick={() => handleFillTemplate('wkf_championship')}
-                  className="h-8 px-3 rounded-full border border-[var(--app-border)] bg-[var(--app-surface)] hover:border-[var(--accent)] hover:text-[var(--accent)] text-[13px] font-medium text-[var(--app-text-secondary)] transition-colors cursor-pointer"
-                >
-                  {tr('Кубок WKF', 'WKF Кубогу', 'WKF Cup')}
-                </button>
-                <button
-                  type="button"
                   onClick={() => handleFillTemplate('skif_cup')}
                   className="h-8 px-3 rounded-full border border-[var(--app-border)] bg-[var(--app-surface)] hover:border-[var(--accent)] hover:text-[var(--accent)] text-[13px] font-medium text-[var(--app-text-secondary)] transition-colors cursor-pointer"
                 >
                   {tr('Сётокан SKIF', 'Сётокан SKIF', 'Shotokan SKIF')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleFillTemplate('wkf_championship')}
+                  className="h-8 px-3 rounded-full border border-[var(--app-border)] bg-[var(--app-surface)] hover:border-[var(--accent)] hover:text-[var(--accent)] text-[13px] font-medium text-[var(--app-text-secondary)] transition-colors cursor-pointer"
+                >
+                  {tr('Кубок WKF', 'WKF Кубогу', 'WKF Cup')}
                 </button>
                 <button
                   type="button"
@@ -1119,31 +1093,35 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
               </div>
             </div>
 
-            {/* Row 6: Disciplines selection */}
-            <div>
-              <label className="block text-sm font-semibold text-[var(--app-text-primary)] mb-2">
-                {tr('Соревновательные дисциплины в программе:', 'Программадагы мелдеш дисциплиналары:', 'Competition Disciplines:')}
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {[...availableDisciplinesList, ...selectedDisciplines.filter((d) => !availableDisciplinesList.includes(d))].map((disc) => {
-                  const isChecked = selectedDisciplines.includes(disc);
-                  return (
-                    <button
-                      key={disc}
-                      type="button"
-                      onClick={() => toggleDiscipline(disc)}
-                      className={`h-9 px-3.5 rounded-full text-sm transition-all flex items-center gap-1.5 cursor-pointer border ${
-                        isChecked
-                          ? 'bg-[var(--accent)] border-[var(--accent)] text-white font-semibold shadow-sm'
-                          : 'bg-[var(--app-surface)] border-[var(--app-border)] text-[var(--app-text-secondary)] hover:border-[var(--accent)] hover:text-[var(--accent)]'
-                      }`}
-                    >
-                      <Check className={`w-3.5 h-3.5 ${isChecked ? 'opacity-100' : 'opacity-0'}`} />
-                      <span>{disciplineLabel(disc, language)}</span>
-                    </button>
-                  );
-                })}
-              </div>
+            {/* Row 6: Disciplines (what is competed) and style / rules — two short rows of small chips */}
+            <div className="space-y-2">
+              {([
+                [tr('Дисциплины', 'Дисциплиналар', 'Disciplines'), disciplineChips],
+                [tr('Стиль и правила', 'Стиль жана эрежелер', 'Style & rules'), [...styleChips, ...selectedDisciplines.filter((d) => !availableDisciplinesList.includes(d))]]
+              ] as [string, string[]][]).map(([groupLabel, chips]) => (
+                <div key={groupLabel} className="flex flex-wrap items-center gap-1.5">
+                  <span className="w-full sm:w-32 shrink-0 text-[13px] font-semibold text-[var(--app-text-primary)]">{groupLabel}</span>
+                  {chips.map((disc) => {
+                    const isChecked = selectedDisciplines.includes(disc);
+                    return (
+                      <button
+                        key={disc}
+                        type="button"
+                        onClick={() => toggleDiscipline(disc)}
+                        aria-pressed={isChecked}
+                        className={`h-8 px-3 rounded-full text-[13px] transition-colors flex items-center gap-1 cursor-pointer border ${
+                          isChecked
+                            ? 'bg-[var(--accent)] border-[var(--accent)] text-white font-semibold'
+                            : 'bg-[var(--app-surface)] border-[var(--app-border)] text-[var(--app-text-secondary)] hover:border-[var(--accent)] hover:text-[var(--accent)]'
+                        }`}
+                      >
+                        {isChecked && <Check className="w-3 h-3" />}
+                        <span>{disciplineLabel(disc, language)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
 
             <div className="flex gap-2 -mt-2">

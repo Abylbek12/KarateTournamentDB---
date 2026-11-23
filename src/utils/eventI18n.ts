@@ -115,11 +115,31 @@ const DISCIPLINES: Record<string, [ky: string, en: string]> = {
   'сётокан shobu ippon': ['Сётокан Shobu Ippon', 'Shotokan Shobu Ippon'],
   'сётокан shobu sanbon': ['Сётокан Shobu Sanbon', 'Shotokan Shobu Sanbon'],
   'кёкусинкай весовой нокдаун': ['Кёкусинкай салмак боюнча нокдаун', 'Kyokushin knockdown by weight'],
-  'абсолютная весовая категория': ['Абсолюттук салмак категориясы', 'Open weight category']
+  'абсолютная весовая категория': ['Абсолюттук салмак категориясы', 'Open weight category'],
+  'skif · shobu ippon': ['SKIF · Shobu Ippon', 'SKIF · Shobu Ippon'],
+  'skif · shobu sanbon': ['SKIF · Shobu Sanbon', 'SKIF · Shobu Sanbon'],
+  'wkf': ['WKF', 'WKF'],
+  'кёкусинкай': ['Кёкусинкай', 'Kyokushin']
 };
 
+/** Older tournaments were saved with «(WKF)» in the names and «Сётокан …» styles: show them in the current wording. */
+const DISCIPLINE_ALIASES: Record<string, string> = {
+  'кумитэ индивидуальное (wkf)': 'Индивидуальное кумитэ',
+  'ката индивидуальное (wkf)': 'Индивидуальное ката',
+  'командное кумитэ (wkf)': 'Командное кумитэ',
+  'командное кумитэ': 'Командное кумитэ',
+  'командное ката': 'Командное ката',
+  'сётокан shobu ippon': 'SKIF · Shobu Ippon',
+  'сётокан shobu sanbon': 'SKIF · Shobu Sanbon',
+  'кёкусинкай весовой нокдаун': 'Кёкусинкай'
+};
+
+/** Current name of a discipline (old saved names → today's wording). */
+export const normalizeDiscipline = (name: string) => DISCIPLINE_ALIASES[name.trim().toLowerCase()] || name.trim();
+
 export function disciplineLabel(name: string, lang: string): string {
-  if (lang === 'ru') return name;
-  const hit = DISCIPLINES[name.trim().toLowerCase()];
-  return hit ? (lang === 'ky' ? hit[0] : hit[1]) : name;
+  const current = normalizeDiscipline(name);
+  if (lang === 'ru') return current;
+  const hit = DISCIPLINES[current.toLowerCase()];
+  return hit ? (lang === 'ky' ? hit[0] : hit[1]) : current;
 }
