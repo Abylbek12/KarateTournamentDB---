@@ -245,8 +245,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [dragging, setDragging] = useState<{ section: string; id: string } | null>(null);
   const [dropTarget, setDropTarget] = useState<{ section: string; id: string; after: boolean } | null>(null);
 
+  // «Управление турниром» always stays the first line of its section, whatever order was saved earlier
+  const pinFirst = (items: NavItem[]) => [...items.filter((i) => i.id === 'manage'), ...items.filter((i) => i.id !== 'manage')];
   const sections = rawSections
-    .map((s) => ({ ...s, items: applyOrder(s.items.filter((i) => i.locked || canAccess(i.id, role)), canReorder ? menuOrder[s.key] : undefined) }))
+    .map((s) => ({ ...s, items: pinFirst(applyOrder(s.items.filter((i) => i.locked || canAccess(i.id, role)), canReorder ? menuOrder[s.key] : undefined)) }))
     .filter((s) => s.items.length > 0);
 
   const moveItem = (sectionKey: string, fromId: string, toId: string, after: boolean) => {
