@@ -83,6 +83,22 @@ const label = 'block text-xs font-medium text-[var(--app-text-secondary)] mb-1';
 export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, participants, currentUser, initialTournamentId, currency: currencyRu = 'сом' }) => {
   const isCoach = currentUser.role === 'club_coach' || currentUser.role === 'admin' || currentUser.role === 'chief_referee' || currentUser.role === 'scorekeeper';
   const open = tournaments.filter((t) => categories.some((c) => c.tournamentId === t.id && !c.isClosed) && t.status !== 'completed');
+  // Tournaments that exist but have no categories yet: nobody can enter, but they must not just vanish from the form
+  const waiting = tournaments.filter(
+    (t) => !open.includes(t) && t.status !== 'completed' && !(t as { isArchived?: boolean }).isArchived && !categories.some((c) => c.tournamentId === t.id)
+  );
+  const linkedWaiting = waiting.find((t) => t.id === initialTournamentId);
+  const isOrganizer = currentUser.role === 'admin' || currentUser.role === 'chief_referee';
+  const waitingNote = (list: typeof waiting) =>
+    list.length > 0 && (
+      <div className="rounded-xl border border-amber-300 bg-amber-50 text-amber-900 px-4 py-3 text-sm text-left">
+        <b>{tl(language, 'Пока без категорий:', 'Азырынча категориясыз:', 'No categories yet:')}</b>{' '}
+        <span translate="no">{list.map((t) => eventTitle(t, language)).join(', ')}</span>.{' '}
+        {isOrganizer
+          ? tl(language, 'Заявки откроются, когда вы добавите категории: «Категории и жеребьёвка».', 'Категорияларды кошкондо табыштамалар ачылат: «Категориялар жана чүчүкулак».', 'Entries open once you add categories: «Categories & draw».')
+          : tl(language, 'Заявки откроются, когда организатор добавит категории.', 'Уюштуруучу категорияларды кошкондо табыштамалар ачылат.', 'Entries open once the organizer adds categories.')}
+      </div>
+    );
   const [chosenTournamentId, setTournamentId] = React.useState(
     open.some((t) => t.id === initialTournamentId) ? initialTournamentId! : open[0]?.id || ''
   );
@@ -273,6 +289,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
         <ClipboardList className="w-8 h-8 mx-auto text-[var(--app-text-muted)]" />
         <div className="mt-3 font-semibold text-[var(--app-text-primary)]">{tl(language, 'Сейчас нет турниров с открытым приёмом заявок', 'Азыр табыштама кабыл алынган мелдештер жок', 'No tournaments are taking entries right now')}</div>
         <div className="text-sm text-[var(--app-text-muted)] mt-1">{tl(language, 'Как только организатор добавит категории, здесь можно будет подать заявку.', 'Уюштуруучу категорияларды кошкондо, бул жерден табыштама берсе болот.', 'Once the organizer adds categories, you can enter here.')}</div>
+        {waiting.length > 0 && <div className="mt-4 max-w-xl mx-auto">{waitingNote(waiting)}</div>}
       </div>
     );
   }
@@ -288,6 +305,9 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
         </p>
       </div>
 
+      {/* Opened from a tournament that has no categories yet: say so instead of silently showing another one */}
+      {linkedWaiting && waitingNote([linkedWaiting])}
+
       <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 grid gap-3 md:grid-cols-4">
         <div className="md:col-span-4">
           <label className={label} htmlFor="entry-tournament">{tl(language, 'Турнир', 'Мелдеш', 'Tournament')}</label>
@@ -297,7 +317,13 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
                 {eventTitle(t, language)} — {placeName(t.city, language)}, {t.startDate}
               </option>
             ))}
+            {waiting.map((t) => (
+              <option key={t.id} value={t.id} disabled>
+                {eventTitle(t, language)} — {tl(language, 'категории ещё не добавлены', 'категориялар али кошула элек', 'no categories yet')}
+              </option>
+            ))}
           </select>
+          {!linkedWaiting && waiting.length > 0 && <p className="text-xs text-[var(--app-text-muted)] mt-1">{tl(language, 'Серые турниры в списке ещё без категорий — заявку на них подать пока нельзя.', 'Тизмедеги боз мелдештерде али категория жок — аларга азырынча табыштама берүүгө болбойт.', 'Grey tournaments have no categories yet — you cannot enter them yet.')}</p>}
         </div>
         <div>
           <label className={label} htmlFor="entry-club">{tl(language, 'Клуб', 'Клуб', 'Club')}</label>
