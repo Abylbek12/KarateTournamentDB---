@@ -19,6 +19,8 @@ export interface PrintRequest {
   lang: 'ru' | 'ky' | 'en';
   /** Schedule only: start time of the first category on every tatami, HH:MM. */
   start?: string;
+  /** Brackets / results only: categories of this tatami, in schedule order. */
+  tatami?: number;
 }
 
 /** Link that opens a printable document in a new tab. */
@@ -28,6 +30,7 @@ export const printUrl = (r: Partial<PrintRequest> & { kind: PrintKind; eventId: 
   if (r.boutId) q.set('b', r.boutId);
   if (r.lang) q.set('lang', r.lang);
   if (r.start) q.set('t', r.start);
+  if (r.tatami) q.set('tt', String(r.tatami));
   return `/?${q.toString()}`;
 };
 
@@ -44,7 +47,8 @@ export function parsePrintRequest(search: string): PrintRequest | null {
     categoryId: q.get('c') || undefined,
     boutId: q.get('b') || undefined,
     lang: ['ru', 'ky', 'en'].includes(lang) ? lang : 'ru',
-    start: /^([01]\d|2[0-3]):[0-5]\d$/.test(t) ? t : undefined
+    start: /^([01]\d|2[0-3]):[0-5]\d$/.test(t) ? t : undefined,
+    tatami: /^\d{1,2}$/.test(q.get('tt') || '') ? Number(q.get('tt')) : undefined
   };
 }
 
@@ -130,7 +134,9 @@ export const PrintDocuments: React.FC<PrintDocumentsProps> = ({ request, tournam
     const def = categories.find((c) => c.id === id);
     return localizeCategoryName(def ? categoryName(def) : eventBouts.find((b) => b.categoryId === id)?.categoryName || id, lang);
   };
-  const selectedCats = categoryId ? [categoryId] : catIds;
+  // One tatami: only its categories (the tatami of the category's bouts), in the organizer's / schedule order
+  const tatamiOf = (cid: string) => eventBouts.find((b) => b.categoryId === cid)?.tatamiNumber;
+  const selectedCats = categoryId ? [categoryId] : request.tatami ? catIds.filter((cid) => tatamiOf(cid) === request.tatami) : catIds;
 
   React.useEffect(() => {
     document.title = `${tr(lang, 'Документы', 'Документтер', 'Documents')} · ${event?.title || 'Apsatarov'}`;
@@ -195,7 +201,10 @@ export const PrintDocuments: React.FC<PrintDocumentsProps> = ({ request, tournam
     );
     return (
       <div className="print-sheet print-break" key={`br-${cid}`}>
-        <Header title={tr(lang, 'Турнирная сетка', 'Турнирдик торчо', 'Bracket')} subtitle={catTitle(cid)} />
+        <Header
+          title={tr(lang, 'Турнирная сетка', 'Турнирдик торчо', 'Bracket')}
+          subtitle={`${catTitle(cid)}${tatamiOf(cid) ? ` · ${tr(lang, 'Татами', 'Татами', 'Tatami')} ${tatamiOf(cid)}` : ''}`}
+        />
         {cb.length === 0 ? (
           <p>{tr(lang, 'Жеребьёвка не проведена.', 'Чүчүкулак өткөрүлө элек.', 'The draw has not been made.')}</p>
         ) : (
@@ -598,11 +607,14 @@ export const PrintDocuments: React.FC<PrintDocumentsProps> = ({ request, tournam
     <div className="print-root">
       <style>{PRINT_CSS}</style>
       <div className="no-print" style={{ maxWidth: '210mm', margin: '0 auto 14px', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-        <div style={{ flex: 1, fontWeight: 700, fontSize: 16 }}>{titleByKind[kind]} · {event.title}</div>
+        <div style={{ flex: 1, fontWeight: 700, fontSize: 16 }}>
+          {titleByKind[kind]}
+          {request.tatami ? ` · ${tr(lang, 'Татами', 'Татами', 'Tatami')} ${request.tatami} (${selectedCats.length})` : ''} · {event.title}
+        </div>
         {(['ru', 'ky', 'en'] as const).map((l) => (
           <a
             key={l}
-            href={printUrl({ kind, eventId, categoryId, boutId, lang: l, start: request.start })}
+            href={printUrl({ kind, eventId, categoryId, boutId, lang: l, start: request.start, tatami: request.tatami })}
             style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #9aa3ad', background: l === lang ? '#1f5fa8' : '#fff', color: l === lang ? '#fff' : '#111', fontSize: 13, textDecoration: 'none' }}
           >
             {l.toUpperCase()}

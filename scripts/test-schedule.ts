@@ -20,6 +20,9 @@ check('clock passes midnight safely', addToClock('23:50', 20 * 60) === '00:10');
 const url = printUrl({ kind: 'schedule', eventId: 'ev1', lang: 'ky', start: '08:30' });
 const back = parsePrintRequest(url.slice(1));
 check('schedule link keeps the start time', back?.kind === 'schedule' && back.start === '08:30' && back.lang === 'ky', url);
+const tt = parsePrintRequest(printUrl({ kind: 'bracket', eventId: 'ev1', lang: 'ru', tatami: 3 }).slice(1));
+check('brackets of one tatami: link keeps the tatami', tt?.kind === 'bracket' && tt.tatami === 3);
+check('bad tatami number is ignored', parsePrintRequest('?print=bracket&e=ev1&tt=abc')?.tatami === undefined);
 check('bad start time is ignored', parsePrintRequest('?print=schedule&e=ev1&t=25:99')?.start === undefined);
 
 console.log(failures ? `\n${failures} check(s) failed` : '\nAll schedule checks passed');

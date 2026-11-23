@@ -34,6 +34,12 @@ export const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ tournaments, ini
     return localizeCategoryName(def ? categoryName(def) : eventBouts.find((b) => b.categoryId === id)?.categoryName || id, language as 'ru' | 'ky' | 'en');
   };
   const link = (kind: PrintKind, categoryId?: string) => printUrl({ kind, eventId: tid, categoryId, lang });
+  // Tatamis that have drawn categories, with how many categories each
+  const tatamiNumbers = React.useMemo(() => {
+    const per = new Map<number, Set<string>>();
+    for (const b of eventBouts) if (b.tatamiNumber) per.set(b.tatamiNumber, (per.get(b.tatamiNumber) || new Set()).add(b.categoryId));
+    return [...per].sort((a, b) => a[0] - b[0]).map(([n, set]) => ({ n, count: set.size }));
+  }, [eventBouts]);
 
   const whole: { kind: PrintKind; label: string; hint: string; icon: React.ReactNode }[] = [
     { kind: 'entries', label: tl('Стартовые листы', 'Старттык тизмелер', 'Start lists'), hint: tl('Все категории — для мандатной комиссии и взвешивания', 'Бардык категориялар — мандаттык комиссия жана таразалоо үчүн', 'All categories — for the registration desk and weigh-in'), icon: <ListChecks className="w-5 h-5" /> },
@@ -93,6 +99,27 @@ export const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ tournaments, ini
           </a>
         ))}
       </div>
+
+      {/* Brackets of one tatami — for the secretary and referees of that tatami, in schedule order */}
+      {tatamiNumbers.length > 1 && (
+        <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 space-y-3">
+          <div>
+            <h2 className="font-semibold text-[var(--app-text-primary)] flex items-center gap-2">
+              <Network className="w-5 h-5 text-[var(--accent)]" /> {tl('Сетки по татами', 'Татамилер боюнча торчолор', 'Brackets by tatami')}
+            </h2>
+            <p className="text-sm text-[var(--app-text-muted)] mt-0.5">
+              {tl('Один PDF на каждое татами — только его категории, в порядке расписания. Удобно раздать секретарям.', 'Ар бир татамиге бир PDF — анын категориялары гана, расписание тартибинде. Катчыларга таратууга ыңгайлуу.', 'One PDF per tatami — only its categories, in schedule order. Handy for the tatami secretaries.')}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {tatamiNumbers.map(({ n, count }) => (
+              <a key={n} className={btn} href={printUrl({ kind: 'bracket', eventId: tid, lang, tatami: n })} target="_blank" rel="noreferrer">
+                <Printer className="w-4 h-4" /> {tl('Татами', 'Татами', 'Tatami')} {n} <span className="text-[var(--app-text-muted)]">({count})</span>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] overflow-hidden">
         <div className="px-4 py-3 border-b border-[var(--app-border)]">
