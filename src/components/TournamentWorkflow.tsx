@@ -42,7 +42,10 @@ export const WorkflowHeader: React.FC<{
   language: string;
   onStep: (n: number) => void;
   onBack: () => void;
-}> = ({ event, step, status, language, onStep, onBack }) => {
+  /** Other tournaments to switch to without leaving the workflow. */
+  tournaments?: Tournament[];
+  onSelectEvent?: (id: string) => void;
+}> = ({ event, step, status, language, onStep, onBack, tournaments = [], onSelectEvent }) => {
   const def = WORKFLOW_STEPS[step - 1];
   const stripRef = React.useRef<HTMLOListElement>(null);
   React.useEffect(() => {
@@ -64,6 +67,24 @@ export const WorkflowHeader: React.FC<{
         >
           <ArrowLeft className="w-4 h-4" /> {tl(language, 'Все турниры', 'Бардык мелдештер', 'All tournaments')}
         </a>
+        {onSelectEvent && tournaments.length > 1 && (
+          <label className="ml-auto flex items-center gap-2 text-sm text-[var(--app-text-muted)] min-w-0">
+            <span className="shrink-0">{tl(language, 'Турнир:', 'Мелдеш:', 'Tournament:')}</span>
+            <select
+              translate="no"
+              value={event.id}
+              onChange={(e) => onSelectEvent(e.target.value)}
+              className="min-w-0 max-w-[60vw] sm:max-w-xs h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-text-primary)] px-2 text-sm"
+            >
+              {tournaments.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {eventTitle(t as never, language)}
+                  {t.startDate ? ` · ${t.startDate}` : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
       <h1 translate="no" className="text-2xl font-bold text-[var(--app-text-primary)] leading-snug">
         {eventTitle(event as never, language)}

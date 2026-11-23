@@ -877,6 +877,8 @@ function AppContent() {
   // returns to the previous screen instead of leaving the site.
   React.useEffect(() => {
     if (screenMode || printRequest) return;
+    // The workflow address names a tournament: wait for the real list (not the placeholder event)
+    if (activeTab === 'manage' && !tournamentsLoaded) return;
     const target = activeTab === 'manage' ? manageHash(selectedEvent.id, workflowStep) : hashForTab(activeTab, isEventTab(activeTab) ? selectedEvent.id : undefined);
     if (window.location.hash === target) return;
     const current = tabFromHash(window.location.hash);
@@ -887,7 +889,7 @@ function AppContent() {
       return;
     }
     window.history.pushState(null, '', target);
-  }, [activeTab, selectedEvent.id, workflowStep]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeTab, selectedEvent.id, workflowStep, tournamentsLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
   // 1-Click Database Reset Handler (Preserving Database Schema)
@@ -997,7 +999,7 @@ function AppContent() {
         onOpenPrivacyModal={() => setIsPrivacyModalOpen(true)}
         onLockedTab={showLockedNotice}
         workflow={
-          activeTab === 'manage'
+          activeTab === 'manage' && canAccess('manage', effectiveRole) && tournamentsLoaded
             ? {
                 eventId: selectedEvent.id,
                 title: eventTitle(selectedEvent, language),
@@ -1563,6 +1565,14 @@ function AppContent() {
                 document.querySelector('main')?.parentElement?.scrollTo({ top: 0 });
               }}
               onBack={() => navigateWithHash('admin')}
+              tournaments={tournaments.filter((t) => !(t as { isArchived?: boolean }).isArchived || t.id === selectedEvent.id) as unknown as Tournament[]}
+              onSelectEvent={(id) => {
+                const ev = tournaments.find((x) => x.id === id);
+                if (!ev) return;
+                setSelectedEvent(ev);
+                setSelectedTournament(ev);
+                rememberTournament(ev.id);
+              }}
             />
           )}
           {inStep(1) && !eventLoading && canAccess('manage', effectiveRole) && (

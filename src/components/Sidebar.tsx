@@ -188,14 +188,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       key: 'officials',
       title: tr('Судейство', 'Калыстык', 'Officiating'),
-      items: [
-        { id: 'scoreboard' as NavTabId, label: tr('Татами: бои и пульты', 'Татами: беттештер', 'Tatami: bouts & consoles'), icon: Tv },
-        { id: 'participants' as NavTabId, label: tr('Взвешивание и допуск', 'Таразалоо жана уруксат', 'Weigh-in & clearance'), icon: Scale },
-        // Chief referee runs the draw too (admins have it under «Организатор»)
-        ...(isAdmin ? [] : [{ id: 'event_setup' as NavTabId, label: tr('Категории и жеребьёвка', 'Категориялар жана чүчүкулак', 'Categories & draw'), icon: Layers }]),
-        ...(isAdmin ? [] : [{ id: 'plan' as NavTabId, label: tr('План турнира', 'Мелдештин планы', 'Tournament plan'), icon: ListChecks }]),
-        ...(isAdmin ? [] : [{ id: 'manage' as NavTabId, label: tr('Управление турниром', 'Мелдешти башкаруу', 'Run the tournament'), icon: Workflow }])
-      ]
+      // The organizer runs everything from «Управление турниром» (stages 1–6), so these are for referees, secretaries and doctors
+      items: isAdmin
+        ? []
+        : [
+            { id: 'manage' as NavTabId, label: tr('Управление турниром', 'Мелдешти башкаруу', 'Run the tournament'), icon: Workflow },
+            { id: 'scoreboard' as NavTabId, label: tr('Татами: бои и пульты', 'Татами: беттештер', 'Tatami: bouts & consoles'), icon: Tv },
+            { id: 'participants' as NavTabId, label: tr('Взвешивание и допуск', 'Таразалоо жана уруксат', 'Weigh-in & clearance'), icon: Scale }
+          ]
     },
     {
       key: 'organizer',
@@ -212,14 +212,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           ]
         : isAdmin
           ? [
+              // One entry point for running a tournament; the stages (categories, weigh-in, draw, bouts, documents) live inside it
               { id: 'manage' as NavTabId, label: tr('Управление турниром', 'Мелдешти башкаруу', 'Run the tournament'), icon: Workflow },
-              { id: 'plan' as NavTabId, label: tr('План турнира', 'Мелдештин планы', 'Tournament plan'), icon: ListChecks },
               { id: 'admin' as NavTabId, label: tr('Турниры и пользователи', 'Мелдештер жана колдонуучулар', 'Events & users'), icon: ShieldCheck },
-              { id: 'event_setup' as NavTabId, label: tr('Категории и жеребьёвка', 'Категориялар жана чүчүкулак', 'Categories & draw'), icon: Layers },
-              ...(isAdmin ? [{ id: 'athletes' as NavTabId, label: tr('Мои спортсмены', 'Менин спортчуларым', 'My athletes'), icon: Users }] : []),
+              { id: 'athletes' as NavTabId, label: tr('Мои спортсмены', 'Менин спортчуларым', 'My athletes'), icon: Users },
+              { id: 'acquiring' as NavTabId, label: tr('Оплата взносов', 'Төгүмдөрдү төлөө', 'Fee payments'), icon: CreditCard },
               { id: 'screens' as NavTabId, label: tr('Экраны и QR-коды', 'Экрандар жана QR', 'Screens & QR'), icon: QrCode },
-              { id: 'acquiring' as NavTabId, label: tr('Взносы', 'Төгүмдөр', 'Entry fees'), icon: CreditCard },
-              { id: 'exports' as NavTabId, label: tr('Документы и печать', 'Документтер жана басып чыгаруу', 'Documents & printing'), icon: Stamp },
               { id: 'lan' as NavTabId, label: tr('Работа без интернета', 'Интернетсиз режим', 'Offline (LAN)'), icon: Wifi }
             ]
           : []
