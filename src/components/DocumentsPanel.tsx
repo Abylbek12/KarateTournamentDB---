@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, Printer, Trophy, Medal, ListChecks, Award, Network } from 'lucide-react';
+import { FileText, Printer, Trophy, Medal, ListChecks, Award, Network, CalendarClock } from 'lucide-react';
 import type { Bout, EventCategory, Tournament } from '../types/schema';
 import { belongsToEvent } from '../data/sampleTournamentData';
 import { categoryName } from '../utils/eventCategories';
@@ -37,6 +37,7 @@ export const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ tournaments, ini
 
   const whole: { kind: PrintKind; label: string; hint: string; icon: React.ReactNode }[] = [
     { kind: 'entries', label: tl('Стартовые листы', 'Старттык тизмелер', 'Start lists'), hint: tl('Все категории — для мандатной комиссии и взвешивания', 'Бардык категориялар — мандаттык комиссия жана таразалоо үчүн', 'All categories — for the registration desk and weigh-in'), icon: <ListChecks className="w-5 h-5" /> },
+    { kind: 'schedule', label: tl('Расписание по татами', 'Татамилер боюнча күн тартиби', 'Schedule by tatami'), hint: tl('Время начала каждой категории, по листу на татами', 'Ар бир категориянын башталыш убактысы, ар бир татамиге бир барак', 'Start time of every category, one page per tatami'), icon: <CalendarClock className="w-5 h-5" /> },
     { kind: 'bracket', label: tl('Все сетки', 'Бардык торчолор', 'All brackets'), hint: tl('Сетки всех категорий, по одной на лист', 'Бардык категориялардын торчолору, ар бири өз барагында', 'Brackets of all categories, one per page'), icon: <Network className="w-5 h-5" /> },
     { kind: 'results', label: tl('Итоговые протоколы', 'Жыйынтык протоколдор', 'Final protocols'), hint: tl('Места и все поединки по каждой категории', 'Ар бир категория боюнча орундар жана бардык беттештер', 'Places and all bouts in each category'), icon: <Trophy className="w-5 h-5" /> },
     { kind: 'medals', label: tl('Медальный зачёт', 'Медалдык эсеп', 'Medal table'), hint: tl('По странам и по клубам', 'Өлкөлөр жана клубдар боюнча', 'By country and by club'), icon: <Medal className="w-5 h-5" /> },

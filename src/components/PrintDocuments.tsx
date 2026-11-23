@@ -9,7 +9,7 @@ import { displayName, displayClub, localizeCategoryName, nameModeFor, participan
 import { countryName, flagEmoji } from '../utils/countries';
 import { BrandMark } from './BrandLogo';
 
-export type PrintKind = 'bracket' | 'results' | 'medals' | 'entries' | 'bout' | 'diplomas';
+export type PrintKind = 'bracket' | 'results' | 'medals' | 'entries' | 'bout' | 'diplomas' | 'schedule';
 
 export interface PrintRequest {
   kind: PrintKind;
@@ -17,6 +17,8 @@ export interface PrintRequest {
   categoryId?: string;
   boutId?: string;
   lang: 'ru' | 'ky' | 'en';
+  /** Schedule only: start time of the first category on every tatami, HH:MM. */
+  start?: string;
 }
 
 /** Link that opens a printable document in a new tab. */
@@ -25,6 +27,7 @@ export const printUrl = (r: Partial<PrintRequest> & { kind: PrintKind; eventId: 
   if (r.categoryId) q.set('c', r.categoryId);
   if (r.boutId) q.set('b', r.boutId);
   if (r.lang) q.set('lang', r.lang);
+  if (r.start) q.set('t', r.start);
   return `/?${q.toString()}`;
 };
 
@@ -32,10 +35,41 @@ export function parsePrintRequest(search: string): PrintRequest | null {
   const q = new URLSearchParams(search);
   const kind = q.get('print') as PrintKind | null;
   const eventId = q.get('e');
-  if (!kind || !eventId || !['bracket', 'results', 'medals', 'entries', 'bout', 'diplomas'].includes(kind)) return null;
+  if (!kind || !eventId || !['bracket', 'results', 'medals', 'entries', 'bout', 'diplomas', 'schedule'].includes(kind)) return null;
   const lang = (q.get('lang') as PrintRequest['lang']) || 'ru';
-  return { kind, eventId, categoryId: q.get('c') || undefined, boutId: q.get('b') || undefined, lang: ['ru', 'ky', 'en'].includes(lang) ? lang : 'ru' };
+  const t = q.get('t') || '';
+  return {
+    kind,
+    eventId,
+    categoryId: q.get('c') || undefined,
+    boutId: q.get('b') || undefined,
+    lang: ['ru', 'ky', 'en'].includes(lang) ? lang : 'ru',
+    start: /^([01]\d|2[0-3]):[0-5]\d$/.test(t) ? t : undefined
+  };
 }
+
+/**
+ * Approximate time one bout takes on the tatami, with the change of athletes:
+ * kumite = bout time + 2.5 min (90 s bout -> 4 min), kata ~3.7 min, team kata / team kumite ~10 min.
+ * Close to how Uventex plans its timetable.
+ */
+export function boutSlotSeconds(c: Pick<EventCategory, 'discipline' | 'durationSeconds'> | undefined): number {
+  const d = c?.discipline;
+  if (d === 'team_kata' || d === 'team_kumite') return 600;
+  if (d === 'kata') return 220;
+  return (c?.durationSeconds || 120) + 150;
+}
+
+/** Bouts needed to decide a category of n entries (single elimination; repechage not counted, like Uventex). */
+export const boutsFor = (n: number) => Math.max(0, n - 1);
+
+/** Adds seconds to HH:MM and returns HH:MM. */
+export const addToClock = (hhmm: string, seconds: number) => {
+  const [h, m] = hhmm.split(':').map(Number);
+  const total = Math.round((h * 60 + m) * 60 + seconds) / 60;
+  const mins = Math.floor(total) % (24 * 60);
+  return `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
+};
 
 interface PrintDocumentsProps {
   request: PrintRequest;
@@ -70,6 +104,7 @@ const PRINT_CSS = `
 /** Printable official documents (A4). "Save as PDF" in the print dialog gives a PDF. */
 export const PrintDocuments: React.FC<PrintDocumentsProps> = ({ request, tournaments, categories, bouts, participants }) => {
   const { kind, categoryId, boutId, lang } = request;
+  const start = request.start || '09:00';
   // Bouts may still carry the legacy demo id, so match the event the same way bouts are matched
   const event = tournaments.find((t) => t.id === request.eventId) || tournaments.find((t) => belongsToEvent(request.eventId, t.id));
   const eventId = event?.id ?? request.eventId;
@@ -482,13 +517,80 @@ export const PrintDocuments: React.FC<PrintDocumentsProps> = ({ request, tournam
     });
   };
 
+  /** Timetable per tatami (like Uventex): start time of each category, in the order of the organizer's list. */
+  const scheduleSheets = () => {
+    const byTatami = new Map<number, string[]>();
+    let undrawn = 0;
+    for (const cid of catIds) {
+      const first = eventBouts.find((b) => b.categoryId === cid);
+      if (!first) {
+        undrawn++;
+        continue;
+      }
+      const n = first.tatamiNumber || 1;
+      byTatami.set(n, [...(byTatami.get(n) || []), cid]);
+    }
+    const count = (cid: string) => {
+      const listed = activeEntries(participants, cid).length;
+      if (listed) return listed;
+      const ids = new Set(eventBouts.filter((b) => b.categoryId === cid).flatMap((b) => [b.akaParticipantId, b.aoParticipantId]).filter(Boolean));
+      return ids.size;
+    };
+    const tatamis = [...byTatami.keys()].sort((a, b) => a - b);
+    if (tatamis.length === 0)
+      return (
+        <div className="print-sheet">
+          {tr(lang, 'Расписание появится после жеребьёвки: в нём только категории, у которых уже есть сетка.', 'Күн тартиби чүчүкулактан кийин пайда болот: анда торчосу бар категориялар гана.', 'The schedule appears after the draw: it lists only categories that already have a bracket.')}
+        </div>
+      );
+    return tatamis.map((n, i) => {
+      let clock = start;
+      const rows = byTatami.get(n)!.map((cid) => {
+        const def = categories.find((c) => c.id === cid);
+        const k = count(cid);
+        const row = { cid, time: clock, k };
+        clock = addToClock(clock, boutsFor(k) * boutSlotSeconds(def));
+        return row;
+      });
+      return (
+        <div className={`print-sheet${i < tatamis.length - 1 ? ' print-break' : ''}`} key={`sched-${n}`}>
+          <Header title={`${tr(lang, 'Расписание', 'Күн тартиби', 'Schedule')} · ${tr(lang, 'Татами', 'Татами', 'Tatami')} #${n}`} subtitle={event.startDate} />
+          <table>
+            <thead>
+              <tr>
+                <th style={{ width: 70 }}>{tr(lang, 'Время', 'Убакыт', 'Time')}</th>
+                <th>{tr(lang, 'Категория', 'Категория', 'Category')}</th>
+                <th style={{ width: 90, textAlign: 'center' }}>{tr(lang, 'Участников', 'Катышуучулар', 'Entries')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.cid}>
+                  <td style={{ fontWeight: 600 }}>{r.time}</td>
+                  <td>{catTitle(r.cid)}</td>
+                  <td style={{ textAlign: 'center' }}>{r.k}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div style={{ fontSize: 10.5, color: '#555', marginTop: 8 }}>
+            {tr(lang, `Время примерное. Окончание ≈ ${clock}.`, `Убакыт болжолдуу. Аякташы ≈ ${clock}.`, `Times are approximate. Finish ≈ ${clock}.`)}
+            {undrawn > 0 && i === tatamis.length - 1 && ' ' + tr(lang, `Без жеребьёвки и не включены: ${undrawn} кат.`, `Чүчүкулаксыз жана кошулган жок: ${undrawn} кат.`, `Not included (no draw yet): ${undrawn} categories.`)}
+          </div>
+          <Signatures roles={[chief, secretary]} />
+        </div>
+      );
+    });
+  };
+
   const titleByKind: Record<PrintKind, string> = {
     bracket: tr(lang, 'Сетки', 'Торчолор', 'Brackets'),
     results: tr(lang, 'Итоговые протоколы', 'Жыйынтык протоколдор', 'Results'),
     medals: tr(lang, 'Медальный зачёт', 'Медалдык эсеп', 'Medal standings'),
     entries: tr(lang, 'Стартовые листы', 'Старттык тизмелер', 'Start lists'),
     bout: tr(lang, 'Протокол поединка', 'Беттештин протоколу', 'Bout protocol'),
-    diplomas: tr(lang, 'Дипломы', 'Дипломдор', 'Diplomas')
+    diplomas: tr(lang, 'Дипломы', 'Дипломдор', 'Diplomas'),
+    schedule: tr(lang, 'Расписание по татами', 'Татамилер боюнча күн тартиби', 'Schedule by tatami')
   };
 
   return (
@@ -499,12 +601,25 @@ export const PrintDocuments: React.FC<PrintDocumentsProps> = ({ request, tournam
         {(['ru', 'ky', 'en'] as const).map((l) => (
           <a
             key={l}
-            href={printUrl({ kind, eventId, categoryId, boutId, lang: l })}
+            href={printUrl({ kind, eventId, categoryId, boutId, lang: l, start: request.start })}
             style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #9aa3ad', background: l === lang ? '#1f5fa8' : '#fff', color: l === lang ? '#fff' : '#111', fontSize: 13, textDecoration: 'none' }}
           >
             {l.toUpperCase()}
           </a>
         ))}
+        {kind === 'schedule' && (
+          <label style={{ fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            {tr(lang, 'Начало', 'Башталышы', 'Start')}
+            <input
+              type="time"
+              defaultValue={start}
+              onChange={(e) => {
+                if (/^\d{2}:\d{2}$/.test(e.target.value)) window.location.replace(printUrl({ kind, eventId, lang, start: e.target.value }));
+              }}
+              style={{ padding: '5px 8px', borderRadius: 8, border: '1px solid #9aa3ad', fontSize: 13 }}
+            />
+          </label>
+        )}
         <button
           onClick={() => window.print()}
           style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, background: '#1f5fa8', color: '#fff', fontWeight: 600, border: 0, cursor: 'pointer' }}
@@ -519,10 +634,11 @@ export const PrintDocuments: React.FC<PrintDocumentsProps> = ({ request, tournam
       {kind === 'entries' && selectedCats.map(entriesSheet)}
       {kind === 'bout' && boutSheet()}
       {kind === 'diplomas' && selectedCats.map(diplomaSheets)}
+      {kind === 'schedule' && scheduleSheets()}
       {kind === 'diplomas' && !categoryId && selectedCats.length > 0 && selectedCats.every((cid) => !computeStandings(eventBouts, cid).gold) && (
         <div className="print-sheet">{tr(lang, 'Призёры ещё не определены.', 'Байге ээлери али аныкталган жок.', 'Medalists are not decided yet.')}</div>
       )}
-      {selectedCats.length === 0 && kind !== 'medals' && kind !== 'bout' && (
+      {selectedCats.length === 0 && kind !== 'medals' && kind !== 'bout' && kind !== 'schedule' && (
         <div className="print-sheet">{tr(lang, 'В этом турнире пока нет категорий.', 'Бул мелдеште категориялар азырынча жок.', 'No categories in this tournament yet.')}</div>
       )}
     </div>
