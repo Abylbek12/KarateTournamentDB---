@@ -265,8 +265,9 @@ export const TournamentInfoDetailView: React.FC<TournamentInfoDetailViewProps> =
           <div>
             <div className="text-[11px] uppercase tracking-wide text-slate-400 mb-1.5">{tr('Дисциплины в программе', 'Программадагы дисциплиналар', 'Disciplines')}</div>
             <div className="flex flex-wrap gap-1.5">
-              {rawTournament.disciplines.map((d) => (
-                <span key={d} translate="no" className="px-2.5 py-1 rounded-lg bg-sky-50 border border-sky-200 text-sky-800 text-xs">{disciplineLabel(d, language)}</span>
+              {/* Same discipline written two ways (old and new wording) is shown once */}
+              {Array.from(new Set(rawTournament.disciplines.map((d) => disciplineLabel(d, language)))).map((label) => (
+                <span key={label} translate="no" className="px-2.5 py-1 rounded-lg bg-sky-50 border border-sky-200 text-sky-800 text-xs">{label}</span>
               ))}
             </div>
           </div>
