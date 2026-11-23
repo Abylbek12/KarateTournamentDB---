@@ -43,6 +43,8 @@ export const TAB_ACCESS: Record<string, 'public' | AccessRole[]> = {
   event_setup: ['admin', 'chief_referee'],
   // Step-by-step tournament checklist
   plan: ['admin', 'chief_referee'],
+  // Tournament workflow: numbered stages from setup to results
+  manage: ['admin', 'chief_referee'],
 };
 
 export function canAccess(tab: string, role: AccessRole): boolean {

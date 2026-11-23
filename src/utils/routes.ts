@@ -22,12 +22,17 @@ export function hashForTab(tab: string, eventId?: string): string {
   return `#${tab}`;
 }
 
+/** Link of a stage of the tournament workflow, e.g. "#manage;id=kg-cup;step=4". */
+export const manageHash = (eventId: string, step: number) => `#manage;id=${eventId};step=${step}`;
+
 /** Screen and tournament of a link. Unknown links → null. */
-export function tabFromHash(hash: string): { tab: string; eventId?: string } | null {
+export function tabFromHash(hash: string): { tab: string; eventId?: string; step?: number } | null {
   const raw = hash.replace(/^#/, '');
   if (!raw) return null;
   const [route, ...params] = raw.split(';');
   const eventId = params.find((p) => p.startsWith('id='))?.slice(3);
+  const stepRaw = Number(params.find((p) => p.startsWith('step='))?.slice(5));
+  if (route === 'manage') return { tab: 'manage', eventId, step: stepRaw >= 1 && stepRaw <= 6 ? stepRaw : 1 };
   if (route === 'home' || route === 'events' || route === 'tournaments') return { tab: 'tournaments' };
   if (ROUTE_TO_EVENT_TAB[route]) return { tab: ROUTE_TO_EVENT_TAB[route], eventId };
   if (/^[a-z_]+$/.test(route) && route !== 'login') return { tab: route, eventId };

@@ -86,12 +86,14 @@ import { UsersRolesPanel } from './components/UsersRolesPanel';
 import { InviteLinksPanel } from './components/InviteLinksPanel';
 import { PublicBracketsView, PublicResultsView, PublicLiveView, PublicCategoriesView } from './components/PublicEventViews';
 import { BoutConsole } from './components/BoutConsole';
-import { EntryForm } from './components/EntryForm';
+import { EntryForm, QuickCategories } from './components/EntryForm';
+import { WorkflowHeader, WorkflowFooter, EventBasicsForm } from './components/TournamentWorkflow';
+import { workflowStatus } from './utils/workflow';
 import { EventSetupPanel } from './components/EventSetupPanel';
 import { activeEntries, categoryName } from './utils/eventCategories';
 import { getDeviceKey, setDeviceKey } from './utils/liveStream';
 import { startServerClock } from './utils/serverClock';
-import { hashForTab, tabFromHash, isEventTab, isPlainClick } from './utils/routes';
+import { hashForTab, tabFromHash, isEventTab, isPlainClick, manageHash } from './utils/routes';
 import { pickCurrentTournament, localToday, readRememberedTournament, rememberTournament } from './utils/currentTournament';
 import { eventTitle } from './utils/eventI18n';
 import { TatamiDisplay, CallRoomDisplay, TatamiControl, upcomingOf } from './components/TatamiScreens';
@@ -139,6 +141,15 @@ function AppContent() {
       return 'tournaments';
     }
   });
+  // Tournament workflow (#manage;id=…;step=N): which numbered stage is open
+  const [workflowStep, setWorkflowStep] = useState<number>(() => {
+    try {
+      return tabFromHash(window.location.hash)?.step || 1;
+    } catch {
+      return 1;
+    }
+  });
+  const inStep = (n: number) => activeTab === 'manage' && workflowStep === n;
   useGlobalDomTranslator(language, activeTab);
   const [tournaments, setTournaments] = useState<EventItem[]>([]);
   // Until the server list arrives, tournament pages show «loading», not the demo placeholder tournament
@@ -296,14 +307,15 @@ function AppContent() {
 
     setGlobalSystemToast(
       tr(
-        `✓ Турнир «${asEvent.title}» создан. Шаг 1 — категории, шаг 2 — участники.`,
-        `✓ «${asEvent.title}» мелдеши түзүлдү. 1-кадам — категориялар, 2-кадам — катышуучулар.`,
-        `✓ Tournament "${asEvent.title}" created. Step 1 — categories, step 2 — athletes.`
+        `✓ Турнир «${asEvent.title}» создан. Дальше — по этапам 1–6 сверху.`,
+        `✓ «${asEvent.title}» мелдеши түзүлдү. Андан ары — жогорудагы 1–6 кадамдар боюнча.`,
+        `✓ Tournament "${asEvent.title}" created. Next — stages 1–6 at the top.`
       )
     );
     setTimeout(() => setGlobalSystemToast(null), 6000);
-    // Straight to the entry form of the new tournament: it offers to create categories first, then to enter athletes
-    navigateWithHash('registration');
+    // Straight to stage 1 of the tournament workflow: event, rules, disciplines and categories, fees on one page
+    setWorkflowStep(1);
+    setActiveTab('manage');
   };
 
   const handleUpdateTournament = async (updatedTournament: Tournament) => {
@@ -438,11 +450,11 @@ function AppContent() {
   // every second only where bouts are live; slower on bracket and result pages; rarely everywhere else.
   const LIVE_TABS = ['scoreboard', 'virtual_studios', 'event_live_scoring'];
   const SLOW_LIVE_TABS = ['plan', 'event_brackets', 'event_results', 'event_medals', 'participants', 'event_setup', 'screens', 'exports'];
-  const boutsPollMs = standaloneScreen || LIVE_TABS.includes(activeTab) ? 1000 : SLOW_LIVE_TABS.includes(activeTab) ? 5000 : 30_000;
-  const entriesTabs = ['plan', 'participants', 'event_setup', 'registration', 'acquiring', 'athletes', 'exports', 'scoreboard'];
+  const boutsPollMs = standaloneScreen || LIVE_TABS.includes(activeTab) || inStep(5) ? 1000 : SLOW_LIVE_TABS.includes(activeTab) || activeTab === 'manage' ? 5000 : 30_000;
+  const entriesTabs = ['plan', 'participants', 'event_setup', 'registration', 'acquiring', 'athletes', 'exports', 'scoreboard', 'manage'];
   const dataPollMs = standaloneScreen ? 60_000 : entriesTabs.includes(activeTab) ? 5000 : 30_000;
   const [bouts, setBoutsState, boutSync] = useServerSyncedState<Bout[]>('bouts', [], { ...sharedStateOptions, autoSave: false, pollMs: boutsPollMs });
-  const eventLoading = isEventTab(activeTab) && activeTab !== 'event_setup' && !tournamentsLoaded;
+  const eventLoading = (isEventTab(activeTab) || activeTab === 'manage') && activeTab !== 'event_setup' && !tournamentsLoaded;
   // Tatami of the selected tournament (at least the ones bouts are already assigned to)
   const tatamiNumbers = React.useMemo(() => {
     const ev = selectedEvent as EventItem & { tatamiCount?: number };
@@ -835,6 +847,7 @@ function AppContent() {
               setSelectedTournament(matchedEvent);
             }
           }
+          if (route.tab === 'manage') setWorkflowStep(route.step || 1);
           setActiveTab(route.tab);
           return;
         }
@@ -864,7 +877,7 @@ function AppContent() {
   // returns to the previous screen instead of leaving the site.
   React.useEffect(() => {
     if (screenMode || printRequest) return;
-    const target = hashForTab(activeTab, isEventTab(activeTab) ? selectedEvent.id : undefined);
+    const target = activeTab === 'manage' ? manageHash(selectedEvent.id, workflowStep) : hashForTab(activeTab, isEventTab(activeTab) ? selectedEvent.id : undefined);
     if (window.location.hash === target) return;
     const current = tabFromHash(window.location.hash);
     // Opening a link to a tournament page before the tournament list has loaded: keep it
@@ -874,7 +887,7 @@ function AppContent() {
       return;
     }
     window.history.pushState(null, '', target);
-  }, [activeTab, selectedEvent.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeTab, selectedEvent.id, workflowStep]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
   // 1-Click Database Reset Handler (Preserving Database Schema)
@@ -983,6 +996,20 @@ function AppContent() {
         language={language}
         onOpenPrivacyModal={() => setIsPrivacyModalOpen(true)}
         onLockedTab={showLockedNotice}
+        workflow={
+          activeTab === 'manage'
+            ? {
+                eventId: selectedEvent.id,
+                title: eventTitle(selectedEvent, language),
+                step: workflowStep,
+                done: workflowStatus(selectedEvent.id, eventCategories, participants, bouts).done,
+                onStep: (n) => {
+                  setWorkflowStep(n);
+                  document.querySelector('main')?.parentElement?.scrollTo({ top: 0 });
+                }
+              }
+            : undefined
+        }
       />
 
       {/* Main Stretched Content Canvas */}
@@ -1524,6 +1551,118 @@ function AppContent() {
             </div>
           )}
 
+          {/* ===== Tournament workflow: numbered stages on one page ===== */}
+          {activeTab === 'manage' && !eventLoading && canAccess('manage', effectiveRole) && (
+            <WorkflowHeader
+              event={selectedEvent as unknown as Tournament}
+              step={workflowStep}
+              status={workflowStatus(selectedEvent.id, eventCategories, participants, bouts)}
+              language={language}
+              onStep={(n) => {
+                setWorkflowStep(n);
+                document.querySelector('main')?.parentElement?.scrollTo({ top: 0 });
+              }}
+              onBack={() => navigateWithHash('admin')}
+            />
+          )}
+          {inStep(1) && !eventLoading && canAccess('manage', effectiveRole) && (
+            <div className="space-y-4">
+              <EventBasicsForm
+                key={selectedEvent.id}
+                event={selectedEvent as unknown as Tournament}
+                language={language}
+                onSave={currentUserRole === 'admin' ? handleUpdateTournament : undefined}
+              />
+              <QuickCategories
+                key={`qc-${selectedEvent.id}`}
+                tournamentId={selectedEvent.id}
+                language={language}
+                heading={tr('1.2 Дисциплины: быстро добавить категории', '1.2 Дисциплиналар: категорияларды тез кошуу', '1.2 Disciplines: add categories quickly')}
+                intro={tr(
+                  'Отметьте индивидуальные и командные ката и кумитэ, пол и возраст — сайт создаст категории (абсолютный вес). Весовые категории WKF — ниже.',
+                  'Жеке жана командалык ката менен кумитэни, жынысты жана жашты белгилеңиз — сайт категорияларды түзөт (абсолюттук салмак). WKF салмак категориялары — төмөндө.',
+                  'Tick individual and team kata and kumite, gender and age — the site creates the categories (open weight). WKF weight classes are below.'
+                )}
+                buttonText={tr('Добавить категории', 'Категорияларды кошуу', 'Add categories')}
+                onAdd={(cats) => setEventCategories((prev) => [...prev, ...cats])}
+              />
+              <h2 className="text-lg font-bold text-[var(--app-text-primary)] pt-1">
+                1.3 {tr('Категории по весам и взносы', 'Салмак боюнча категориялар жана төгүмдөр', 'Weight categories & fees')}
+              </h2>
+              <EventSetupPanel
+                key={`setup-${selectedEvent.id}`}
+                mode="setup"
+                hidePicker
+                tournaments={tournaments}
+                initialTournamentId={selectedEvent.id}
+                categories={eventCategories}
+                onChangeCategories={setEventCategories}
+                participants={participants}
+                bouts={bouts}
+                tatamiNumbers={tatamiNumbers}
+                onDraw={handleDrawCategory}
+                onWithdraw={handleWithdrawEntry}
+                onUpdateTournament={currentUserRole === 'admin' ? handleUpdateTournament : undefined}
+              />
+            </div>
+          )}
+          {inStep(2) && !eventLoading && currentUser && canAccess('manage', effectiveRole) && (
+            <EntryForm
+              key={`entries-${selectedEvent.id}`}
+              tournaments={tournaments}
+              categories={eventCategories}
+              participants={participants}
+              currentUser={currentUser}
+              initialTournamentId={selectedEvent.id}
+              onAddCategories={(cats) => setEventCategories((prev) => [...prev, ...cats])}
+            />
+          )}
+          {inStep(4) && !eventLoading && canAccess('manage', effectiveRole) && (
+            <div className="space-y-4">
+              <EventSetupPanel
+                key={`draw-${selectedEvent.id}`}
+                mode="draw"
+                hidePicker
+                tournaments={tournaments}
+                initialTournamentId={selectedEvent.id}
+                categories={eventCategories}
+                onChangeCategories={setEventCategories}
+                participants={participants}
+                bouts={bouts}
+                tatamiNumbers={tatamiNumbers}
+                onDraw={handleDrawCategory}
+                onWithdraw={handleWithdrawEntry}
+              />
+              <div className="flex flex-wrap gap-2">
+                <a href={`/?print=schedule&e=${encodeURIComponent(selectedEvent.id)}&lang=${language}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-[var(--app-border)] text-sm text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)]">
+                  {tr('Расписание по татами / PDF', 'Татамилер боюнча расписание / PDF', 'Schedule by tatami / PDF')}
+                </a>
+                <a href={`/?print=bracket&e=${encodeURIComponent(selectedEvent.id)}&lang=${language}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-[var(--app-border)] text-sm text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)]">
+                  {tr('Все сетки / PDF', 'Бардык торчолор / PDF', 'All brackets / PDF')}
+                </a>
+                <a href={hashForTab('event_brackets', selectedEvent.id)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-[var(--app-border)] text-sm text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)]">
+                  {tr('Сетки на сайте', 'Сайттагы торчолор', 'Brackets on the site')}
+                </a>
+              </div>
+            </div>
+          )}
+          {inStep(6) && !eventLoading && canAccess('manage', effectiveRole) && (
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                {([
+                  ['event_results', tr('Результаты на сайте', 'Сайттагы жыйынтыктар', 'Results on the site')],
+                  ['event_medals', tr('Медальный зачёт', 'Медалдык эсеп', 'Medal table')],
+                  ['event_brackets', tr('Сетки с результатами', 'Жыйынтыктары менен торчолор', 'Brackets with results')]
+                ] as const).map(([tab, text]) => (
+                  <a key={tab} href={hashForTab(tab, selectedEvent.id)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-[var(--app-border)] text-sm text-[var(--app-text-primary)] hover:bg-[var(--app-surface-subtle)]">
+                    {text}
+                  </a>
+                ))}
+              </div>
+              <DocumentsPanel key={`docs-${selectedEvent.id}`} hidePicker tournaments={tournaments} initialTournamentId={selectedEvent.id} categories={eventCategories} bouts={bouts} />
+            </div>
+          )}
+
           {/* 1.1 Информация о событии (Matching video at 00:27-00:30) */}
           {activeTab === 'event_info' && !eventLoading && (
             <TournamentInfoDetailView
@@ -1654,7 +1793,7 @@ function AppContent() {
 
 
 
-          {activeTab === 'scoreboard' && (
+          {(activeTab === 'scoreboard' || (inStep(5) && !eventLoading && canAccess('manage', effectiveRole))) && (
             <TatamiOverview
               key={selectedEvent.id}
               hidePicker
@@ -1788,7 +1927,7 @@ function AppContent() {
           {activeTab === 'lan' && <OfflinePanel onOpenScreens={() => navigateWithHash('screens')} />}
 
 
-          {activeTab === 'participants' && (
+          {(activeTab === 'participants' || (inStep(3) && !eventLoading && canAccess('manage', effectiveRole))) && (
             <ParticipantsManager
               key={selectedEvent.id}
               hidePicker
@@ -1813,6 +1952,18 @@ function AppContent() {
           {activeTab === 'help' && <RoleGuide initial={effectiveRole === 'club_coach' ? 'coach' : effectiveRole === 'admin' ? 'organizer' : ['tatami_referee', 'scorekeeper', 'chief_referee', 'medical_officer'].includes(effectiveRole) ? 'official' : 'athlete'} />}
           {activeTab === 'help' && (
             <HelpFaqView language={language} />
+          )}
+
+          {activeTab === 'manage' && !eventLoading && canAccess('manage', effectiveRole) && (
+            <WorkflowFooter
+              eventId={selectedEvent.id}
+              step={workflowStep}
+              language={language}
+              onStep={(n) => {
+                setWorkflowStep(n);
+                document.querySelector('main')?.parentElement?.scrollTo({ top: 0 });
+              }}
+            />
           )}
 
           </>)}
@@ -2073,7 +2224,7 @@ function AppContent() {
                   menu
                 ]
               : role === 'admin'
-                ? [go('plan', tr('План', 'План', 'Plan'), ClipboardList), events, tatami, go('screens', tr('Экраны', 'Экрандар', 'Screens'), QrCode), menu]
+                ? [go('manage', tr('Турнир', 'Мелдеш', 'Run'), ClipboardList), events, tatami, go('screens', tr('Экраны', 'Экрандар', 'Screens'), QrCode), menu]
                 : role === 'club_coach' || role === 'athlete'
                   ? [events, go('registration', tr('Заявка', 'Табыштама', 'Enter'), ClipboardList), go('athletes', tr('Спортсмены', 'Спортчулар', 'Athletes'), Users), liveNow, menu]
                   : [

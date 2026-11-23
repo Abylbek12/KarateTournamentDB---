@@ -34,7 +34,7 @@ type QuickDiscipline = 'kumite' | 'kata' | 'team_kumite' | 'team_kata';
  * A tournament without categories, opened by the organizer: add the usual categories in one step
  * (kumite / kata / team, gender, age; open weight) and go straight to entering athletes.
  */
-const QuickCategories: React.FC<{ tournamentId: string; language: string; onAdd: (cats: EventCategory[]) => void }> = ({ tournamentId, language, onAdd }) => {
+export const QuickCategories: React.FC<{ tournamentId: string; language: string; onAdd: (cats: EventCategory[]) => void; heading?: string; intro?: string; buttonText?: string }> = ({ tournamentId, language, onAdd, heading, intro, buttonText }) => {
   const t3 = (ru: string, ky: string, en: string) => tl(language, ru, ky, en);
   const [disc, setDisc] = React.useState<QuickDiscipline[]>(['kumite', 'kata']);
   const [gender, setGender] = React.useState<'male' | 'female' | 'both'>('male');
@@ -79,9 +79,9 @@ const QuickCategories: React.FC<{ tournamentId: string; language: string; onAdd:
   return (
     <section className="rounded-2xl border-2 border-[var(--accent)] bg-[var(--app-surface)] p-4 space-y-4">
       <div>
-        <h2 className="text-lg font-bold text-[var(--app-text-primary)]">{t3('Шаг 1. Категории турнира', '1-кадам. Мелдештин категориялары', 'Step 1. Tournament categories')}</h2>
+        <h2 className="text-lg font-bold text-[var(--app-text-primary)]">{heading || t3('Шаг 1. Категории турнира', '1-кадам. Мелдештин категориялары', 'Step 1. Tournament categories')}</h2>
         <p className="text-sm text-[var(--app-text-secondary)] mt-0.5">
-          {t3('У турнира ещё нет категорий. Отметьте, что будет на турнире, — сайт создаст категории, и сразу можно вписывать спортсменов.', 'Мелдеште али категория жок. Мелдеште эмне болорун белгилеңиз — сайт категорияларды түзөт, жана дароо спортчуларды жазса болот.', 'This tournament has no categories yet. Tick what the tournament will have — the site creates the categories and you can enter athletes right away.')}
+          {intro || t3('У турнира ещё нет категорий. Отметьте, что будет на турнире, — сайт создаст категории, и сразу можно вписывать спортсменов.', 'Мелдеште али категория жок. Мелдеште эмне болорун белгилеңиз — сайт категорияларды түзөт, жана дароо спортчуларды жазса болот.', 'This tournament has no categories yet. Tick what the tournament will have — the site creates the categories and you can enter athletes right away.')}
         </p>
       </div>
       <div>
@@ -122,7 +122,7 @@ const QuickCategories: React.FC<{ tournamentId: string; language: string; onAdd:
       </p>
       {error && <div className="text-sm text-red-600">{error}</div>}
       <button onClick={add} className="h-11 px-5 rounded-xl bg-[var(--accent)] text-white font-semibold cursor-pointer">
-        {t3('Создать категории и перейти к заявке', 'Категорияларды түзүп, табыштамага өтүү', 'Create categories and go to entries')}
+        {buttonText || t3('Создать категории и перейти к заявке', 'Категорияларды түзүп, табыштамага өтүү', 'Create categories and go to entries')}
       </button>
     </section>
   );

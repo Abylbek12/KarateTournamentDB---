@@ -23,6 +23,11 @@ interface EventSetupPanelProps {
   currency?: string;
   /** Saves tournament fields (price periods). Without it the price editor is hidden. */
   onUpdateTournament?: (t: Tournament) => void;
+  /**
+   * Inside the tournament workflow: 'setup' (stage 1) shows only category creation, fees and the list;
+   * 'draw' (stage 4) shows only the list with the draw. Default: everything, as before.
+   */
+  mode?: 'all' | 'setup' | 'draw';
 }
 
 const field = 'rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-text-primary)] px-2.5 py-1.5 text-sm';
@@ -40,8 +45,7 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
   onDraw,
   onWithdraw,
   currency: currencyRu = 'сом',
-  onUpdateTournament
-}) => {
+  onUpdateTournament, mode = 'all'}) => {
   const { language } = useApp();
   const tl = (ru: string, ky: string, en: string) => (language === 'ky' ? ky : language === 'en' ? en : ru);
   const currency = language === 'en' && currencyRu === 'сом' ? 'KGS' : currencyRu;
@@ -111,7 +115,7 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
 
   return (
     <div className="theme-keep space-y-5 pb-8">
-      <div className="flex flex-wrap items-end gap-3">
+      {mode === 'all' && <div className="flex flex-wrap items-end gap-3">
         <div className="flex-1 min-w-[240px]">
           <h1 className="text-2xl font-bold text-[var(--app-text-primary)] flex items-center gap-2">
             <Layers className="w-6 h-6 text-[var(--accent)]" /> {tl('Категории и жеребьёвка', 'Категориялар жана чүчүкулак', 'Categories & draw')}
@@ -130,9 +134,9 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
             </option>
           ))}
         </select>}
-      </div>
+      </div>}
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      {mode !== 'draw' && <div className="grid gap-4 lg:grid-cols-2">
         <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 space-y-3">
           <h2 className="font-semibold text-[var(--app-text-primary)]">{tl('Стандартный набор WKF', 'WKF стандарттык топтому', 'Standard WKF set')}</h2>
           <div className="flex flex-wrap gap-2">
@@ -217,9 +221,9 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
             <Plus className="w-4 h-4" /> {tl('Добавить категорию', 'Категория кошуу', 'Add category')}
           </button>
         </section>
-      </div>
+      </div>}
 
-      {onUpdateTournament && tournaments.find((t) => t.id === tid) && (
+      {mode !== 'draw' && onUpdateTournament && tournaments.find((t) => t.id === tid) && (
         <PricingEditor
           tournament={tournaments.find((t) => t.id === tid)!}
           categories={cats}
@@ -258,7 +262,7 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
                     <span className={`text-xs px-2 py-0.5 rounded-md ${catBouts.length ? 'bg-emerald-600/10 text-emerald-700' : 'bg-[var(--app-surface-subtle)] text-[var(--app-text-muted)]'}`}>
                       {catBouts.length ? (started ? tl('идут бои', 'беттештер жүрүүдө', 'bouts running') : tl('сетка готова', 'торчо даяр', 'bracket ready')) : c.isClosed ? tl('приём закрыт', 'кабыл алуу жабык', 'entries closed') : tl('приём заявок', 'табыштама кабыл алынат', 'entries open')}
                     </span>
-                    <select value={tatami} onChange={(e) => setTatamiFor({ ...tatamiFor, [c.id]: Number(e.target.value) })} className={`${field} h-8 py-0`} title={tl('Татами', 'Татами', 'Tatami')}>
+                    {mode !== 'setup' && <><select value={tatami} onChange={(e) => setTatamiFor({ ...tatamiFor, [c.id]: Number(e.target.value) })} className={`${field} h-8 py-0`} title={tl('Татами', 'Татами', 'Tatami')}>
                       {tatamiNumbers.map((n) => (
                         <option key={n} value={n}>{tl('Татами', 'Татами', 'Tatami')} {n}</option>
                       ))}
@@ -280,7 +284,7 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
                       title={entries.length < 2 ? tl('Нужно минимум 2 участника', 'Кеминде 2 катышуучу керек', 'At least 2 athletes needed') : started ? tl('Бои уже начались', 'Беттештер башталып калды', 'Bouts have started') : tl('Жеребьёвка', 'Чүчүкулак', 'Draw')}
                     >
                       <Shuffle className="w-3.5 h-3.5" /> {catBouts.length ? tl('Заново', 'Кайра', 'Redo') : tl('Жеребьёвка', 'Чүчүкулак', 'Draw')}
-                    </button>
+                    </button></>}
                     {catBouts.length > 0 && (
                       <a href={printUrl({ kind: 'bracket', eventId: c.tournamentId, categoryId: c.id, lang: language as 'ru' | 'ky' | 'en' })} target="_blank" rel="noreferrer" className="p-1.5 rounded-lg text-[var(--app-text-muted)] hover:text-[var(--app-text-primary)]" title={tl('Печать сетки / PDF', 'Торчону басып чыгаруу / PDF', 'Print bracket / PDF')}>
                         <Printer className="w-4 h-4" />

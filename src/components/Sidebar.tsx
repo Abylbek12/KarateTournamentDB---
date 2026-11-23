@@ -28,9 +28,12 @@ import {
   Layers,
   ChevronDown,
   GripVertical,
-  ListChecks
+  ListChecks,
+  Workflow,
+  Check
 } from 'lucide-react';
-import { hashForTab, isPlainClick } from '../utils/routes';
+import { hashForTab, isPlainClick, manageHash } from '../utils/routes';
+import { WORKFLOW_STEPS, stepText } from '../utils/workflow';
 import { canAccess, type AccessRole } from '../utils/access';
 import { TournamentRules, UserRole, Tournament } from '../types/schema';
 import { Language } from '../utils/translations';
@@ -61,7 +64,8 @@ export type NavTabId =
   | 'registration'
   | 'screens'
   | 'event_setup'
-  | 'plan';
+  | 'plan'
+  | 'manage';
 
 interface SidebarProps {
   activeTab: string;
@@ -80,6 +84,8 @@ interface SidebarProps {
   onOpenPrivacyModal?: () => void;
   /** Coach/athlete tapped an organizer item: they see it, but it is closed for them. */
   onLockedTab?: (label: string) => void;
+  /** Inside the tournament workflow: the menu shows its numbered stages and the current one. */
+  workflow?: { eventId: string; title: string; step: number; done: Record<number, boolean>; onStep: (n: number) => void };
 }
 
 interface NavItem {
@@ -145,8 +151,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleMobile,
   language: propLanguage,
   onOpenPrivacyModal,
-  onLockedTab
-}) => {
+  onLockedTab, workflow}) => {
   const appContext = useApp();
   const language = propLanguage || appContext.language;
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -188,7 +193,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { id: 'participants' as NavTabId, label: tr('Взвешивание и допуск', 'Таразалоо жана уруксат', 'Weigh-in & clearance'), icon: Scale },
         // Chief referee runs the draw too (admins have it under «Организатор»)
         ...(isAdmin ? [] : [{ id: 'event_setup' as NavTabId, label: tr('Категории и жеребьёвка', 'Категориялар жана чүчүкулак', 'Categories & draw'), icon: Layers }]),
-        ...(isAdmin ? [] : [{ id: 'plan' as NavTabId, label: tr('План турнира', 'Мелдештин планы', 'Tournament plan'), icon: ListChecks }])
+        ...(isAdmin ? [] : [{ id: 'plan' as NavTabId, label: tr('План турнира', 'Мелдештин планы', 'Tournament plan'), icon: ListChecks }]),
+        ...(isAdmin ? [] : [{ id: 'manage' as NavTabId, label: tr('Управление турниром', 'Мелдешти башкаруу', 'Run the tournament'), icon: Workflow }])
       ]
     },
     {
@@ -206,6 +212,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           ]
         : isAdmin
           ? [
+              { id: 'manage' as NavTabId, label: tr('Управление турниром', 'Мелдешти башкаруу', 'Run the tournament'), icon: Workflow },
               { id: 'plan' as NavTabId, label: tr('План турнира', 'Мелдештин планы', 'Tournament plan'), icon: ListChecks },
               { id: 'admin' as NavTabId, label: tr('Турниры и пользователи', 'Мелдештер жана колдонуучулар', 'Events & users'), icon: ShieldCheck },
               { id: 'event_setup' as NavTabId, label: tr('Категории и жеребьёвка', 'Категориялар жана чүчүкулак', 'Categories & draw'), icon: Layers },
@@ -273,6 +280,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     target: { section: string; id: string; after: boolean } | null;
   } | null>(null);
   const suppressClick = React.useRef(false);
+  const lastTouch = React.useRef(0);
   const moveItemRef = React.useRef(moveItem);
   moveItemRef.current = moveItem;
 
@@ -401,6 +409,50 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto px-2.5 py-3 space-y-4">
+          {/* Tournament workflow: the menu turns into the list of numbered stages, current one highlighted */}
+          {workflow && activeTab === 'manage' && (
+            <div className="rounded-xl border border-[var(--accent)]/40 bg-[var(--accent-soft)]/40 p-1.5">
+              {!compact && (
+                <div className="px-2 pt-1 pb-1.5">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">{tr('Управление турниром', 'Мелдешти башкаруу', 'Run the tournament')}</div>
+                  <div className="text-sm font-semibold text-[var(--app-text-primary)] truncate" translate="no" title={workflow.title}>{workflow.title}</div>
+                </div>
+              )}
+              <ol className="space-y-0.5">
+                {WORKFLOW_STEPS.map((st) => {
+                  const current = st.n === workflow.step;
+                  const done = workflow.done[st.n];
+                  return (
+                    <li key={st.n}>
+                      <a
+                        href={manageHash(workflow.eventId, st.n)}
+                        aria-current={current ? 'step' : undefined}
+                        title={stepText(language, st.label)}
+                        onClick={(e) => {
+                          if (!isPlainClick(e)) return; // Ctrl/Cmd-click or «Open in new tab»
+                          e.preventDefault();
+                          workflow.onStep(st.n);
+                          if (isMobileOpen) onToggleMobile();
+                        }}
+                        className={`flex items-center gap-2.5 rounded-lg ${compact ? 'justify-center p-2' : 'px-2 py-1.5 min-h-[38px]'} ${
+                          current ? 'bg-[var(--accent)] text-white font-semibold' : 'text-[var(--app-text-secondary)] hover:bg-[var(--app-surface-subtle)] hover:text-[var(--app-text-primary)]'
+                        }`}
+                      >
+                        <span
+                          className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                            current ? 'bg-white text-[var(--accent)]' : done ? 'bg-emerald-600 text-white' : 'bg-[var(--app-surface-subtle)] text-[var(--app-text-primary)]'
+                          }`}
+                        >
+                          {done && !current ? <Check className="w-3.5 h-3.5" /> : st.n}
+                        </span>
+                        {!compact && <span className="text-sm truncate">{stepText(language, st.label)}</span>}
+                      </a>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          )}
           {sections.map((section) => (
             <div key={section.key}>
               {section.title && !compact && (
@@ -444,9 +496,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       href={hashForTab(item.id)}
                       data-menu-id={item.id}
                       data-menu-section={section.key}
-                      onTouchStart={(e) => startTouchDrag(section.key, item.id, e)}
+                      onTouchStart={(e) => {
+                        lastTouch.current = Date.now();
+                        startTouchDrag(section.key, item.id, e);
+                      }}
                       onContextMenu={(e) => {
-                        if (canReorder) e.preventDefault(); // a long press moves the item instead of opening the phone menu
+                        // Phone: a long press moves the item. Mouse right-click keeps the browser menu («Open in new tab»).
+                        if (canReorder && Date.now() - lastTouch.current < 1500) e.preventDefault();
                       }}
                       style={canReorder ? { WebkitTouchCallout: 'none' } : undefined}
                       draggable={canReorder && !compact}
