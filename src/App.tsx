@@ -296,12 +296,14 @@ function AppContent() {
 
     setGlobalSystemToast(
       tr(
-        `✓ Турнир «${asEvent.title}» опубликован и синхронизирован с витриной!`,
-        `✓ «${asEvent.title}» мелдеши жарыяланды жана витрина менен синхрондоштурулду!`,
-        `✓ Tournament "${asEvent.title}" published and synced with showcase!`
+        `✓ Турнир «${asEvent.title}» создан. Шаг 1 — категории, шаг 2 — участники.`,
+        `✓ «${asEvent.title}» мелдеши түзүлдү. 1-кадам — категориялар, 2-кадам — катышуучулар.`,
+        `✓ Tournament "${asEvent.title}" created. Step 1 — categories, step 2 — athletes.`
       )
     );
-    setTimeout(() => setGlobalSystemToast(null), 5000);
+    setTimeout(() => setGlobalSystemToast(null), 6000);
+    // Straight to the entry form of the new tournament: it offers to create categories first, then to enter athletes
+    navigateWithHash('registration');
   };
 
   const handleUpdateTournament = async (updatedTournament: Tournament) => {
@@ -1733,6 +1735,11 @@ function AppContent() {
               participants={participants}
               currentUser={currentUser}
               initialTournamentId={selectedTournament?.id}
+              onAddCategories={
+                currentUserRole === 'admin' || currentUserRole === 'chief_referee'
+                  ? (cats) => setEventCategories((prev) => [...prev, ...cats])
+                  : undefined
+              }
             />
           )}
 

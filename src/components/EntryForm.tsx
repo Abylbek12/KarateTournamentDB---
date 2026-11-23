@@ -1,7 +1,7 @@
 import React from 'react';
 import { UserPlus, Trash2, Users, CheckCircle2, AlertTriangle, ClipboardList, X } from 'lucide-react';
 import type { AuthenticatedUserProfile, BeltRank, EventCategory, Gender, Participant, Tournament } from '../types/schema';
-import { BELT_LABELS, BELT_CHOICES, categoryFits, categoryName, isTeamCategory, beltLabel } from '../utils/eventCategories';
+import { BELT_LABELS, BELT_CHOICES, categoryFits, categoryName, isTeamCategory, beltLabel, newCategoryId } from '../utils/eventCategories';
 import { COUNTRIES, flagEmoji, countryByNoc, countryName } from '../utils/countries';
 import { transliterate } from '../utils/names';
 import { formatBirthInput, parseBirthText } from '../utils/dateInput';
@@ -24,7 +24,109 @@ interface EntryFormProps {
   currentUser: AuthenticatedUserProfile;
   initialTournamentId?: string;
   currency?: string;
+  /** Organizer only: add categories right from the entry form (a tournament without categories). */
+  onAddCategories?: (cats: EventCategory[]) => void;
 }
+
+type QuickDiscipline = 'kumite' | 'kata' | 'team_kumite' | 'team_kata';
+
+/**
+ * A tournament without categories, opened by the organizer: add the usual categories in one step
+ * (kumite / kata / team, gender, age; open weight) and go straight to entering athletes.
+ */
+const QuickCategories: React.FC<{ tournamentId: string; language: string; onAdd: (cats: EventCategory[]) => void }> = ({ tournamentId, language, onAdd }) => {
+  const t3 = (ru: string, ky: string, en: string) => tl(language, ru, ky, en);
+  const [disc, setDisc] = React.useState<QuickDiscipline[]>(['kumite', 'kata']);
+  const [gender, setGender] = React.useState<'male' | 'female' | 'both'>('male');
+  const [ageMin, setAgeMin] = React.useState('18');
+  const [ageMax, setAgeMax] = React.useState('');
+  const [fee, setFee] = React.useState('0');
+  const [error, setError] = React.useState('');
+  const labels: Record<QuickDiscipline, string> = {
+    kumite: t3('Кумитэ (личное)', 'Кумитэ (жеке)', 'Kumite (individual)'),
+    kata: t3('Ката (личное)', 'Ката (жеке)', 'Kata (individual)'),
+    team_kumite: t3('Кумитэ командное', 'Командалык кумитэ', 'Team kumite'),
+    team_kata: t3('Ката командное', 'Командалык ката', 'Team kata')
+  };
+  const toggle = (d: QuickDiscipline) => setDisc((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d]));
+  const add = () => {
+    const min = Number(ageMin);
+    const max = ageMax.trim() === '' ? null : Number(ageMax);
+    if (!disc.length) return setError(t3('Отметьте хотя бы одну дисциплину.', 'Жок дегенде бир дисциплинаны белгилеңиз.', 'Tick at least one discipline.'));
+    if (!Number.isFinite(min) || (max != null && (!Number.isFinite(max) || max < min)))
+      return setError(t3('Проверьте возраст: «до» не может быть меньше «от».', 'Жашты текшериңиз: «чейин» «баштап» кичине боло албайт.', 'Check the age: «to» cannot be less than «from».'));
+    const genders: Gender[] = gender === 'both' ? ['male', 'female'] : [gender];
+    const cats: EventCategory[] = [];
+    for (const g of genders)
+      for (const d of disc)
+        cats.push({
+          id: newCategoryId(),
+          tournamentId,
+          discipline: d,
+          gender: g,
+          ageMin: min,
+          ageMax: max,
+          weightMin: null,
+          weightMax: null,
+          fee: Number(fee) || 0,
+          durationSeconds: d === 'kata' || d === 'team_kata' ? 240 : min >= 16 ? 180 : 120
+        });
+    setError('');
+    onAdd(cats);
+  };
+  const chip = (on: boolean) =>
+    `inline-flex items-center gap-2 h-10 px-3 rounded-xl border text-sm cursor-pointer ${on ? 'border-[var(--accent)] bg-[var(--app-surface-subtle)] font-semibold text-[var(--app-text-primary)]' : 'border-[var(--app-border)] text-[var(--app-text-secondary)]'}`;
+  return (
+    <section className="rounded-2xl border-2 border-[var(--accent)] bg-[var(--app-surface)] p-4 space-y-4">
+      <div>
+        <h2 className="text-lg font-bold text-[var(--app-text-primary)]">{t3('Шаг 1. Категории турнира', '1-кадам. Мелдештин категориялары', 'Step 1. Tournament categories')}</h2>
+        <p className="text-sm text-[var(--app-text-secondary)] mt-0.5">
+          {t3('У турнира ещё нет категорий. Отметьте, что будет на турнире, — сайт создаст категории, и сразу можно вписывать спортсменов.', 'Мелдеште али категория жок. Мелдеште эмне болорун белгилеңиз — сайт категорияларды түзөт, жана дароо спортчуларды жазса болот.', 'This tournament has no categories yet. Tick what the tournament will have — the site creates the categories and you can enter athletes right away.')}
+        </p>
+      </div>
+      <div>
+        <div className={label}>{t3('Дисциплины', 'Дисциплиналар', 'Disciplines')}</div>
+        <div className="flex flex-wrap gap-2">
+          {(Object.keys(labels) as QuickDiscipline[]).map((d) => (
+            <label key={d} className={chip(disc.includes(d))}>
+              <input type="checkbox" checked={disc.includes(d)} onChange={() => toggle(d)} className="w-4 h-4 accent-[var(--accent)]" />
+              {labels[d]}
+            </label>
+          ))}
+        </div>
+      </div>
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
+        <div>
+          <label className={label} htmlFor="qc-gender">{t3('Пол', 'Жынысы', 'Gender')}</label>
+          <select id="qc-gender" value={gender} onChange={(e) => setGender(e.target.value as typeof gender)} className={field}>
+            <option value="male">{t3('Мужской', 'Эркек', 'Male')}</option>
+            <option value="female">{t3('Женский', 'Аял', 'Female')}</option>
+            <option value="both">{t3('Оба (отдельно М и Ж)', 'Экөө тең (Э жана А өзүнчө)', 'Both (separate M and F)')}</option>
+          </select>
+        </div>
+        <div>
+          <label className={label} htmlFor="qc-age-min">{t3('Возраст от', 'Жашы, баштап', 'Age from')}</label>
+          <input id="qc-age-min" inputMode="numeric" value={ageMin} onChange={(e) => setAgeMin(e.target.value)} className={field} />
+        </div>
+        <div>
+          <label className={label} htmlFor="qc-age-max">{t3('Возраст до', 'Жашы, чейин', 'Age to')}</label>
+          <input id="qc-age-max" inputMode="numeric" value={ageMax} onChange={(e) => setAgeMax(e.target.value)} placeholder={t3('любой', 'каалаган', 'any')} className={field} />
+        </div>
+        <div>
+          <label className={label} htmlFor="qc-fee">{t3('Взнос', 'Төгүм', 'Fee')}</label>
+          <input id="qc-fee" inputMode="numeric" value={fee} onChange={(e) => setFee(e.target.value)} className={field} />
+        </div>
+      </div>
+      <p className="text-xs text-[var(--app-text-muted)]">
+        {t3('Вес не делится (абсолютная категория). Весовые категории и другие настройки можно поменять позже в «Категории и жеребьёвка».', 'Салмак бөлүнбөйт (абсолюттук категория). Салмак категорияларын жана башка жөндөөлөрдү кийин «Категориялар жана чүчүкулак» бөлүмүндө өзгөртсө болот.', 'No weight split (open weight). Weight classes and other settings can be changed later in «Categories & draw».')}
+      </p>
+      {error && <div className="text-sm text-red-600">{error}</div>}
+      <button onClick={add} className="h-11 px-5 rounded-xl bg-[var(--accent)] text-white font-semibold cursor-pointer">
+        {t3('Создать категории и перейти к заявке', 'Категорияларды түзүп, табыштамага өтүү', 'Create categories and go to entries')}
+      </button>
+    </section>
+  );
+};
 
 interface AthleteDraft {
   key: string;
@@ -80,7 +182,7 @@ const field = 'w-full rounded-lg border border-[var(--app-border)] bg-[var(--app
 const label = 'block text-xs font-medium text-[var(--app-text-secondary)] mb-1';
 
 /** Entry form for athletes, parents and coaches (coach: many athletes and teams at once). */
-export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, participants, currentUser, initialTournamentId, currency: currencyRu = 'сом' }) => {
+export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, participants, currentUser, initialTournamentId, currency: currencyRu = 'сом', onAddCategories }) => {
   const isCoach = currentUser.role === 'club_coach' || currentUser.role === 'admin' || currentUser.role === 'chief_referee' || currentUser.role === 'scorekeeper';
   const open = tournaments.filter((t) => categories.some((c) => c.tournamentId === t.id && !c.isClosed) && t.status !== 'completed');
   // Tournaments that exist but have no categories yet: nobody can enter, but they must not just vanish from the form
@@ -99,11 +201,19 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
           : tl(language, 'Заявки откроются, когда организатор добавит категории.', 'Уюштуруучу категорияларды кошкондо табыштамалар ачылат.', 'Entries open once the organizer adds categories.')}
       </div>
     );
+  // The organizer may also pick a tournament without categories: the form then offers to create them
+  const canSetup = isOrganizer && !!onAddCategories;
+  const selectable = canSetup ? [...open, ...waiting] : open;
   const [chosenTournamentId, setTournamentId] = React.useState(
-    open.some((t) => t.id === initialTournamentId) ? initialTournamentId! : open[0]?.id || ''
+    selectable.some((t) => t.id === initialTournamentId) ? initialTournamentId! : selectable[0]?.id || ''
   );
   // Categories may arrive after the form opens (link straight to #registration): fall back to what the list shows.
-  const tournamentId = open.some((t) => t.id === chosenTournamentId) ? chosenTournamentId : open.some((t) => t.id === initialTournamentId) ? initialTournamentId! : open[0]?.id || '';
+  const tournamentId = selectable.some((t) => t.id === chosenTournamentId)
+    ? chosenTournamentId
+    : selectable.some((t) => t.id === initialTournamentId)
+      ? initialTournamentId!
+      : selectable[0]?.id || '';
+  const needsSetup = canSetup && waiting.some((t) => t.id === tournamentId);
   const tournament = tournaments.find((t) => t.id === tournamentId);
   const cats = categories.filter((c) => c.tournamentId === tournamentId && !c.isClosed);
   const teamCats = cats.filter(isTeamCategory);
@@ -283,7 +393,28 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
     .filter((p) => p.createdBy === currentUser.id && p.tournamentId === tournamentId)
     .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
 
-  if (open.length === 0) {
+  // Organizer opened a tournament without categories: step 1 — create them right here
+  if (needsSetup) {
+    return (
+      <div className="theme-keep space-y-5 pb-8 max-w-5xl">
+        <h1 className="text-2xl font-bold text-[var(--app-text-primary)]">{tl(language, 'Подать заявку', 'Табыштама берүү', 'Enter a tournament')}</h1>
+        <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4">
+          <label className={label} htmlFor="entry-tournament-setup">{tl(language, 'Турнир', 'Мелдеш', 'Tournament')}</label>
+          <select id="entry-tournament-setup" translate="no" value={tournamentId} onChange={(e) => setTournamentId(e.target.value)} className={field}>
+            {selectable.map((t) => (
+              <option key={t.id} value={t.id}>
+                {eventTitle(t, language)}
+                {waiting.includes(t) ? ` — ${tl(language, 'категории ещё не добавлены', 'категориялар али кошула элек', 'no categories yet')}` : ''}
+              </option>
+            ))}
+          </select>
+        </section>
+        <QuickCategories key={tournamentId} tournamentId={tournamentId} language={language} onAdd={(cats) => onAddCategories!(cats)} />
+      </div>
+    );
+  }
+
+  if (open.length === 0 && !canSetup) {
     return (
       <div className="theme-keep rounded-2xl border border-dashed border-[var(--app-border)] p-10 text-center">
         <ClipboardList className="w-8 h-8 mx-auto text-[var(--app-text-muted)]" />
@@ -306,7 +437,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
       </div>
 
       {/* Opened from a tournament that has no categories yet: say so instead of silently showing another one */}
-      {linkedWaiting && waitingNote([linkedWaiting])}
+      {linkedWaiting && !canSetup && waitingNote([linkedWaiting])}
 
       <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 grid gap-3 md:grid-cols-4">
         <div className="md:col-span-4">
@@ -318,12 +449,12 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
               </option>
             ))}
             {waiting.map((t) => (
-              <option key={t.id} value={t.id} disabled>
+              <option key={t.id} value={t.id} disabled={!canSetup}>
                 {eventTitle(t, language)} — {tl(language, 'категории ещё не добавлены', 'категориялар али кошула элек', 'no categories yet')}
               </option>
             ))}
           </select>
-          {!linkedWaiting && waiting.length > 0 && <p className="text-xs text-[var(--app-text-muted)] mt-1">{tl(language, 'Серые турниры в списке ещё без категорий — заявку на них подать пока нельзя.', 'Тизмедеги боз мелдештерде али категория жок — аларга азырынча табыштама берүүгө болбойт.', 'Grey tournaments have no categories yet — you cannot enter them yet.')}</p>}
+          {!linkedWaiting && !canSetup && waiting.length > 0 && <p className="text-xs text-[var(--app-text-muted)] mt-1">{tl(language, 'Серые турниры в списке ещё без категорий — заявку на них подать пока нельзя.', 'Тизмедеги боз мелдештерде али категория жок — аларга азырынча табыштама берүүгө болбойт.', 'Grey tournaments have no categories yet — you cannot enter them yet.')}</p>}
         </div>
         <div>
           <label className={label} htmlFor="entry-club">{tl(language, 'Клуб', 'Клуб', 'Club')}</label>
