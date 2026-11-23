@@ -163,9 +163,14 @@ const BoutCard: React.FC<{ bout: Bout; language: Lang }> = ({ bout, language }) 
     const score = side === 'aka' ? bout.akaScore : bout.aoScore;
     const won = !!bout.winnerId && bout.winnerId === id;
     return (
-      <div className={`flex items-center gap-2 px-3 py-1.5 ${won ? 'font-semibold' : ''}`}>
-        {/* Brackets: red (AKA) and white (SHIRO / AO) like traditional karate; white is outlined in gray to stay visible */}
-        <span className={`w-2 self-stretch rounded-full ${side === 'aka' ? 'bg-red-600' : 'bg-white ring-1 ring-inset ring-slate-400'}`} />
+      // Bracket line under each name, like Uventex: red for AKA, white outlined in gray for the second athlete.
+      // The small marker before the name keeps the usual red / blue.
+      <div
+        className={`flex items-center gap-2 px-3 py-1.5 ${won ? 'font-semibold' : ''} ${
+          side === 'aka' ? 'border-b-2 border-red-600' : 'border-b-[3px] border-white shadow-[0_1px_0_0_#94a3b8,inset_0_-1px_0_0_#94a3b8]'
+        }`}
+      >
+        <span className={`w-1.5 self-stretch rounded-full ${side === 'aka' ? 'bg-red-600' : 'bg-blue-600'}`} />
         <span className="flex-1 min-w-0">
           <span className={`block truncate text-sm ${p ? 'text-[var(--app-text-primary)]' : 'text-[var(--app-text-muted)] italic'}`}>
             {p ? fullName(p) : t(language, 'ожидается', 'күтүлүүдө', 'TBD')}
@@ -194,7 +199,6 @@ const BoutCard: React.FC<{ bout: Bout; language: Lang }> = ({ bout, language }) 
         )}
       </div>
       {row('aka')}
-      <div className="border-t border-[var(--app-border)]" />
       {row('ao')}
     </div>
   );
