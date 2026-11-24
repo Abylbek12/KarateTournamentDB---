@@ -5,7 +5,9 @@ import type { Bout, Participant, TournamentCategory, EventCategory } from '../ty
 import { categoryName, activeEntries, DISCIPLINE_LABELS } from '../utils/eventCategories';
 import type { EventItem, EventActionType } from '../data/eventsData';
 import { belongsToEvent } from '../data/sampleTournamentData';
-import { ELIMINATION_ORDER, computeStandings, repechageHalf, repechageStep, stageLabel } from '../utils/bracketProgression';
+import { computeStandings, stageLabel } from '../utils/bracketProgression';
+import { BracketTree } from './BracketTree';
+import type { ThirdPlaceMode } from '../types/schema';
 import * as E from '../utils/boutEngine';
 import { clockNow } from '../utils/serverClock';
 import { displayName, displayClub, localizeCategoryName, nameModeFor, participantFlag, participantNoc, participantCountry, type NameMode } from '../utils/names';
@@ -364,17 +366,17 @@ const CategoryPicker: React.FC<{
 };
 
 /** Public bracket of each category, built from the real bouts. */
-export const PublicBracketsView: React.FC<BaseProps> = (props) => {
+export const PublicBracketsView: React.FC<BaseProps & { thirdPlaceOf?: (categoryId: string) => ThirdPlaceMode | undefined }> = (props) => {
   const { event, bouts, categories, language } = props;
   const { eventBouts, cats } = useEventCategories(event, bouts, categories);
   useEventNameMode(eventBouts, language);
   const [catId, setCatId] = React.useState<string | null>(null);
   const active = catId && cats.some((c) => c.id === catId) ? catId : cats[0]?.id;
-  const catBouts = eventBouts.filter((b) => b.categoryId === active);
-  const rounds = ELIMINATION_ORDER.filter((s) => catBouts.some((b) => b.roundStage === s));
-  const repechage = catBouts
-    .filter((b) => b.roundStage === 'repechage' || b.roundStage === 'bronze_match')
-    .sort((a, b) => repechageHalf(a) - repechageHalf(b) || repechageStep(a) - repechageStep(b));
+  const findAthlete = (id?: string): Participant | undefined =>
+    id
+      ? props.participants.find((p) => p.id === id) ||
+        ((eventBouts.find((b) => b.akaParticipantId === id)?.akaParticipant || eventBouts.find((b) => b.aoParticipantId === id)?.aoParticipant) as Participant | undefined)
+      : undefined;
 
   return (
     <div className="theme-keep space-y-5 pb-8">
@@ -386,35 +388,21 @@ export const PublicBracketsView: React.FC<BaseProps> = (props) => {
       ) : (
         <>
           <CategoryPicker cats={cats} bouts={eventBouts} active={active} onPick={setCatId} language={language} />
-          <div className="overflow-x-auto">
-            <div className="flex gap-4 min-w-max pb-2">
-              {rounds.map((stage) => (
-                <div key={stage} className="w-64 flex flex-col">
-                  <div className="text-xs font-semibold uppercase tracking-wider text-[var(--app-text-muted)] mb-2">{stageLabel(stage, language)}</div>
-                  <div className="flex flex-col justify-around flex-1 gap-3">
-                    {catBouts
-                      .filter((b) => b.roundStage === stage)
-                      .sort((a, b) => a.bracketPosition - b.bracketPosition)
-                      .map((b) => (
-                        <BoutCard key={b.id} bout={b} language={language} />
-                      ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+          {/* Wide bracket like Uventex: scrolls sideways on a phone, nothing is squeezed */}
+          <div className="overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 [-webkit-overflow-scrolling:touch]">
+            {active && (
+              <BracketTree
+                bouts={eventBouts}
+                categoryId={active}
+                lang={language}
+                variant="screen"
+                thirdPlace={props.thirdPlaceOf?.(active)}
+                nameOf={(p) => fullName(p)}
+                clubOf={(p) => displayClub(p, currentMode)}
+                find={findAthlete}
+              />
+            )}
           </div>
-          {repechage.length > 0 && (
-            <section>
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--app-text-muted)] mb-2">
-                {t(language, 'Утешительные бои за бронзу', 'Коло үчүн утешителдик беттештер', 'Repechage (bronze)')}
-              </h3>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {repechage.map((b) => (
-                  <BoutCard key={b.id} bout={b} language={language} />
-                ))}
-              </div>
-            </section>
-          )}
         </>
       )}
     </div>

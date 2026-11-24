@@ -312,7 +312,14 @@ export interface EventCategory {
   /** Name of the discipline when discipline is 'other' (e.g. «Кихон», «Тамешивари»). */
   customDiscipline?: string;
   isClosed?: boolean;
+  /**
+   * Third places: 'two_bronze' — both semi-final losers get bronze (SKIF);
+   * 'repechage' — repechage bouts, two bronzes (WKF, the default); 'bronze_match' — one bout for 3rd place.
+   */
+  thirdPlace?: ThirdPlaceMode;
 }
+
+export type ThirdPlaceMode = 'two_bronze' | 'repechage' | 'bronze_match';
 
 export interface Tatami {
   id: string;

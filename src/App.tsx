@@ -930,7 +930,8 @@ function AppContent() {
   const handleUpdateBout = (updatedBout: Bout) => {
     // Winner moves to the next round (any bracket size); repechage for the two bronzes is kept in sync.
     const find = (id?: string) => (id ? participants.find((p) => p.id === id) : undefined);
-    setBouts((prev) => applyBoutResult(prev, updatedBout, find));
+    const mode = eventCategories.find((c) => c.id === updatedBout.categoryId)?.thirdPlace;
+    setBouts((prev) => applyBoutResult(prev, updatedBout, find, mode));
   };
 
   const handleUpdateParticipant = (updatedParticipant: Participant) => {
@@ -1724,6 +1725,7 @@ function AppContent() {
           {activeTab === 'event_brackets' && !eventLoading && (
             <PublicBracketsView
               event={selectedEvent}
+              thirdPlaceOf={(cid) => eventCategories.find((c) => c.id === cid)?.thirdPlace}
               loading={!boutSync.loaded}
               bouts={bouts}
               participants={participants}

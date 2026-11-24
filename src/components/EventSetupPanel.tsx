@@ -5,7 +5,7 @@ import { useApp } from '../context/AppContext';
 import { localizeCategoryName } from '../utils/names';
 import { NumberField } from './NumberField';
 import { PricingEditor } from './PricingEditor';
-import type { Bout, EventCategory, Gender, Participant, Tournament } from '../types/schema';
+import type { Bout, EventCategory, Gender, Participant, ThirdPlaceMode, Tournament } from '../types/schema';
 import { WKF_AGE_GROUPS, buildWkfSet, categoryName, newCategoryId, activeEntries, DISCIPLINE_LABELS, isTeamCategory } from '../utils/eventCategories';
 
 interface EventSetupPanelProps {
@@ -112,6 +112,15 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
   const remove = (id: string) => onChangeCategories(categories.filter((c) => c.id !== id));
 
   const entriesTotal = cats.reduce((n, c) => n + activeEntries(participants, c.id).length, 0);
+  // Third places: both semi-final losers (SKIF), repechage (WKF) or one bout for 3rd place
+  const thirdOptions: { v: ThirdPlaceMode; label: string }[] = [
+    { v: 'two_bronze', label: tl('Два 3-х места — проигравшие в полуфиналах (SKIF)', 'Эки 3-орун — жарым финалда утулгандар (SKIF)', 'Two 3rd places — semi-final losers (SKIF)') },
+    { v: 'repechage', label: tl('Два 3-х места через утешительные бои (WKF)', 'Утешителдик беттештер аркылуу эки 3-орун (WKF)', 'Two 3rd places via repechage (WKF)') },
+    { v: 'bronze_match', label: tl('Бой за 3-е место (одно 3-е место)', '3-орун үчүн беттеш (бир 3-орун)', 'Bout for 3rd place (one 3rd place)') }
+  ];
+  const thirdOf = (c: EventCategory): ThirdPlaceMode => c.thirdPlace || 'repechage';
+  const allThird = cats.length && cats.every((c) => thirdOf(c) === thirdOf(cats[0])) ? thirdOf(cats[0]) : '';
+  const setThirdAll = (v: ThirdPlaceMode) => onChangeCategories(categories.map((c) => (c.tournamentId === tid ? { ...c, thirdPlace: v } : c)));
 
   return (
     <div className="theme-keep space-y-5 pb-8">
@@ -240,6 +249,15 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
         <div className="px-4 py-3 border-b border-[var(--app-border)] flex flex-wrap items-center gap-2">
           <h2 className="font-semibold text-[var(--app-text-primary)] flex-1">{tl('Категории турнира', 'Мелдештин категориялары', 'Tournament categories')} ({cats.length})</h2>
           <span className="text-sm text-[var(--app-text-muted)]">{tl('Заявок', 'Табыштамалар', 'Entries')}: {entriesTotal}</span>
+          {cats.length > 0 && (
+            <label className="w-full flex flex-wrap items-center gap-2 text-sm text-[var(--app-text-secondary)]">
+              {tl('3-и места во всех категориях:', 'Бардык категориялардагы 3-орундар:', '3rd places in all categories:')}
+              <select value={allThird} onChange={(e) => e.target.value && setThirdAll(e.target.value as ThirdPlaceMode)} className={`${field} h-8 py-0 max-w-full`}>
+                {!allThird && <option value="">{tl('разные', 'ар кандай', 'mixed')}</option>}
+                {thirdOptions.map((o) => <option key={o.v} value={o.v}>{o.label}</option>)}
+              </select>
+            </label>
+          )}
         </div>
         {cats.length === 0 ? (
           <div className="p-8 text-center text-sm text-[var(--app-text-muted)]">{tl('Категорий пока нет. Добавьте стандартный набор WKF или свою категорию.', 'Азырынча категориялар жок. WKF стандарттык топтомун же өз категорияңызды кошуңуз.', 'No categories yet. Add the standard WKF set or your own category.')}</div>
@@ -307,6 +325,12 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
                   </div>
                   {open === c.id && (
                     <div className="px-4 pb-3">
+                      <label className="flex flex-wrap items-center gap-2 text-sm text-[var(--app-text-secondary)] py-2">
+                        {tl('3-и места:', '3-орундар:', '3rd places:')}
+                        <select value={thirdOf(c)} onChange={(e) => patch(c.id, { thirdPlace: e.target.value as ThirdPlaceMode })} className={`${field} h-8 py-0 max-w-full`}>
+                          {thirdOptions.map((o) => <option key={o.v} value={o.v}>{o.label}</option>)}
+                        </select>
+                      </label>
                       {entries.length === 0 ? (
                         <div className="text-sm text-[var(--app-text-muted)] py-2">{tl('Заявок пока нет.', 'Азырынча табыштама жок.', 'No entries yet.')}</div>
                       ) : (

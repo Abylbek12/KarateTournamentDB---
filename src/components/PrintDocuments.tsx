@@ -2,7 +2,9 @@ import React from 'react';
 import { Printer } from 'lucide-react';
 import type { Bout, EventCategory, Participant, Tournament } from '../types/schema';
 import { belongsToEvent } from '../data/sampleTournamentData';
-import { ELIMINATION_ORDER, computeStandings, repechageHalf, repechageStep, stageLabel } from '../utils/bracketProgression';
+import { computeStandings, stageLabel } from '../utils/bracketProgression';
+import { bracketLayout } from '../utils/bracketLayout';
+import { BracketTree, bracketCardWidth, bracketSize } from './BracketTree';
 import * as E from '../utils/boutEngine';
 import { categoryName, activeEntries, beltName, ageOn } from '../utils/eventCategories';
 import { displayName, displayClub, localizeCategoryName, nameModeFor, participantCountry, participantFlag, participantNoc, type NameMode } from '../utils/names';
@@ -89,6 +91,9 @@ const tr = (lang: Lang, ru: string, ky: string, en: string) => (lang === 'ky' ? 
 const PRINT_CSS = `
 @page { size: A4; margin: 14mm 12mm; }
 @page diploma { size: A4 landscape; margin: 0; }
+@page bracket { size: A4 landscape; margin: 9mm 10mm; }
+.print-sheet.bracket-sheet { width: 297mm; page: bracket; }
+.bracket-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px; }
 .print-root { background: #e9ecef; color: #111; font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; padding: 24px 12px 48px; }
 .print-sheet { background: #fff; width: 210mm; max-width: 100%; margin: 0 auto 18px; padding: 14mm 12mm; box-shadow: 0 2px 12px rgba(0,0,0,.12); }
 .print-sheet.landscape { width: 297mm; min-height: 210mm; padding: 0; page: diploma; }
@@ -101,6 +106,9 @@ const PRINT_CSS = `
   .print-root { background: #fff; padding: 0; }
   .print-sheet { box-shadow: none; margin: 0; width: auto; padding: 0; }
   .print-sheet.landscape { width: 297mm; height: 210mm; }
+  .print-sheet.bracket-sheet { width: auto; }
+  .bracket-scroll { overflow: visible; }
+  .bracket-zoom { zoom: var(--print-zoom, 1); }
   .no-print { display: none !important; }
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }`;
@@ -179,53 +187,29 @@ export const PrintDocuments: React.FC<PrintDocumentsProps> = ({ request, tournam
   // ---------- Documents ----------
   const bracketSheet = (cid: string) => {
     const cb = eventBouts.filter((b) => b.categoryId === cid);
-    const rounds = ELIMINATION_ORDER.filter((s) => cb.some((b) => b.roundStage === s));
-    const rep = cb.filter((b) => b.roundStage === 'repechage' || b.roundStage === 'bronze_match').sort((a, b) => repechageHalf(a) - repechageHalf(b) || repechageStep(a) - repechageStep(b));
-    const boutBox = (b: Bout) => (
-      <div key={b.id} style={{ border: '1px solid #555', fontSize: 10.5, marginBottom: 6, breakInside: 'avoid' }}>
-        <div style={{ background: '#eef1f4', padding: '1px 4px', fontSize: 9.5 }}>#{b.boutNumber} · {b.scheduledTime}</div>
-        {(['aka', 'ao'] as const).map((s) => {
-          const p = sideP(b, s);
-          const id = s === 'aka' ? b.akaParticipantId : b.aoParticipantId;
-          const won = b.winnerId && b.winnerId === id;
-          return (
-            <div key={s} style={{ display: 'flex', gap: 4, padding: '2px 4px', // Bracket line: red for AKA, white outlined in gray for the second athlete (like Uventex lines)
-              borderBottom: s === 'aka' ? '2px solid #c0392b' : '3px solid #fff', boxShadow: s === 'aka' ? undefined : '0 1px 0 0 #8a939c, inset 0 -1px 0 0 #8a939c', fontWeight: won ? 700 : 400 }}>
-              <span style={{ width: 6, background: s === 'aka' ? '#c0392b' : '#1f5fa8' }} />
-              <span style={{ flex: 1, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{p ? `${name(p)} ${participantNoc(p)}` : '—'}</span>
-              <span>{b.status !== 'scheduled' ? (s === 'aka' ? b.akaScore : b.aoScore) : ''}</span>
-            </div>
-          );
-        })}
-      </div>
-    );
+    const def = categories.find((c) => c.id === cid);
+    // Width of the drawing → zoom so the whole bracket fits one landscape A4 sheet (277 mm ≈ 1047 px) when printed
+    const people = cb.flatMap((b) => [b.akaParticipantId, b.aoParticipantId]).map(find).filter((p): p is Participant => !!p);
+    const layout = bracketLayout(cb);
+    const size = bracketSize(layout.columns.length, layout.firstCount, bracketCardWidth(people.map((p) => ({ name: name(p), club: club(p) }))));
+    // Fit the width always; the height too (≈ 500 px under the title on a landscape sheet), but never smaller than 55 %
+    const zoom = Math.min(1, 1040 / size.width, Math.max(0.55, 500 / size.height));
     return (
-      <div className="print-sheet print-break" key={`br-${cid}`}>
-        <Header
-          title={tr(lang, 'Турнирная сетка', 'Турнирдик торчо', 'Bracket')}
-          subtitle={`${catTitle(cid)}${tatamiOf(cid) ? ` · ${tr(lang, 'Татами', 'Татами', 'Tatami')} ${tatamiOf(cid)}` : ''}`}
-        />
+      <div className="print-sheet print-break bracket-sheet" key={`br-${cid}`}>
+        <Header title={tr(lang, 'Турнирная сетка', 'Турнирдик торчо', 'Bracket')} />
+        {/* Category in big letters: discipline, qualification, age and weight class */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '4px 14px', margin: '-4px 0 12px' }}>
+          <div style={{ fontSize: 20, fontWeight: 800 }}>{catTitle(cid)}</div>
+          {tatamiOf(cid) && <div style={{ fontSize: 14, fontWeight: 600, color: '#333' }}>{tr(lang, 'Татами', 'Татами', 'Tatami')} {tatamiOf(cid)}</div>}
+        </div>
         {cb.length === 0 ? (
           <p>{tr(lang, 'Жеребьёвка не проведена.', 'Чүчүкулак өткөрүлө элек.', 'The draw has not been made.')}</p>
         ) : (
-          <>
-            <div style={{ display: 'flex', gap: 8 }}>
-              {rounds.map((stage) => (
-                <div key={stage} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>{stageLabel(stage, lang)}</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-around', flex: 1 }}>
-                    {cb.filter((b) => b.roundStage === stage).sort((a, b) => a.bracketPosition - b.bracketPosition).map(boutBox)}
-                  </div>
-                </div>
-              ))}
+          <div className="bracket-scroll">
+            <div className="bracket-zoom" style={{ ['--print-zoom' as string]: zoom } as React.CSSProperties}>
+              <BracketTree bouts={eventBouts} categoryId={cid} lang={lang} variant="print" thirdPlace={def?.thirdPlace} nameOf={(p) => `${name(p)} ${participantNoc(p)}`.trim()} clubOf={(p) => club(p)} find={find} />
             </div>
-            {rep.length > 0 && (
-              <div style={{ marginTop: 10 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>{tr(lang, 'Утешительные бои', 'Утешителдик беттештер', 'Repechage')}</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>{rep.map(boutBox)}</div>
-              </div>
-            )}
-          </>
+          </div>
         )}
         <Signatures roles={[chief, secretary]} />
       </div>
