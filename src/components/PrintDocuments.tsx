@@ -202,7 +202,7 @@ export const PrintDocuments: React.FC<PrintDocumentsProps> = ({ request, tournam
     // Height budget: under the header on the first sheet; a 17–32 bracket has a subgroup per sheet
     const split = size.splitPages;
     // Small brackets may grow (up to 130 %) to use the sheet, like Uventex
-    const zoom = Math.min(1.3, 1010 / size.width, Math.max(0.55, (split ? 540 : 450) / size.height));
+    const zoom = Math.min(1.3, 1010 / size.width, Math.max(0.55, (split ? 520 : 420) / size.height));
     const title = catTitle(cid);
     const info: BracketInfo = {
       discipline: def ? disciplineName(def) : title.split(' · ')[0],

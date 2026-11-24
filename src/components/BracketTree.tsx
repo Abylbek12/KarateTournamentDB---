@@ -45,8 +45,8 @@ export interface BracketTreeProps {
 // Big brackets (8+ bouts in a column) are tighter so a 16-athlete bracket still reads well on one sheet
 const dims = (variant: 'print' | 'screen', dense = false) =>
   variant === 'print'
-    ? { head: 13, row: 30, pair: dense ? 4 : 8, gapY: dense ? 6 : 14, gapX: 34, name: 12, club: 9.5, title: 18 }
-    : { head: 12, row: 27, pair: dense ? 4 : 6, gapY: dense ? 6 : 10, gapX: 28, name: 11.5, club: 9, title: 16 };
+    ? { head: 13, row: 27, pair: dense ? 4 : 6, gapY: dense ? 6 : 12, gapX: 34, name: 11.5, club: 9, title: 18 }
+    : { head: 12, row: 25, pair: dense ? 4 : 5, gapY: dense ? 6 : 10, gapX: 28, name: 11, club: 8.5, title: 16 };
 const denseFor = (firstCount: number) => (isSplit(firstCount) ? firstCount / 2 : firstCount) >= 8;
 
 /** Slot width from the longest name / club in the category: everything fits, nothing is cut. */
@@ -83,8 +83,8 @@ export const BracketTree: React.FC<BracketTreeProps> = ({ bouts, categoryId, lan
   const repechage = cat.filter((b) => b.roundStage === 'repechage').sort((a, b) => repechageHalf(a) - repechageHalf(b) || repechageStep(a) - repechageStep(b));
   const print = variant === 'print';
   const c = print
-    ? { text: '#111', muted: '#555', border: '#444', bg: '#fff', line: '#555', aka: '#e0453a', ao: '#9aa3ad', winner: '#111', band: '#fff' }
-    : { text: 'var(--app-text-primary)', muted: 'var(--app-text-muted)', border: 'var(--app-border)', bg: 'var(--app-surface)', line: 'var(--app-text-muted)', aka: '#e0453a', ao: '#9aa3ad', winner: 'var(--app-text-primary)', band: 'var(--app-surface)' };
+    ? { text: '#111', muted: '#555', border: '#444', bg: '#fff', line: '#555', aka: '#e0453a', ao: '#d1d5db', aoBg: '#F3F4F6', winner: '#111', band: '#fff' }
+    : { text: 'var(--app-text-primary)', muted: 'var(--app-text-muted)', border: 'var(--app-border)', bg: 'var(--app-surface)', line: 'var(--app-text-muted)', aka: '#e0453a', ao: 'var(--app-border)', aoBg: 'var(--app-surface-subtle)', winner: 'var(--app-text-primary)', band: 'var(--app-surface)' };
 
   const people = cat.flatMap((b) => [b.akaParticipantId, b.aoParticipantId]).map(find).filter((p): p is Participant => !!p);
   const cardW = bracketCardWidth(people.map((p) => ({ name: nameOf(p), club: clubOf(p) })), variant);
@@ -92,12 +92,13 @@ export const BracketTree: React.FC<BracketTreeProps> = ({ bouts, categoryId, lan
   const athlete = (id?: string): SideSource => (id ? { kind: 'athlete', id } : { kind: 'empty' });
 
   // ---------- one athlete slot: an open frame (top, left, bottom) like Uventex ----------
-  const slot = (content: { p?: Participant; label?: string; won?: boolean; score?: number | string }, edge: string, key: string, style?: React.CSSProperties) => (
+  // Each athlete is a separate block: AKA in a thin red frame with a red left accent, AO on a light-gray background
+  const slot = (content: { p?: Participant; label?: string; won?: boolean; score?: number | string }, edge: string, key: string, style?: React.CSSProperties, fill?: string, accent?: string) => (
     <div
       key={key}
       style={{
-        height: d.row, display: 'flex', alignItems: 'center', gap: 6, padding: '0 4px 0 7px', boxSizing: 'border-box',
-        borderTop: `1.5px solid ${edge}`, borderBottom: `1.5px solid ${edge}`, borderLeft: `1.5px solid ${edge}`, background: c.bg,
+        height: d.row, display: 'flex', alignItems: 'center', gap: 6, padding: '0 5px 0 7px', boxSizing: 'border-box',
+        border: `1px solid ${edge}`, borderLeft: accent ? `3px solid ${accent}` : `1px solid ${edge}`, borderRadius: 2, background: fill || c.bg,
         ...style
       }}
     >
@@ -119,7 +120,7 @@ export const BracketTree: React.FC<BracketTreeProps> = ({ bouts, categoryId, lan
     const won = !!b?.winnerId && src.kind === 'athlete' && b.winnerId === src.id;
     const score = b && b.status !== 'scheduled' ? (s === 'aka' ? b.akaScore : b.aoScore) : '';
     // AKA: red frame; AO: white inside, gray edges
-    return slot({ p, won, score, label: src.kind === 'winner' ? winnerLabel(src.boutNumber) : '' }, s === 'aka' ? c.aka : c.ao, s, s === 'ao' ? { marginTop: d.pair } : undefined);
+    return slot({ p, won, score, label: src.kind === 'winner' ? winnerLabel(src.boutNumber) : '' }, s === 'aka' ? c.aka : c.ao, s, s === 'ao' ? { marginTop: d.pair } : undefined, s === 'aka' ? c.bg : c.aoBg, s === 'aka' ? c.aka : undefined);
   };
   const card = (b: Bout | undefined, aka: SideSource, ao: SideSource, style: React.CSSProperties, key: string) => (
     <div key={key} style={{ position: 'absolute', width: cardW, height: CARD_H, boxSizing: 'border-box', outline: b?.status === 'in_progress' ? `2px solid ${c.aka}` : undefined, outlineOffset: 2, ...style }}>
@@ -219,7 +220,7 @@ export const BracketTree: React.FC<BracketTreeProps> = ({ bouts, categoryId, lan
           )}
           {opts.withFinalExtras && finalSlot?.bout && (
             <div style={{ position: 'absolute', left: champX, top: champY, width: cardW }}>
-              {slot({ p: champ, won: true, label: '' }, c.winner, 'champ', { borderWidth: 2 })}
+              {slot({ p: champ, won: true, label: '' }, c.winner, 'champ', { borderWidth: 2, borderLeftWidth: 2 })}
             </div>
           )}
           {opts.withFinalExtras && bronzeBout && (
@@ -290,9 +291,13 @@ export const BracketTree: React.FC<BracketTreeProps> = ({ bouts, categoryId, lan
           </div>
           {/* Five referee signatures (print) */}
           {print && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 28, margin: '14px 0 4px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', columnGap: 22, margin: '6px 0 14px' }}>
               {referees.map((r) => (
-                <div key={r} style={{ borderTop: '2px solid #9aa3ad', paddingTop: 4, fontSize: 11, color: '#555' }}>{r}</div>
+                <div key={r} style={{ minWidth: 0 }}>
+                  {/* Space for a handwritten signature, then the line across the column */}
+                  <div style={{ height: 40, borderBottom: '1.5px solid #6b7280' }} />
+                  <div style={{ paddingTop: 4, fontSize: 11, color: '#444', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r}</div>
+                </div>
               ))}
             </div>
           )}
