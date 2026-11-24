@@ -1282,7 +1282,8 @@ app.post('/api/entries', (req: Request, res: Response) => {
       actualWeightKg: null,
       isWeighedIn: false,
       isMedicalCleared: false,
-      feePaymentStatus: cat.fee > 0 ? 'pending' : 'exempt',
+      // New entries start as «Оплачено» (the owner's rule); free categories stay «Освобождён». Changed by hand in «Оплата взносов».
+      feePaymentStatus: cat.fee > 0 ? 'paid' : 'exempt',
       status: 'registered',
       licenseNumber: String(e.licenseNumber || '').trim().slice(0, 40),
       teamName: isTeam ? String(e.teamName || '').trim().slice(0, 80) : undefined,
@@ -1310,7 +1311,7 @@ app.post('/api/entries', (req: Request, res: Response) => {
     );
     own.forEach((p, i) => {
       p.feeAmount = quote.lines[i].amount;
-      p.feePaymentStatus = quote.lines[i].amount > 0 ? 'pending' : 'exempt';
+      p.feePaymentStatus = quote.lines[i].amount > 0 ? 'paid' : 'exempt';
     });
   }
   // «Мои спортсмены»: a new athlete entered by hand lands in the roster; a chosen one gets the newest weight.
