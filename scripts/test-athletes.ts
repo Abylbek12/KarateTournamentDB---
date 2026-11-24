@@ -144,7 +144,8 @@ async function main() {
     check('entry by hand: card created once for two categories', typed.status === 201 && roster2.length === 2 && typed.data.entries.every((e: any) => e.athleteId === roster2.find((a: any) => a.lastName === 'Иванов')?.id));
     check('entry by hand: server reports the roster changed', typed.data.rosterChanged === true);
     const adminEntry = await admin.call('POST', '/api/entries', { entries: [{ ...hand, lastName: 'Организаторов' }] });
-    check('entry by the organizer: card lands in the organizer roster', adminEntry.status === 201 && (await admin.call('GET', '/api/athletes')).data.athletes?.length === 1);
+    // Owner's rule (24 Nov 2026): an admin / organizer loading a tournament list gets no cards in «Мои спортсмены»
+    check('entry by the organizer: no automatic card', adminEntry.status === 201 && !adminEntry.data.entries?.[0]?.athleteId && ((await admin.call('GET', '/api/athletes')).data.athletes?.length ?? 0) === 0);
     const secretaryEntry = await referee.call('POST', '/api/entries', { entries: [{ ...hand, lastName: 'Секретарев' }] });
     check('entry by the secretary: no automatic card', secretaryEntry.status === 201 && !secretaryEntry.data.entries?.[0]?.athleteId);
 
