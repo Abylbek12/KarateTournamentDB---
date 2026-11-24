@@ -83,9 +83,9 @@ export const BracketTree: React.FC<BracketTreeProps> = ({ bouts, categoryId, lan
   const repechage = cat.filter((b) => b.roundStage === 'repechage').sort((a, b) => repechageHalf(a) - repechageHalf(b) || repechageStep(a) - repechageStep(b));
   const print = variant === 'print';
   const c = print
-    ? { text: '#111', muted: '#555', border: '#444', bg: '#fff', line: '#555', aka: '#e0453a', ao: '#d1d5db', aoBg: '#fff', winner: '#111', band: '#fff', cardText: '#111', cardMuted: '#555' }
+    ? { text: '#111', muted: '#555', border: '#444', bg: '#fff', line: '#555', aka: '#e0453a', ao: '#6b7280', aoBg: '#fff', winner: '#111', band: '#fff', cardText: '#111', cardMuted: '#555' }
     : // Athlete blocks are always white (#fff) with dark text, also in the dark theme
-      { text: 'var(--app-text-primary)', muted: 'var(--app-text-muted)', border: 'var(--app-border)', bg: '#fff', line: 'var(--app-text-muted)', aka: '#e0453a', ao: '#d1d5db', aoBg: '#fff', winner: 'var(--app-text-primary)', band: 'var(--app-surface)', cardText: '#111', cardMuted: '#5b6470' };
+      { text: 'var(--app-text-primary)', muted: 'var(--app-text-muted)', border: 'var(--app-border)', bg: '#fff', line: 'var(--app-text-muted)', aka: '#e0453a', ao: '#6b7280', aoBg: '#fff', winner: 'var(--app-text-primary)', band: 'var(--app-surface)', cardText: '#111', cardMuted: '#5b6470' };
 
   const people = cat.flatMap((b) => [b.akaParticipantId, b.aoParticipantId]).map(find).filter((p): p is Participant => !!p);
   const cardW = bracketCardWidth(people.map((p) => ({ name: nameOf(p), club: clubOf(p) })), variant);
