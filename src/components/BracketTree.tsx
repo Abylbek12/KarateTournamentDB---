@@ -37,8 +37,8 @@ export interface BracketTreeProps {
 // Sizes: a little bigger on paper, compact on the screen
 const dims = (variant: 'print' | 'screen') =>
   variant === 'print'
-    ? { head: 17, row: 32, gapY: 12, gapX: 40, name: 12, club: 10, title: 20 }
-    : { head: 15, row: 28, gapY: 8, gapX: 30, name: 11.5, club: 9.5, title: 18 };
+    ? { head: 17, row: 32, pair: 4, gapY: 12, gapX: 40, name: 12, club: 10, title: 20 }
+    : { head: 15, row: 28, pair: 3, gapY: 8, gapX: 30, name: 11.5, club: 9.5, title: 18 };
 
 /** Card width from the longest name / club in the category: everything fits, nothing is cut. */
 export function bracketCardWidth(texts: { name: string; club: string }[], variant: 'print' | 'screen' = 'print'): number {
@@ -55,7 +55,7 @@ const isSplit = (firstCount: number) => firstCount >= 16;
 export function bracketPanelSize(categoryBouts: Bout[], cardW: number, variant: 'print' | 'screen' = 'print') {
   const d = dims(variant);
   const L = bracketLayout(categoryBouts);
-  const unit = d.head + d.row * 2 + d.gapY;
+  const unit = d.head + d.row * 2 + d.pair + d.gapY;
   const split = isSplit(L.firstCount);
   // Split: a page holds one subgroup (B with the final and the places on its right), so half the slots
   const cols = L.columns.length;
@@ -65,7 +65,8 @@ export function bracketPanelSize(categoryBouts: Bout[], cardW: number, variant: 
 
 export const BracketTree: React.FC<BracketTreeProps> = ({ bouts, categoryId, lang, variant, thirdPlace, info, nameOf, clubOf, find }) => {
   const d = dims(variant);
-  const CARD_H = d.head + d.row * 2;
+  // Card: bout number, then two separate blocks (AKA, AO) with a small gap between them
+  const CARD_H = d.head + d.row * 2 + d.pair;
   const UNIT = CARD_H + d.gapY;
   const cat = bouts.filter((b) => b.categoryId === categoryId);
   const layout = bracketLayout(cat);
@@ -73,8 +74,8 @@ export const BracketTree: React.FC<BracketTreeProps> = ({ bouts, categoryId, lan
   const repechage = cat.filter((b) => b.roundStage === 'repechage').sort((a, b) => repechageHalf(a) - repechageHalf(b) || repechageStep(a) - repechageStep(b));
   const print = variant === 'print';
   const c = print
-    ? { text: '#111', muted: '#555', border: '#555', head: '#eef1f4', bg: '#fff', line: '#333', aka: '#c0392b', ao: '#1f5fa8', gray: '#8a939c', band: '#f4f6f8' }
-    : { text: 'var(--app-text-primary)', muted: 'var(--app-text-muted)', border: 'var(--app-border)', head: 'var(--app-surface-subtle)', bg: 'var(--app-surface)', line: 'var(--app-text-muted)', aka: '#dc2626', ao: '#2563eb', gray: '#94a3b8', band: 'var(--app-surface-subtle)' };
+    ? { text: '#111', muted: '#555', border: '#555', head: '#eef1f4', bg: '#fff', line: '#333', aka: '#c0392b', ao: '#1f5fa8', gray: '#8a939c', band: '#f4f6f8', aoBg: '#eceff3', aoBorder: '#c9cfd6' }
+    : { text: 'var(--app-text-primary)', muted: 'var(--app-text-muted)', border: 'var(--app-border)', head: 'var(--app-surface-subtle)', bg: 'var(--app-surface)', line: 'var(--app-text-muted)', aka: '#dc2626', ao: '#2563eb', gray: '#94a3b8', band: 'var(--app-surface-subtle)', aoBg: 'var(--app-surface-subtle)', aoBorder: 'var(--app-border)' };
 
   const people = cat.flatMap((b) => [b.akaParticipantId, b.aoParticipantId]).map(find).filter((p): p is Participant => !!p);
   const cardW = bracketCardWidth(people.map((p) => ({ name: nameOf(p), club: clubOf(p) })), variant);
@@ -91,12 +92,14 @@ export const BracketTree: React.FC<BracketTreeProps> = ({ bouts, categoryId, lan
         key={s}
         style={{
           height: d.row, display: 'flex', alignItems: 'center', gap: 5, padding: '0 6px 0 0', boxSizing: 'border-box',
-          // Line under each name like Uventex: red under AKA, white outlined in gray under the second athlete
-          borderBottom: s === 'aka' ? `2px solid ${c.aka}` : '3px solid #fff',
-          boxShadow: s === 'aka' ? undefined : `0 1px 0 0 ${c.gray}, inset 0 -1px 0 0 ${c.gray}`
+          // Two separate blocks: AKA in a red frame, AO on a light-gray background
+          border: s === 'aka' ? `1.5px solid ${c.aka}` : `1px solid ${c.aoBorder}`,
+          background: s === 'aka' ? c.bg : c.aoBg,
+          borderRadius: 3,
+          marginTop: s === 'ao' ? d.pair : 0
         }}
       >
-        <span style={{ width: 5, alignSelf: 'stretch', background: s === 'aka' ? c.aka : c.ao }} />
+        <span style={{ width: 5, alignSelf: 'stretch', background: s === 'aka' ? c.aka : c.ao, borderRadius: '2px 0 0 2px' }} />
         <span style={{ flex: 1, minWidth: 0, lineHeight: 1.12 }}>
           {p ? (
             <>
@@ -112,8 +115,8 @@ export const BracketTree: React.FC<BracketTreeProps> = ({ bouts, categoryId, lan
     );
   };
   const card = (b: Bout | undefined, aka: SideSource, ao: SideSource, style: React.CSSProperties, key: string) => (
-    <div key={key} style={{ position: 'absolute', width: cardW, height: CARD_H, border: `1px solid ${b?.status === 'in_progress' ? c.aka : c.border}`, background: c.bg, boxSizing: 'border-box', ...style }}>
-      <div style={{ height: d.head, background: c.head, fontSize: d.club, color: c.muted, padding: '0 5px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <div key={key} style={{ position: 'absolute', width: cardW, height: CARD_H, boxSizing: 'border-box', outline: b?.status === 'in_progress' ? `2px solid ${c.aka}` : undefined, outlineOffset: 2, ...style }}>
+      <div style={{ height: d.head, fontSize: d.club, color: c.muted, padding: '0 2px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span>#{b?.boutNumber}{b?.scheduledTime ? ` · ${b.scheduledTime}` : ''}</span>
         {b?.status === 'in_progress' && <span style={{ color: c.aka, fontWeight: 700 }}>LIVE</span>}
       </div>
@@ -167,8 +170,9 @@ export const BracketTree: React.FC<BracketTreeProps> = ({ bouts, categoryId, lan
       for (const slot of col.slots) {
         if (!slot.bout) continue;
         const to = feedsInto(slot.local);
-        const y1 = center(r, slot.local);
-        const y2 = center(r + 1, to.pos) - CARD_H / 2 + d.head + (to.side === 'aka' ? d.row / 2 : d.row * 1.5);
+        // The line leaves from the gap between the two blocks of the bout
+        const y1 = center(r, slot.local) - CARD_H / 2 + d.head + d.row + d.pair / 2;
+        const y2 = center(r + 1, to.pos) - CARD_H / 2 + d.head + (to.side === 'aka' ? d.row / 2 : d.row * 1.5 + d.pair);
         const x1 = x(r) + cardW;
         lines.push(`M${x1} ${y1} H${x1 + d.gapX / 2} V${y2} H${x(r + 1)}`);
       }
