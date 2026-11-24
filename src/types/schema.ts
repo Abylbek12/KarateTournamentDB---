@@ -175,6 +175,9 @@ export interface Tournament {
   liveStreams?: Record<string, string>;
   /** Price periods and the discount for next categories (src/utils/pricing.ts). */
   pricing?: TournamentPricing;
+  /** Printed under every bracket, e.g. «Кыдыралиев К.С. (3 дан)». */
+  chiefRefereeName?: string;
+  chiefSecretaryName?: string;
 }
 
 export interface Club {

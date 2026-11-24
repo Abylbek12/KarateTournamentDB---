@@ -186,6 +186,12 @@ export const PrintDocuments: React.FC<PrintDocumentsProps> = ({ request, tournam
   const secretary = tr(lang, 'Главный секретарь', 'Башкы катчы', 'Chief Secretary');
 
   // ---------- Documents ----------
+  // «29 ноя 2026», like Uventex
+  const fmtDate = (iso?: string) => {
+    if (!iso) return undefined;
+    const d = new Date(`${iso.slice(0, 10)}T00:00:00`);
+    return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString(lang === 'en' ? 'en-GB' : lang === 'ky' ? 'ky-KG' : 'ru-RU', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/\./g, '').replace(/\s*г$/, '').trim();
+  };
   const bracketSheet = (cid: string) => {
     const cb = eventBouts.filter((b) => b.categoryId === cid);
     const def = categories.find((c) => c.id === cid);
@@ -195,7 +201,8 @@ export const PrintDocuments: React.FC<PrintDocumentsProps> = ({ request, tournam
     const size = bracketPanelSize(cb, bracketCardWidth(people.map((p) => ({ name: athleteName(p), club: club(p) }))));
     // Height budget: under the header on the first sheet; a 17–32 bracket has a subgroup per sheet
     const split = size.splitPages;
-    const zoom = Math.min(1, 1010 / size.width, Math.max(0.55, (split ? 560 : 470) / size.height));
+    // Small brackets may grow (up to 130 %) to use the sheet, like Uventex
+    const zoom = Math.min(1.3, 1010 / size.width, Math.max(0.55, (split ? 540 : 450) / size.height));
     const title = catTitle(cid);
     const info: BracketInfo = {
       discipline: def ? disciplineName(def) : title.split(' · ')[0],
@@ -203,13 +210,18 @@ export const PrintDocuments: React.FC<PrintDocumentsProps> = ({ request, tournam
       code: def ? categoryCode(def) : cid,
       protocol: catIds.indexOf(cid) + 1,
       tatami: tatamiOf(cid),
-      date: event.startDate
+      date: fmtDate(event.startDate),
+      time: [...cb].sort((a, b) => a.boutNumber - b.boutNumber)[0]?.scheduledTime,
+      eventTitle: event.title,
+      city: event.city,
+      chiefReferee: event.chiefRefereeName,
+      chiefSecretary: event.chiefSecretaryName
     };
     return (
       <div className="print-sheet print-break bracket-sheet" key={`br-${cid}`}>
-        <Header title={tr(lang, 'Турнирная сетка', 'Турнирдик торчо', 'Bracket')} />
         {cb.length === 0 ? (
           <>
+            <Header title={tr(lang, 'Турнирная сетка', 'Турнирдик торчо', 'Bracket')} />
             <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 8 }}>{title}</div>
             <p>{tr(lang, 'Жеребьёвка не проведена.', 'Чүчүкулак өткөрүлө элек.', 'The draw has not been made.')}</p>
           </>
@@ -220,7 +232,6 @@ export const PrintDocuments: React.FC<PrintDocumentsProps> = ({ request, tournam
             </div>
           </div>
         )}
-        <Signatures roles={[chief, secretary]} />
       </div>
     );
   };
