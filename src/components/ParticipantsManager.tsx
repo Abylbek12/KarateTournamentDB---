@@ -17,7 +17,7 @@ import { Participant, Club, BeltRank, EventCategory, Tournament } from '../types
 import { belongsToEvent } from '../data/sampleTournamentData';
 import { useApp } from '../context/AppContext';
 import { placeName, countryLabel } from '../utils/eventI18n';
-import { categoryName, weighInFits, findCategoryForWeight, beltName, beltLabel } from '../utils/eventCategories';
+import { categoryName, weighInFits, findCategoryForWeight, beltName, beltLabel, hasWeightClasses } from '../utils/eventCategories';
 import { SAMPLE_PARTICIPANTS, SAMPLE_CLUBS } from '../data/sampleTournamentData';
 
 interface ParticipantsManagerProps {
@@ -53,6 +53,7 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
   // Weigh-in modal state
   const [weighInAthlete, setWeighInAthlete] = useState<Participant | null>(null);
   const [actualWeightInput, setActualWeightInput] = useState<number>(0);
+  const [weighError, setWeighError] = useState('');
   const [medicalClearedInput, setMedicalClearedInput] = useState<boolean>(true);
 
   const filtered = inTournament.filter((p) => {
@@ -68,17 +69,27 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
 
   const handleOpenWeighIn = (p: Participant) => {
     setWeighInAthlete(p);
-    setActualWeightInput(p.actualWeightKg || p.declaredWeightKg);
+    setActualWeightInput(p.actualWeightKg || p.declaredWeightKg || 0);
+    setWeighError('');
     setMedicalClearedInput(p.isMedicalCleared);
   };
 
   const handleSaveWeighIn = () => {
     if (!weighInAthlete) return;
     const cat = catOf(weighInAthlete);
-    const fits = weighInFits(cat, actualWeightInput);
+    // Empty weight = not given (kata, open weight): saved as «нет», never as 0 kg
+    const kg = actualWeightInput > 0 ? actualWeightInput : null;
+    const needsWeight = !!cat && hasWeightClasses(cat) && (cat.weightMin != null || cat.weightMax != null);
+    if (kg == null && needsWeight) {
+      setWeighError(tl('Для этой весовой категории впишите вес.', 'Бул салмак категориясы үчүн салмакты жазыңыз.', 'Enter the weight for this weight category.'));
+      return;
+    }
+    const fits = weighInFits(cat, kg);
     const updated: Participant = {
       ...weighInAthlete,
-      actualWeightKg: actualWeightInput,
+      actualWeightKg: kg,
+      // weight given later: it also becomes the declared weight
+      declaredWeightKg: weighInAthlete.declaredWeightKg > 0 ? weighInAthlete.declaredWeightKg : kg ?? 0,
       isWeighedIn: true,
       isMedicalCleared: medicalClearedInput,
       status: medicalClearedInput ? 'weighed_in' : 'disqualified',
@@ -251,12 +262,12 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
 
                     {/* Declared weight */}
                     <td className="px-5 py-4 text-right tabular-nums text-slate-400 tabular-nums">
-                      {p.declaredWeightKg} {tl('кг', 'кг', 'kg')}
+                      {p.declaredWeightKg > 0 ? `${p.declaredWeightKg} ${tl('кг', 'кг', 'kg')}` : tl('не указан', 'көрсөтүлгөн эмес', 'not given')}
                     </td>
 
                     {/* Actual weight */}
                     <td className="px-5 py-4 text-right tabular-nums tabular-nums">
-                      {p.actualWeightKg !== null ? (
+                      {p.actualWeightKg ? (
                         <span className="font-bold text-white">
                           {p.actualWeightKg} {tl('кг', 'кг', 'kg')}
                         </span>
@@ -335,7 +346,7 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
                   {weighInAthlete.lastName} {weighInAthlete.firstName}
                 </div>
                 <div className="text-xs text-slate-400">
-                  {weighInAthlete.clubName} · {tl('Заявленный вес', 'Көрсөтүлгөн салмак', 'Declared weight')}: {weighInAthlete.declaredWeightKg} {tl('кг', 'кг', 'kg')}
+                  {weighInAthlete.clubName} · {tl('Заявленный вес', 'Көрсөтүлгөн салмак', 'Declared weight')}: {weighInAthlete.declaredWeightKg > 0 ? `${weighInAthlete.declaredWeightKg} ${tl('кг', 'кг', 'kg')}` : tl('не указан — впишите, если известен', 'көрсөтүлгөн эмес — белгилүү болсо жазыңыз', 'not given — enter it if known')}
                 </div>
               </div>
 
@@ -346,11 +357,12 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
                 <NumberField
                   decimals
                   value={actualWeightInput}
-                  onValueChange={setActualWeightInput}
+                  onValueChange={(v) => { setActualWeightInput(v); setWeighError(''); }}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-base text-white focus:outline-none focus:border-rose-500 tabular-nums font-bold"
                 />
               </div>
 
+              {weighError && <div role="alert" className="text-xs font-semibold text-amber-400">{weighError}</div>}
               <div className="flex items-center gap-2 pt-2">
                 <input
                   type="checkbox"

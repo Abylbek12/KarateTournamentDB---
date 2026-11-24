@@ -8,13 +8,13 @@ import type { BeltRank, EventCategory, Gender, Participant } from '../types/sche
  */
 
 export const BELT_ORDER: BeltRank[] = [
-  'white_10kyu', 'yellow_8kyu', 'orange_7kyu', 'green_6kyu', 'blue_4kyu',
-  'brown_3kyu', 'brown_1kyu', 'black_1dan', 'black_2dan', 'black_3dan_plus'
+  'white_10kyu', 'yellow_8kyu', 'orange_7kyu', 'green_6kyu', 'kyu_5', 'blue_4kyu',
+  'brown_3kyu', 'brown_2kyu', 'brown_1kyu', 'black_1dan', 'black_2dan', 'black_3dan_plus'
 ];
 
 export const BELT_LABELS: Record<BeltRank, string> = {
-  white_10kyu: 'Белый (10 кю)', yellow_8kyu: 'Жёлтый (8 кю)', orange_7kyu: 'Оранжевый (7 кю)', green_6kyu: 'Зелёный (6 кю)',
-  blue_4kyu: 'Синий (4 кю)', brown_3kyu: 'Коричневый (3 кю)', brown_1kyu: 'Коричневый (1 кю)', black_1dan: 'Чёрный (1 дан)',
+  white_10kyu: 'Белый (10 кю)', yellow_8kyu: 'Жёлтый (8 кю)', orange_7kyu: 'Оранжевый (7 кю)', green_6kyu: 'Зелёный (6 кю)', kyu_5: '5 кю',
+  blue_4kyu: 'Синий (4 кю)', brown_3kyu: 'Коричневый (3 кю)', brown_2kyu: 'Коричневый (2 кю)', brown_1kyu: 'Коричневый (1 кю)', black_1dan: 'Чёрный (1 дан)',
   black_2dan: 'Чёрный (2 дан)', black_3dan_plus: 'Чёрный (3 дан и выше)', other: 'Другое'
 };
 
@@ -22,13 +22,13 @@ export const BELT_LABELS: Record<BeltRank, string> = {
 export const BELT_CHOICES: BeltRank[] = [...BELT_ORDER, 'other'];
 
 const BELT_LABELS_KY: Record<BeltRank, string> = {
-  white_10kyu: 'Ак (10 кю)', yellow_8kyu: 'Сары (8 кю)', orange_7kyu: 'Кызгылт сары (7 кю)', green_6kyu: 'Жашыл (6 кю)',
-  blue_4kyu: 'Көк (4 кю)', brown_3kyu: 'Күрөң (3 кю)', brown_1kyu: 'Күрөң (1 кю)', black_1dan: 'Кара (1 дан)',
+  white_10kyu: 'Ак (10 кю)', yellow_8kyu: 'Сары (8 кю)', orange_7kyu: 'Кызгылт сары (7 кю)', green_6kyu: 'Жашыл (6 кю)', kyu_5: '5 кю',
+  blue_4kyu: 'Көк (4 кю)', brown_3kyu: 'Күрөң (3 кю)', brown_2kyu: 'Күрөң (2 кю)', brown_1kyu: 'Күрөң (1 кю)', black_1dan: 'Кара (1 дан)',
   black_2dan: 'Кара (2 дан)', black_3dan_plus: 'Кара (3 дан жана жогору)', other: 'Башка'
 };
 const BELT_LABELS_EN: Record<BeltRank, string> = {
-  white_10kyu: 'White (10 kyu)', yellow_8kyu: 'Yellow (8 kyu)', orange_7kyu: 'Orange (7 kyu)', green_6kyu: 'Green (6 kyu)',
-  blue_4kyu: 'Blue (4 kyu)', brown_3kyu: 'Brown (3 kyu)', brown_1kyu: 'Brown (1 kyu)', black_1dan: 'Black (1 dan)',
+  white_10kyu: 'White (10 kyu)', yellow_8kyu: 'Yellow (8 kyu)', orange_7kyu: 'Orange (7 kyu)', green_6kyu: 'Green (6 kyu)', kyu_5: '5 kyu',
+  blue_4kyu: 'Blue (4 kyu)', brown_3kyu: 'Brown (3 kyu)', brown_2kyu: 'Brown (2 kyu)', brown_1kyu: 'Brown (1 kyu)', black_1dan: 'Black (1 dan)',
   black_2dan: 'Black (2 dan)', black_3dan_plus: 'Black (3 dan and above)', other: 'Other'
 };
 
@@ -128,7 +128,8 @@ export function categoryFits(
 
 /** Weigh-in check: the actual weight must still fit the category. */
 export function weighInFits(c: EventCategory | undefined, actualKg: number | null): boolean {
-  if (!c || !hasWeightClasses(c) || actualKg == null) return true;
+  // No weight yet (not given in the entry) = nothing to check
+  if (!c || !hasWeightClasses(c) || actualKg == null || !(actualKg > 0)) return true;
   if (c.weightMin != null && actualKg <= c.weightMin) return false;
   if (c.weightMax != null && actualKg > c.weightMax) return false;
   return true;

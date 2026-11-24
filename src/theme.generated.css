@@ -60,6 +60,7 @@
   .text-emerald-400 { color: var(--color-emerald-700); }
   .text-emerald-300 { color: var(--color-emerald-700); }
   .text-amber-300 { color: var(--color-amber-700); }
+  .text-amber-400 { color: var(--color-amber-700); }
   .text-white\/85 { color: var(--app-text-primary); }
   .text-white\/75 { color: var(--app-text-primary); }
   .text-white\/40 { color: var(--app-text-primary); }
@@ -69,7 +70,6 @@
   .text-blue-300 { color: var(--color-blue-700); }
   .text-teal-100 { color: var(--color-teal-700); }
   .text-blue-400 { color: var(--color-blue-700); }
-  .text-amber-400 { color: var(--color-amber-700); }
   .text-rose-200 { color: var(--color-rose-700); }
   .hover\:text-white:hover { color: var(--app-text-primary); }
 }

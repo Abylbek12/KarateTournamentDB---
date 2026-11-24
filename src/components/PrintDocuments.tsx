@@ -387,7 +387,7 @@ export const PrintDocuments: React.FC<PrintDocumentsProps> = ({ request, tournam
                 <td>{club(p)}</td>
                 <td>{noc(p)}</td>
                 <td style={{ fontSize: 10 }}>{beltName(p)}</td>
-                <td>{p.actualWeightKg ?? (p.declaredWeightKg || '')}</td>
+                <td>{p.actualWeightKg || p.declaredWeightKg || ''}</td>
                 <td>{p.isWeighedIn ? (p.isMedicalCleared ? '✓' : '✗') : ''}</td>
               </tr>
             ))}

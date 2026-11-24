@@ -5,7 +5,7 @@
 import { athleteKey } from './pricing';
 
 export const BELT_RANKS = [
-  'white_10kyu', 'yellow_8kyu', 'orange_7kyu', 'green_6kyu', 'blue_4kyu', 'brown_3kyu', 'brown_1kyu',
+  'white_10kyu', 'yellow_8kyu', 'orange_7kyu', 'green_6kyu', 'kyu_5', 'blue_4kyu', 'brown_3kyu', 'brown_2kyu', 'brown_1kyu',
   'black_1dan', 'black_2dan', 'black_3dan_plus', 'other'
 ] as const;
 
