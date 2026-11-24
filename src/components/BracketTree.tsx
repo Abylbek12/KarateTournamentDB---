@@ -83,8 +83,9 @@ export const BracketTree: React.FC<BracketTreeProps> = ({ bouts, categoryId, lan
   const repechage = cat.filter((b) => b.roundStage === 'repechage').sort((a, b) => repechageHalf(a) - repechageHalf(b) || repechageStep(a) - repechageStep(b));
   const print = variant === 'print';
   const c = print
-    ? { text: '#111', muted: '#555', border: '#444', bg: '#fff', line: '#555', aka: '#e0453a', ao: '#d1d5db', aoBg: '#F3F4F6', winner: '#111', band: '#fff' }
-    : { text: 'var(--app-text-primary)', muted: 'var(--app-text-muted)', border: 'var(--app-border)', bg: 'var(--app-surface)', line: 'var(--app-text-muted)', aka: '#e0453a', ao: 'var(--app-border)', aoBg: 'var(--app-surface-subtle)', winner: 'var(--app-text-primary)', band: 'var(--app-surface)' };
+    ? { text: '#111', muted: '#555', border: '#444', bg: '#fff', line: '#555', aka: '#e0453a', ao: '#d1d5db', aoBg: '#fff', winner: '#111', band: '#fff', cardText: '#111', cardMuted: '#555' }
+    : // Athlete blocks are always white (#fff) with dark text, also in the dark theme
+      { text: 'var(--app-text-primary)', muted: 'var(--app-text-muted)', border: 'var(--app-border)', bg: '#fff', line: 'var(--app-text-muted)', aka: '#e0453a', ao: '#d1d5db', aoBg: '#fff', winner: 'var(--app-text-primary)', band: 'var(--app-surface)', cardText: '#111', cardMuted: '#5b6470' };
 
   const people = cat.flatMap((b) => [b.akaParticipantId, b.aoParticipantId]).map(find).filter((p): p is Participant => !!p);
   const cardW = bracketCardWidth(people.map((p) => ({ name: nameOf(p), club: clubOf(p) })), variant);
@@ -92,7 +93,7 @@ export const BracketTree: React.FC<BracketTreeProps> = ({ bouts, categoryId, lan
   const athlete = (id?: string): SideSource => (id ? { kind: 'athlete', id } : { kind: 'empty' });
 
   // ---------- one athlete slot: an open frame (top, left, bottom) like Uventex ----------
-  // Each athlete is a separate block: AKA in a thin red frame with a red left accent, AO on a light-gray background
+  // Each athlete is a separate block: AKA in a thin red frame with a red left accent, AO white with a gray frame
   const slot = (content: { p?: Participant; label?: string; won?: boolean; score?: number | string }, edge: string, key: string, style?: React.CSSProperties, fill?: string, accent?: string) => (
     <div
       key={key}
@@ -105,14 +106,14 @@ export const BracketTree: React.FC<BracketTreeProps> = ({ bouts, categoryId, lan
       <span style={{ flex: 1, minWidth: 0, lineHeight: 1.12 }}>
         {content.p ? (
           <>
-            <span style={{ display: 'block', fontSize: d.name, fontWeight: content.won ? 700 : 500, color: c.text, whiteSpace: 'nowrap' }}>{nameOf(content.p)}</span>
-            <span style={{ display: 'block', fontSize: d.club, color: c.muted, whiteSpace: 'nowrap' }}>{clubOf(content.p)}</span>
+            <span style={{ display: 'block', fontSize: d.name, fontWeight: content.won ? 700 : 500, color: c.cardText, whiteSpace: 'nowrap' }}>{nameOf(content.p)}</span>
+            <span style={{ display: 'block', fontSize: d.club, color: c.cardMuted, whiteSpace: 'nowrap' }}>{clubOf(content.p)}</span>
           </>
         ) : (
-          <span style={{ fontSize: d.club + 0.5, fontStyle: 'italic', color: c.muted, whiteSpace: 'nowrap' }}>{content.label || ''}</span>
+          <span style={{ fontSize: d.club + 0.5, fontStyle: 'italic', color: c.cardMuted, whiteSpace: 'nowrap' }}>{content.label || ''}</span>
         )}
       </span>
-      {content.score !== '' && content.score != null && <span style={{ fontSize: d.name, fontWeight: 700, color: c.text }}>{content.score}</span>}
+      {content.score !== '' && content.score != null && <span style={{ fontSize: d.name, fontWeight: 700, color: c.cardText }}>{content.score}</span>}
     </div>
   );
   const sideSlot = (b: Bout | undefined, src: SideSource, s: 'aka' | 'ao') => {
@@ -150,12 +151,12 @@ export const BracketTree: React.FC<BracketTreeProps> = ({ bouts, categoryId, lan
         const p = find(pl.id);
         return (
           <div key={i} style={{ display: 'flex', gap: 6, padding: '4px 6px', minHeight: 26, boxSizing: 'border-box', borderTop: i ? `1.5px solid ${c.border}` : undefined, alignItems: 'center' }}>
-            <span style={{ fontSize: d.club, color: c.text, width: 14 }}>{pl.place}.</span>
-            <span style={{ flex: 1, lineHeight: 1.15, color: c.text }}>
+            <span style={{ fontSize: d.club, color: c.cardText, width: 14 }}>{pl.place}.</span>
+            <span style={{ flex: 1, lineHeight: 1.15, color: c.cardText }}>
               {p && (
                 <>
                   <span style={{ display: 'block', fontWeight: 600 }}>{nameOf(p)}</span>
-                  <span style={{ display: 'block', fontSize: d.club, color: c.muted }}>{clubOf(p)}</span>
+                  <span style={{ display: 'block', fontSize: d.club, color: c.cardMuted }}>{clubOf(p)}</span>
                 </>
               )}
             </span>
