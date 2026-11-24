@@ -82,6 +82,8 @@ interface PrintDocumentsProps {
   categories: EventCategory[];
   bouts: Bout[];
   participants: Participant[];
+  /** Server data still on its way: show «loading», never sheets that say «no draw yet» */
+  loading?: boolean;
 }
 
 type Lang = PrintRequest['lang'];
@@ -115,7 +117,7 @@ const PRINT_CSS = `
 }`;
 
 /** Printable official documents (A4). "Save as PDF" in the print dialog gives a PDF. */
-export const PrintDocuments: React.FC<PrintDocumentsProps> = ({ request, tournaments, categories, bouts, participants }) => {
+export const PrintDocuments: React.FC<PrintDocumentsProps> = ({ request, tournaments, categories, bouts, participants, loading }) => {
   const { kind, categoryId, boutId, lang } = request;
   const start = request.start || '09:00';
   // Bouts may still carry the legacy demo id, so match the event the same way bouts are matched
@@ -151,6 +153,7 @@ export const PrintDocuments: React.FC<PrintDocumentsProps> = ({ request, tournam
     document.title = `${tr(lang, 'Документы', 'Документтер', 'Documents')} · ${event?.title || 'Apsatarov'}`;
   }, [event, lang]);
 
+  if (loading) return <div style={{ padding: 40, fontFamily: 'sans-serif', color: '#444' }}>{tr(lang, 'Загружаем данные турнира…', 'Мелдештин маалыматтары жүктөлүүдө…', 'Loading the tournament data…')}</div>;
   if (!event) return <div style={{ padding: 40, fontFamily: 'sans-serif' }}>{tr(lang, 'Турнир не найден', 'Мелдеш табылган жок', 'Tournament not found')}</div>;
 
   const Header: React.FC<{ title: string; subtitle?: string }> = ({ title, subtitle }) => (
@@ -186,6 +189,41 @@ export const PrintDocuments: React.FC<PrintDocumentsProps> = ({ request, tournam
   const secretary = tr(lang, 'Главный секретарь', 'Башкы катчы', 'Chief Secretary');
 
   // ---------- Documents ----------
+  // «All brackets»: only categories that have a bracket; the others are listed on one sheet with the reason
+  const hasBracket = (cid: string) => eventBouts.some((b) => b.categoryId === cid);
+  const drawnCats = selectedCats.filter(hasBracket);
+  const withoutBracket = selectedCats.filter((cid) => !hasBracket(cid));
+  const withoutBracketSheet = () => (
+    <div className="print-sheet print-break" key="no-bracket">
+      <Header title={tr(lang, 'Категории без сетки', 'Торчосу жок категориялар', 'Categories without a bracket')} />
+      <table>
+        <thead>
+          <tr>
+            <th>{tr(lang, 'Категория', 'Категория', 'Category')}</th>
+            <th>{tr(lang, 'Почему нет сетки', 'Эмне үчүн торчо жок', 'Why there is no bracket')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {withoutBracket.map((cid) => {
+            const list = activeEntries(eventEntries, cid);
+            const reason =
+              list.length === 0
+                ? tr(lang, 'нет участников', 'катышуучу жок', 'no athletes')
+                : list.length === 1
+                  ? `${tr(lang, 'один участник — 1 место без боя', 'бир катышуучу — беттешсиз 1-орун', 'one athlete — 1st place without a bout')}: ${name(list[0])}`
+                  : tr(lang, 'жеребьёвка ещё не проведена', 'чүчүкулак али өткөрүлө элек', 'the draw has not been made yet');
+            return (
+              <tr key={cid}>
+                <td>{catTitle(cid)}</td>
+                <td>{reason}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+
   // «29 ноя 2026», like Uventex
   const fmtDate = (iso?: string) => {
     if (!iso) return undefined;
@@ -645,7 +683,8 @@ export const PrintDocuments: React.FC<PrintDocumentsProps> = ({ request, tournam
         </button>
       </div>
 
-      {kind === 'bracket' && selectedCats.map(bracketSheet)}
+      {kind === 'bracket' && (categoryId ? selectedCats : drawnCats).map(bracketSheet)}
+      {kind === 'bracket' && !categoryId && withoutBracket.length > 0 && withoutBracketSheet()}
       {kind === 'results' && selectedCats.map(resultsSheet)}
       {kind === 'medals' && medalsSheet()}
       {kind === 'entries' && selectedCats.map(entriesSheet)}

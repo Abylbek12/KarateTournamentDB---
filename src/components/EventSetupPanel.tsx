@@ -313,10 +313,23 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
                     </button>
                     <span className="text-xs text-[var(--app-text-muted)] w-24">{entries.length} {tl('заяв.', 'табыш.', 'entries')}</span>
                     <span className="text-xs text-[var(--app-text-muted)] w-20">{c.fee} {currency}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-md ${catBouts.length ? 'bg-emerald-600/10 text-emerald-700' : 'bg-[var(--app-surface-subtle)] text-[var(--app-text-muted)]'}`}>
-                      {catBouts.length ? (started ? tl('идут бои', 'беттештер жүрүүдө', 'bouts running') : tl('сетка готова', 'торчо даяр', 'bracket ready')) : c.isClosed ? tl('приём закрыт', 'кабыл алуу жабык', 'entries closed') : tl('приём заявок', 'табыштама кабыл алынат', 'entries open')}
+                    {/* One rule for every category: bracket → ready / running; on the draw page a category without a pair says why */}
+                    <span className={`text-xs px-2 py-0.5 rounded-md ${catBouts.length ? 'bg-emerald-600/10 text-emerald-700' : mode === 'draw' && entries.length < 2 ? 'bg-amber-500/10 text-amber-700' : 'bg-[var(--app-surface-subtle)] text-[var(--app-text-muted)]'}`}>
+                      {catBouts.length
+                        ? started
+                          ? tl('идут бои', 'беттештер жүрүүдө', 'bouts running')
+                          : tl('сетка готова', 'торчо даяр', 'bracket ready')
+                        : mode === 'draw' && entries.length === 0
+                          ? tl('нет участников', 'катышуучу жок', 'no athletes')
+                          : mode === 'draw' && entries.length === 1
+                            ? tl('1 участник — без боя', '1 катышуучу — беттешсиз', '1 athlete — no bout')
+                            : c.isClosed
+                              ? tl('приём закрыт', 'кабыл алуу жабык', 'entries closed')
+                              : mode === 'draw'
+                                ? tl('ждёт жеребьёвки', 'чүчүкулакты күтүүдө', 'waiting for the draw')
+                                : tl('приём заявок', 'табыштама кабыл алынат', 'entries open')}
                     </span>
-                    {mode !== 'setup' && <><select value={tatami} onChange={(e) => setTatamiFor({ ...tatamiFor, [c.id]: Number(e.target.value) })} className={`${field} h-8 py-0`} title={tl('Татами', 'Татами', 'Tatami')}>
+                    {mode !== 'setup' && entries.length >= 2 && <><select value={tatami} onChange={(e) => setTatamiFor({ ...tatamiFor, [c.id]: Number(e.target.value) })} className={`${field} h-8 py-0`} title={tl('Татами', 'Татами', 'Tatami')}>
                       {tatamiNumbers.map((n) => (
                         <option key={n} value={n}>{tl('Татами', 'Татами', 'Tatami')} {n}</option>
                       ))}
@@ -350,14 +363,14 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
                     <button onClick={() => patch(c.id, { isClosed: !c.isClosed })} className="p-1.5 rounded-lg text-[var(--app-text-muted)] hover:text-[var(--app-text-primary)] cursor-pointer" title={c.isClosed ? tl('Открыть приём заявок', 'Табыштама кабыл алууну ачуу', 'Open entries') : tl('Закрыть приём заявок', 'Табыштама кабыл алууну жабуу', 'Close entries')}>
                       {c.isClosed ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
                     </button>
-                    <button
+                    {mode !== 'draw' && <button
                       disabled={entries.length > 0 || catBouts.length > 0}
                       onClick={() => remove(c.id)}
                       className="p-1.5 rounded-lg text-[var(--app-text-muted)] hover:text-red-600 disabled:opacity-30 cursor-pointer"
                       title={entries.length ? tl('Сначала отзовите заявки', 'Адегенде табыштамаларды кайтарыңыз', 'Withdraw the entries first') : tl('Удалить категорию', 'Категорияны өчүрүү', 'Delete category')}
                     >
                       <Trash2 className="w-4 h-4" />
-                    </button>
+                    </button>}
                   </div>
                   {open === c.id && (
                     <div className="px-4 pb-3">
@@ -379,9 +392,9 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
                                 <td className="py-1.5 text-[var(--app-text-muted)] tabular-nums">{p.birthDate}</td>
                                 <td className="py-1.5 text-[var(--app-text-muted)] tabular-nums">{p.declaredWeightKg ? `${p.declaredWeightKg} ${tl('кг', 'кг', 'kg')}` : ''}</td>
                                 <td className="py-1.5 text-right">
-                                  <button onClick={() => setConfirm({ text: `${tl('Отозвать заявку', 'Табыштаманы кайтаруу', 'Withdraw entry')}: ${p.teamName || `${p.lastName} ${p.firstName}`}?`, run: () => onWithdraw(p.id) })} className="text-xs text-[var(--app-text-muted)] hover:text-red-600 cursor-pointer">
+                                  {catBouts.length === 0 && <button onClick={() => setConfirm({ text: `${tl('Отозвать заявку', 'Табыштаманы кайтаруу', 'Withdraw entry')}: ${p.teamName || `${p.lastName} ${p.firstName}`}?`, run: () => onWithdraw(p.id) })} className="text-xs text-[var(--app-text-muted)] hover:text-red-600 cursor-pointer">
                                     {tl('Отозвать', 'Кайтарып алуу', 'Withdraw')}
-                                  </button>
+                                  </button>}
                                 </td>
                               </tr>
                             ))}
