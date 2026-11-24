@@ -1329,7 +1329,8 @@ app.post('/api/entries/:id/withdraw', (req: Request, res: Response) => {
     res.status(404).json({ error: 'Заявка не найдена.' });
     return;
   }
-  const official = ['admin', 'chief_referee', 'scorekeeper'].includes(user.role);
+  // The organizer of this tournament acts as an official for it
+  const official = ['admin', 'chief_referee', 'scorekeeper'].includes(user.role) || (user.role === 'organizer' && ownedEventIds(eventsList(), user.id).has(String(entry.tournamentId)));
   if (!official && entry.createdBy !== user.id) {
     res.status(403).json({ error: 'Можно отозвать только свою заявку.' });
     return;

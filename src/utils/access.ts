@@ -3,8 +3,8 @@ import type { UserRole } from '../types/schema';
 /** Role of the current visitor; 'guest' = not signed in. */
 export type AccessRole = UserRole | 'guest';
 
-const STAFF: AccessRole[] = ['admin', 'chief_referee', 'tatami_referee', 'scorekeeper'];
-const SIGNED_IN: AccessRole[] = ['admin', 'chief_referee', 'tatami_referee', 'scorekeeper', 'club_coach', 'athlete', 'medical_officer'];
+const STAFF: AccessRole[] = ['admin', 'organizer', 'chief_referee', 'tatami_referee', 'scorekeeper'];
+const SIGNED_IN: AccessRole[] = ['admin', 'organizer', 'chief_referee', 'tatami_referee', 'scorekeeper', 'club_coach', 'athlete', 'medical_officer'];
 
 /**
  * Who may open which screen. 'public' = everyone, including visitors who are not signed in.
@@ -26,25 +26,26 @@ export const TAB_ACCESS: Record<string, 'public' | AccessRole[]> = {
   help: 'public',
 
   // Personal / club area (sign-in required)
-  registration: ['admin', 'club_coach', 'athlete'],
+  registration: ['admin', 'organizer', 'club_coach', 'athlete'],
   coach: ['admin', 'club_coach', 'athlete'],
-  athletes: ['admin', 'club_coach', 'athlete'],
+  athletes: ['admin', 'organizer', 'club_coach', 'athlete'],
   acquiring: ['admin', 'club_coach', 'athlete'],
 
   // Competition operations (officials)
   scoreboard: [...STAFF, 'medical_officer'],
-  participants: ['admin', 'chief_referee', 'scorekeeper', 'medical_officer'],
+  participants: ['admin', 'organizer', 'chief_referee', 'scorekeeper', 'medical_officer'],
 
   // Organizer / site owner
   admin: SIGNED_IN, // admins manage events here; other roles see their personal cabinet
-  exports: ['admin', 'chief_referee'],
+  exports: ['admin', 'organizer', 'chief_referee'],
   lan: ['admin'],
   screens: ['admin'],
-  event_setup: ['admin', 'chief_referee'],
+  event_setup: ['admin', 'organizer', 'chief_referee'],
   // Step-by-step tournament checklist
-  plan: ['admin', 'chief_referee'],
+  plan: ['admin', 'organizer', 'chief_referee'],
   // Tournament workflow: numbered stages from setup to results
-  manage: ['admin', 'chief_referee'],
+  // organizer: only their own tournaments (the server checks every change)
+  manage: ['admin', 'organizer', 'chief_referee'],
 };
 
 export function canAccess(tab: string, role: AccessRole): boolean {
@@ -62,6 +63,7 @@ export const ROLE_LABELS: Record<AccessRole, string> = {
   scorekeeper: 'Секретарь',
   chief_referee: 'Главный судья',
   medical_officer: 'Врач',
+  organizer: 'Организатор',
   admin: 'Администратор'
 };
 
@@ -74,6 +76,7 @@ const ROLE_LABELS_KY: Record<AccessRole, string> = {
   scorekeeper: 'Катчы',
   chief_referee: 'Башкы калыс',
   medical_officer: 'Дарыгер',
+  organizer: 'Уюштуруучу',
   admin: 'Администратор'
 };
 
@@ -85,6 +88,7 @@ const ROLE_LABELS_EN: Record<AccessRole, string> = {
   scorekeeper: 'Scorekeeper',
   chief_referee: 'Chief referee',
   medical_officer: 'Medical officer',
+  organizer: 'Organizer',
   admin: 'Administrator'
 };
 

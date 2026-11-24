@@ -77,7 +77,9 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
 }) => {
   const { language } = useApp();
   const tr = (ru: string, ky: string, en: string) => trLang(language, ru, ky, en);
-  const isAdmin = currentUserRole === 'admin';
+  // The organizer manages their own tournaments here the same way (the list they get is only theirs)
+  const isOrganizer = currentUserRole === 'organizer';
+  const isAdmin = currentUserRole === 'admin' || isOrganizer;
 
   // Open the creation form by default for Administrators so they can immediately create an event and upload an image
   // Open by default on big screens; on phones the list comes first (form opens with «+ Создать турнир»)
@@ -695,12 +697,20 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
       <div className="p-5 sm:p-6 rounded-3xl bg-[var(--app-surface)] border border-[var(--app-border)] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="min-w-0">
           <h2 className="text-xl sm:text-2xl font-bold text-[var(--app-text-primary)]">
-            {isAdmin
-              ? tr('Турниры и пользователи', 'Мелдештер жана колдонуучулар', 'Tournaments & users')
-              : tr('Турниры', 'Мелдештер', 'Tournaments')}
+            {isOrganizer
+              ? tr('Мои турниры', 'Менин мелдештерим', 'My tournaments')
+              : isAdmin
+                ? tr('Турниры и пользователи', 'Мелдештер жана колдонуучулар', 'Tournaments & users')
+                : tr('Турниры', 'Мелдештер', 'Tournaments')}
           </h2>
           <p className="text-sm text-[var(--app-text-muted)] mt-1">
-            {isAdmin
+            {isOrganizer
+              ? tr(
+                  'Создавайте свои турниры и ведите их: категории, заявки, взвешивание, жеребьёвка, бои и документы. Чужие турниры вы видите как обычный посетитель.',
+                  'Өз мелдештериңизди түзүп, жүргүзүңүз: категориялар, табыштамалар, таразалоо, чүчүкулак, беттештер жана документтер. Башка мелдештерди кадимки конок катары көрөсүз.',
+                  'Create and run your own tournaments: categories, entries, weigh-in, draw, bouts and documents. Other tournaments you see as a visitor.'
+                )
+              : isAdmin
               ? tr(
                   'Создавайте и меняйте турниры. Ниже — пользователи, ссылки для регистрации и резервная копия.',
                   'Мелдештерди түзүп, өзгөртүңүз. Төмөндө — колдонуучулар, каттоо шилтемелери жана резервдик көчүрмө.',

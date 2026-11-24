@@ -15,7 +15,8 @@ interface InviteRow {
   active: boolean;
 }
 
-const STAFF_ROLES: AccessRole[] = ['tatami_referee', 'scorekeeper', 'chief_referee', 'medical_officer', 'club_coach'];
+// «Организатор»: runs only the tournaments they create (to let others try the site safely)
+const STAFF_ROLES: AccessRole[] = ['organizer', 'tatami_referee', 'scorekeeper', 'chief_referee', 'medical_officer', 'club_coach'];
 
 const CopyButton: React.FC<{ text: string }> = ({ text }) => {
   const { language } = useApp();
@@ -97,7 +98,7 @@ export const InviteLinksPanel: React.FC = () => {
         <div className="min-w-0">
           <h2 className="text-lg font-bold text-[var(--app-text-primary)]">{tl('Ссылки для регистрации', 'Катталуу шилтемелери', 'Sign-up links')}</h2>
           <p className="text-sm text-[var(--app-text-muted)]">
-            {tl('Общие ссылки заранее выбирают роль спортсмена или тренера (её можно сменить). Секретная ссылка задаёт роль судьи, секретаря или врача. Стать администратором по ссылке нельзя.', 'Жалпы шилтемелер спортчу же машыктыруучу ролун алдын ала тандайт (аны өзгөртсө болот). Жашыруун шилтеме калыс, катчы же дарыгер ролун берет. Шилтеме аркылуу администратор болууга болбойт.', 'Public links pre-select the athlete or coach role (it can be changed). A secret link sets the referee, scorekeeper or doctor role. Nobody can become an administrator by a link.')}
+            {tl('Общие ссылки заранее выбирают роль спортсмена или тренера (её можно сменить). Секретная ссылка задаёт роль организатора, судьи, секретаря или врача. Организатор ведёт только свои турниры, чужие только смотрит. Стать администратором по ссылке нельзя.', 'Жалпы шилтемелер спортчу же машыктыруучу ролун алдын ала тандайт (аны өзгөртсө болот). Жашыруун шилтеме уюштуруучу, калыс, катчы же дарыгер ролун берет. Уюштуруучу өз мелдештерин гана жүргүзөт, башкаларды көрөт гана. Шилтеме аркылуу администратор болууга болбойт.', 'Public links pre-select the athlete or coach role (it can be changed). A secret link sets the organizer, referee, scorekeeper or doctor role. An organizer runs only their own tournaments and only views the others. Nobody can become an administrator by a link.')}
           </p>
         </div>
       </div>
@@ -129,7 +130,7 @@ export const InviteLinksPanel: React.FC = () => {
       {/* Staff invites */}
       <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-subtle)] p-4">
         <div className="flex items-center gap-2 text-sm font-bold text-[var(--app-text-primary)]">
-          <ShieldCheck className="w-4 h-4 text-[var(--accent)]" /> {tl('Секретная ссылка для судей, секретарей и врачей', 'Калыстар, катчылар жана дарыгерлер үчүн жашыруун шилтеме', 'Secret link for referees, scorekeepers and doctors')}
+          <ShieldCheck className="w-4 h-4 text-[var(--accent)]" /> {tl('Секретная ссылка для организаторов, судей, секретарей и врачей', 'Уюштуруучулар, калыстар, катчылар жана дарыгерлер үчүн жашыруун шилтеме', 'Secret link for organizers, referees, scorekeepers and doctors')}
         </div>
         <p className="text-xs text-[var(--app-text-muted)] mt-1">
           {tl('Отправьте её лично (WhatsApp, Telegram). Ссылка работает ограниченное время и ограниченное число раз.', 'Аны жеке жөнөтүңүз (WhatsApp, Telegram). Шилтеме чектелген убакытта жана чектелген санда иштейт.', 'Send it personally (WhatsApp, Telegram). The link works for a limited time and a limited number of people.')}

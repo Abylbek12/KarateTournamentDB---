@@ -40,7 +40,7 @@ export interface ClubAthlete {
 export type ClubAthleteInput = Partial<Omit<ClubAthlete, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>>;
 
 /** Who may keep a roster: coaches, athletes/parents and the admin. */
-export const ROSTER_ROLES = new Set(['club_coach', 'athlete', 'admin']);
+export const ROSTER_ROLES = new Set(['club_coach', 'athlete', 'admin', 'organizer']);
 export const MAX_ATHLETES_PER_OWNER = 500;
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;

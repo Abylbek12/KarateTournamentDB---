@@ -77,6 +77,8 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
   const { language } = useApp();
   const tr = (ru: string, ky: string, en: string) => trLang(language, ru, ky, en);
   const isAdmin = currentUserRole === 'admin';
+  // Organizers create tournaments too (theirs); deleting stays with the admin here
+  const canCreate = isAdmin || currentUserRole === 'organizer';
 
   const [query, setQuery] = useState('');
   const [region, setRegion] = useState('all');
@@ -205,7 +207,7 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
               {tr('Турниры по каратэ', 'Каратэ мелдештери', 'Karate tournaments')}
             </h1>
             {/* Organizer only: create a tournament in one tap */}
-            {isAdmin && onOpenCreateTournament && (
+            {canCreate && onOpenCreateTournament && (
               <button
                 onClick={onOpenCreateTournament}
                 className="group shrink-0 inline-flex items-center gap-2 h-10 sm:h-11 pl-1.5 pr-4 sm:pr-5 rounded-full bg-gradient-to-r from-rose-600 to-red-500 hover:from-rose-500 hover:to-red-500 text-white text-sm sm:text-[15px] font-bold shadow-md shadow-rose-600/25 hover:shadow-lg hover:shadow-rose-600/35 active:scale-[0.98] transition-all cursor-pointer lg:hidden"
@@ -240,7 +242,7 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
               </button>
             )}
           </label>
-          {isAdmin && onOpenCreateTournament && (
+          {canCreate && onOpenCreateTournament && (
             <button
               onClick={onOpenCreateTournament}
               className="group hidden lg:inline-flex shrink-0 items-center gap-2 h-11 pl-1.5 pr-5 rounded-full bg-gradient-to-r from-rose-600 to-red-500 hover:from-rose-500 hover:to-red-500 text-white text-[15px] font-bold shadow-md shadow-rose-600/25 hover:shadow-lg hover:shadow-rose-600/35 active:scale-[0.98] transition-all cursor-pointer"

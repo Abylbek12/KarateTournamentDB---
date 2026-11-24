@@ -158,6 +158,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const tr = (ru: string, ky: string, en: string) => (language === 'ky' ? ky : language === 'en' ? en : ru);
 
   const isAdmin = role === 'admin';
+  // Organizer: runs their own tournaments (invited by the site owner)
+  const isOrganizer = role === 'organizer';
   const isSignedIn = role !== 'guest';
   // Coaches and athletes see the organizer menu too (so they know what the site can do), but it stays closed for them.
   const seesLockedOrganizer = role === 'club_coach' || role === 'athlete';
@@ -176,7 +178,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       key: 'member',
       title: tr('Мой кабинет', 'Менин кабинетим', 'My account'),
       items:
-        isSignedIn && !isAdmin
+        isSignedIn && !isAdmin && !isOrganizer
           ? [
               { id: 'admin' as NavTabId, label: tr('Личный кабинет', 'Жеке кабинет', 'My account'), icon: UserCircle2 },
               { id: 'athletes' as NavTabId, label: tr('Мои спортсмены', 'Менин спортчуларым', 'My athletes'), icon: Users },
@@ -189,7 +191,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       key: 'officials',
       title: tr('Судейство', 'Калыстык', 'Officiating'),
       // The organizer runs everything from «Управление турниром» (stages 1–6), so these are for referees, secretaries and doctors
-      items: isAdmin
+      items: isAdmin || isOrganizer
         ? []
         : [
             { id: 'manage' as NavTabId, label: tr('Управление турниром', 'Мелдешти башкаруу', 'Run the tournament'), icon: Workflow },
@@ -220,7 +222,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
               { id: 'screens' as NavTabId, label: tr('Экраны и QR-коды', 'Экрандар жана QR', 'Screens & QR'), icon: QrCode },
               { id: 'lan' as NavTabId, label: tr('Работа без интернета', 'Интернетсиз режим', 'Offline (LAN)'), icon: Wifi }
             ]
-          : []
+          : isOrganizer
+            ? [
+                { id: 'manage' as NavTabId, label: tr('Управление турниром', 'Мелдешти башкаруу', 'Run the tournament'), icon: Workflow },
+                { id: 'admin' as NavTabId, label: tr('Мои турниры', 'Менин мелдештерим', 'My tournaments'), icon: ShieldCheck },
+                { id: 'athletes' as NavTabId, label: tr('Мои спортсмены', 'Менин спортчуларым', 'My athletes'), icon: Users }
+              ]
+            : []
     },
     {
       key: 'help',

@@ -15,7 +15,7 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "test:draw": "tsx scripts/test-draw.ts",
-    "test": "npm run test:draw && npm run test:bouts && npm run test:categories && npm run test:intl && npm run test:youtube && npm run test:pricing && npm run test:athletes && npm run test:current && npm run test:sensei && npm run test:schedule && npm run test:workflow && npm run test:bracket",
+    "test": "npm run test:draw && npm run test:bouts && npm run test:categories && npm run test:intl && npm run test:youtube && npm run test:pricing && npm run test:athletes && npm run test:current && npm run test:sensei && npm run test:schedule && npm run test:workflow && npm run test:bracket && npm run test:organizer",
     "test:athletes": "tsx scripts/test-athletes.ts",
     "test:bouts": "tsx scripts/test-bouts.ts",
     "test:categories": "tsx scripts/test-categories.ts",
@@ -26,6 +26,7 @@
     "test:schedule": "tsx scripts/test-schedule.ts",
     "test:workflow": "tsx scripts/test-workflow.ts",
     "test:bracket": "tsx scripts/test-bracket-layout.ts",
+    "test:organizer": "tsx scripts/test-organizer.ts",
     "test:pricing": "tsx scripts/test-pricing.ts"
   },
   "dependencies": {

@@ -1,6 +1,8 @@
 import type { TournamentPricing } from '../utils/pricing';
 export type UserRole = 
   | 'admin'
+  /** Runs only the tournaments they created (invited by the site owner) */
+  | 'organizer'
   | 'chief_referee'
   | 'tatami_referee'
   | 'scorekeeper'
@@ -178,6 +180,8 @@ export interface Tournament {
   /** Printed under every bracket, e.g. «Кыдыралиев К.С. (3 дан)». */
   chiefRefereeName?: string;
   chiefSecretaryName?: string;
+  /** Account that created the tournament; an organizer may change only their own (set by the server). */
+  ownerId?: string;
 }
 
 export interface Club {

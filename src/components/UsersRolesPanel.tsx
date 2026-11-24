@@ -23,9 +23,9 @@ interface UserRow {
   createdAt: string;
 }
 
-const ASSIGNABLE: AccessRole[] = ['athlete', 'club_coach', 'tatami_referee', 'scorekeeper', 'chief_referee', 'medical_officer', 'admin'];
+const ASSIGNABLE: AccessRole[] = ['athlete', 'club_coach', 'organizer', 'tatami_referee', 'scorekeeper', 'chief_referee', 'medical_officer', 'admin'];
 
-type Group = 'athletes' | 'coaches' | 'referees' | 'scorekeepers' | 'medics' | 'admins' | 'all';
+type Group = 'athletes' | 'coaches' | 'referees' | 'scorekeepers' | 'medics' | 'organizers' | 'admins' | 'all';
 const GROUPS: { id: Group; label: string; test?: (u: { role: AccessRole; alsoCompetes?: boolean }) => boolean }[] = [
   // Coaches who also compete appear here too, so every competitor is in one list
   { id: 'athletes', label: 'Спортсмены', test: (u) => u.role === 'athlete' || (u.role === 'club_coach' && !!u.alsoCompetes) },
@@ -33,6 +33,7 @@ const GROUPS: { id: Group; label: string; test?: (u: { role: AccessRole; alsoCom
   { id: 'referees', label: 'Судьи', test: (u) => u.role === 'tatami_referee' || u.role === 'chief_referee' },
   { id: 'scorekeepers', label: 'Секретари', test: (u) => u.role === 'scorekeeper' },
   { id: 'medics', label: 'Врачи', test: (u) => u.role === 'medical_officer' },
+  { id: 'organizers', label: 'Организаторы', test: (u) => u.role === 'organizer' },
   { id: 'admins', label: 'Администраторы', test: (u) => u.role === 'admin' },
   { id: 'all', label: 'Все' }
 ];

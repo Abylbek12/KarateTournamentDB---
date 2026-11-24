@@ -161,6 +161,11 @@ function AppContent() {
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>('club_coach');
   // What the visitor may see: 'guest' until signed in.
   const effectiveRole: AccessRole = currentUser ? currentUserRole : 'guest';
+  // Organizer: runs only the tournaments they created; admin: all. The server checks the same rule.
+  const isOrganizer = effectiveRole === 'organizer';
+  const ownsEvent = (ev?: { ownerId?: string } | null) =>
+    effectiveRole === 'admin' || (isOrganizer && !!ev && !!currentUser && ev.ownerId === currentUser.id);
+
 
   // Role switching is a UI preview only; real permissions are enforced by the server session.
   // Nobody can switch to Administrator without signing in as an administrator.
@@ -258,7 +263,7 @@ function AppContent() {
   };
 
   const handleAddTournament = async (newTournament: Tournament) => {
-    if (currentUserRole !== 'admin') {
+    if (currentUserRole !== 'admin' && currentUserRole !== 'organizer') {
       setGlobalSystemToast(
         tr(
           'Доступ запрещён (RBAC): создание турниров доступно только Администратору.',
@@ -279,8 +284,10 @@ function AppContent() {
       emblemType: isCustomUpload ? 'custom_upload' : ((newTournament as any).emblemType || 'pcl'),
       locationLabel: (newTournament as any).locationLabel || (newTournament.city ? `${newTournament.country || ''}, ${newTournament.city}` : ''),
       dateLabel: (newTournament as any).dateLabel || `${newTournament.startDate} - ${newTournament.endDate}`,
-      availableActions: (newTournament as any).availableActions || ['info', 'categories_prices', 'brackets', 'results', 'medals', 'live_scoring']
-    };
+      availableActions: (newTournament as any).availableActions || ['info', 'categories_prices', 'brackets', 'results', 'medals', 'live_scoring'],
+      // The creator owns the tournament (the server sets the same)
+      ownerId: currentUser?.id
+    } as EventItem;
 
     setTournaments((prev) => [asEvent, ...prev]);
     setSelectedTournament(asEvent);
@@ -319,7 +326,7 @@ function AppContent() {
   };
 
   const handleUpdateTournament = async (updatedTournament: Tournament) => {
-    if (currentUserRole !== 'admin') {
+    if (!ownsEvent(tournaments.find((t) => t.id === updatedTournament.id) as { ownerId?: string } | undefined)) {
       setGlobalSystemToast(
         tr(
           'Доступ запрещён (RBAC): редактирование турниров доступно только Администратору.',
@@ -377,7 +384,7 @@ function AppContent() {
   };
 
   const handleDeleteTournament = async (tournamentId: string) => {
-    if (currentUserRole !== 'admin') {
+    if (!ownsEvent(tournaments.find((t) => t.id === tournamentId) as { ownerId?: string } | undefined)) {
       setGlobalSystemToast(
         tr(
           'Доступ запрещён (RBAC): удаление турниров доступно только Администратору.',
@@ -456,6 +463,8 @@ function AppContent() {
   const [bouts, setBoutsState, boutSync] = useServerSyncedState<Bout[]>('bouts', [], { ...sharedStateOptions, autoSave: false, pollMs: boutsPollMs });
   const eventLoading = (isEventTab(activeTab) || activeTab === 'manage') && activeTab !== 'event_setup' && !tournamentsLoaded;
   // Tatami of the selected tournament (at least the ones bouts are already assigned to)
+  // Stages of «Управление турниром»: officials and admin for every tournament, an organizer only for their own
+  const canRunEvent = canAccess('manage', effectiveRole) && (!isOrganizer || ownsEvent(selectedEvent as { ownerId?: string }));
   const tatamiNumbers = React.useMemo(() => {
     const ev = selectedEvent as EventItem & { tatamiCount?: number };
     const planned = Math.min(12, Math.max(1, Number(ev.tatamiCount || ev.ringsCount) || 4));
@@ -504,14 +513,14 @@ function AppContent() {
     ...sharedStateOptions,
     pollMs: dataPollMs,
     // Athletes and coaches submit entries through /api/entries; only officials edit the list.
-    canWrite: !!currentUser && ['admin', 'chief_referee', 'scorekeeper', 'medical_officer'].includes(currentUser.role)
+    canWrite: !!currentUser && ['admin', 'organizer', 'chief_referee', 'scorekeeper', 'medical_officer'].includes(currentUser.role)
   });
   const [protocols, setProtocols] = useServerSyncedState<RefereeProtocol[]>('protocols', [], { ...sharedStateOptions, pollMs: standaloneScreen ? 60_000 : ['exports', 'scoreboard'].includes(activeTab) ? 10_000 : 60_000 });
   // Tournament categories created by the organizer (server-stored).
   const [eventCategories, setEventCategories, categorySync] = useServerSyncedState<EventCategory[]>('categories', [], {
     ...sharedStateOptions,
     pollMs: dataPollMs,
-    canWrite: !!currentUser && ['admin', 'chief_referee'].includes(currentUser.role)
+    canWrite: !!currentUser && ['admin', 'organizer', 'chief_referee'].includes(currentUser.role)
   });
   const [activeScoreboardBout, setActiveScoreboardBout] = useState<Bout | null>(null);
   const [editTournamentRequest, setEditTournamentRequest] = useState<string | null>(null);
@@ -1580,7 +1589,7 @@ function AppContent() {
                 document.querySelector('main')?.parentElement?.scrollTo({ top: 0 });
               }}
               onBack={() => navigateWithHash('admin')}
-              tournaments={tournaments.filter((t) => !(t as { isArchived?: boolean }).isArchived || t.id === selectedEvent.id) as unknown as Tournament[]}
+              tournaments={tournaments.filter((t) => (!(t as { isArchived?: boolean }).isArchived || t.id === selectedEvent.id) && (!isOrganizer || ownsEvent(t as { ownerId?: string }) || t.id === selectedEvent.id)) as unknown as Tournament[]}
               onSelectEvent={(id) => {
                 const ev = tournaments.find((x) => x.id === id);
                 if (!ev) return;
@@ -1590,13 +1599,28 @@ function AppContent() {
               }}
             />
           )}
-          {inStep(1) && !eventLoading && canAccess('manage', effectiveRole) && (
+          {activeTab === 'manage' && !eventLoading && isOrganizer && !canRunEvent && (
+            // An organizer opened somebody else's tournament: they can look, not run it
+            <div className="theme-keep rounded-2xl border border-amber-400 bg-[var(--app-surface)] p-5 space-y-3">
+              <div className="font-semibold text-[var(--app-text-primary)]">
+                {tr('Это не ваш турнир — его ведёт другой организатор.', 'Бул сиздин мелдеш эмес — аны башка уюштуруучу жүргүзөт.', 'This is not your tournament — another organizer runs it.')}
+              </div>
+              <p className="text-sm text-[var(--app-text-secondary)]">
+                {tr('Смотреть его можно как обычный посетитель: сетки, результаты, медали. Управлять можно только своими турнирами.', 'Аны кадимки конок катары көрө аласыз: торчолор, жыйынтыктар, медалдар. Өз мелдештериңизди гана башкара аласыз.', 'You can view it like any visitor: brackets, results, medals. You can run only your own tournaments.')}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button onClick={() => navigateWithHash('admin')} className="h-10 px-4 rounded-lg bg-[var(--accent)] text-white text-sm font-semibold cursor-pointer">{tr('Мои турниры', 'Менин мелдештерим', 'My tournaments')}</button>
+                <button onClick={() => handleSelectTournamentAction(selectedEvent, 'brackets')} className="h-10 px-4 rounded-lg border border-[var(--app-border)] text-sm text-[var(--app-text-primary)] cursor-pointer">{tr('Смотреть сетки', 'Торчолорду көрүү', 'View brackets')}</button>
+              </div>
+            </div>
+          )}
+          {inStep(1) && !eventLoading && canRunEvent && (
             <div className="space-y-4">
               <EventBasicsForm
                 key={selectedEvent.id}
                 event={selectedEvent as unknown as Tournament}
                 language={language}
-                onSave={currentUserRole === 'admin' ? handleUpdateTournament : undefined}
+                onSave={ownsEvent(selectedEvent as { ownerId?: string }) ? handleUpdateTournament : undefined}
               />
               <QuickCategories
                 key={`qc-${selectedEvent.id}`}
@@ -1627,11 +1651,11 @@ function AppContent() {
                 tatamiNumbers={tatamiNumbers}
                 onDraw={handleDrawCategory}
                 onWithdraw={handleWithdrawEntry}
-                onUpdateTournament={currentUserRole === 'admin' ? handleUpdateTournament : undefined}
+                onUpdateTournament={ownsEvent(selectedEvent as { ownerId?: string }) ? handleUpdateTournament : undefined}
               />
             </div>
           )}
-          {inStep(2) && !eventLoading && currentUser && canAccess('manage', effectiveRole) && (
+          {inStep(2) && !eventLoading && currentUser && canRunEvent && (
             <EntryForm
               key={`entries-${selectedEvent.id}`}
               tournaments={tournaments}
@@ -1642,7 +1666,7 @@ function AppContent() {
               onAddCategories={(cats) => setEventCategories((prev) => [...prev, ...cats])}
             />
           )}
-          {inStep(4) && !eventLoading && canAccess('manage', effectiveRole) && (
+          {inStep(4) && !eventLoading && canRunEvent && (
             <div className="space-y-4">
               <EventSetupPanel
                 key={`draw-${selectedEvent.id}`}
@@ -1671,7 +1695,7 @@ function AppContent() {
               </div>
             </div>
           )}
-          {inStep(6) && !eventLoading && canAccess('manage', effectiveRole) && (
+          {inStep(6) && !eventLoading && canRunEvent && (
             <div className="space-y-4">
               <div className="flex flex-wrap gap-2">
                 {([
@@ -1700,7 +1724,7 @@ function AppContent() {
               }}
               entriesCount={participants.filter((p) => belongsToEvent(p.tournamentId, selectedEvent.id) && p.status !== 'withdrawn').length}
               onEdit={
-                effectiveRole === 'admin'
+                ownsEvent(selectedEvent as { ownerId?: string })
                   ? () => {
                       setEditTournamentRequest(selectedEvent.id);
                       navigateWithHash('admin');
@@ -1819,7 +1843,7 @@ function AppContent() {
 
 
 
-          {(activeTab === 'scoreboard' || (inStep(5) && !eventLoading && canAccess('manage', effectiveRole))) && (
+          {(activeTab === 'scoreboard' || (inStep(5) && !eventLoading && canRunEvent)) && (
             <TatamiOverview
               key={selectedEvent.id}
               hidePicker
@@ -1827,7 +1851,7 @@ function AppContent() {
               initialTournamentId={selectedEvent.id}
               bouts={bouts}
               tatamiNumbers={tatamiNumbers}
-              canScore={['admin', 'chief_referee', 'tatami_referee', 'scorekeeper'].includes(effectiveRole)}
+              canScore={['admin', 'organizer', 'chief_referee', 'tatami_referee', 'scorekeeper'].includes(effectiveRole)}
               onOpenLiveNow={() => navigateWithHash('virtual_studios')}
               onOpenConsole={(b) => {
                 setSelectedConsoleBoutId(b.id);
@@ -1858,10 +1882,10 @@ function AppContent() {
             <DocumentsPanel key={selectedEvent.id} hidePicker tournaments={tournaments} initialTournamentId={selectedEvent.id} categories={eventCategories} bouts={bouts} />
           )}
 
-          {activeTab === 'admin' && effectiveRole === 'admin' && (
+          {activeTab === 'admin' && (effectiveRole === 'admin' || isOrganizer) && (
             <div className="max-w-4xl mx-auto w-full space-y-5">
             <TournamentEventsManager
-              tournaments={tournaments}
+              tournaments={isOrganizer ? tournaments.filter((t) => ownsEvent(t as { ownerId?: string })) : tournaments}
               currentUserRole={currentUserRole}
               onRoleChange={requestRoleChange}
               selectedTournament={selectedTournament}
@@ -1878,9 +1902,13 @@ function AppContent() {
               createRequestId={createTournamentRequest}
               onCreateRequestHandled={() => setCreateTournamentRequest(null)}
             />
-              <UsersRolesPanel currentUserId={currentUser?.id} />
-              <InviteLinksPanel />
-              <LaunchPanel />
+              {effectiveRole === 'admin' && (
+                <>
+                  <UsersRolesPanel currentUserId={currentUser?.id} />
+                  <InviteLinksPanel />
+                  <LaunchPanel />
+                </>
+              )}
             </div>
           )}
           {activeTab === 'admin' && effectiveRole !== 'admin' && currentUser && (
@@ -1901,7 +1929,7 @@ function AppContent() {
               currentUser={currentUser}
               initialTournamentId={selectedTournament?.id}
               onAddCategories={
-                currentUserRole === 'admin' || currentUserRole === 'chief_referee'
+                currentUserRole === 'admin' || currentUserRole === 'chief_referee' || currentUserRole === 'organizer'
                   ? (cats) => setEventCategories((prev) => [...prev, ...cats])
                   : undefined
               }
@@ -1921,7 +1949,7 @@ function AppContent() {
               tatamiNumbers={tatamiNumbers}
               onDraw={handleDrawCategory}
               onWithdraw={handleWithdrawEntry}
-              onUpdateTournament={currentUserRole === 'admin' ? handleUpdateTournament : undefined}
+              onUpdateTournament={ownsEvent(selectedEvent as { ownerId?: string }) ? handleUpdateTournament : undefined}
             />
           )}
 
@@ -1953,7 +1981,7 @@ function AppContent() {
           {activeTab === 'lan' && <OfflinePanel onOpenScreens={() => navigateWithHash('screens')} />}
 
 
-          {(activeTab === 'participants' || (inStep(3) && !eventLoading && canAccess('manage', effectiveRole))) && (
+          {(activeTab === 'participants' || (inStep(3) && !eventLoading && canRunEvent)) && (
             <ParticipantsManager
               key={selectedEvent.id}
               hidePicker
@@ -1980,7 +2008,7 @@ function AppContent() {
             <HelpFaqView language={language} />
           )}
 
-          {activeTab === 'manage' && !eventLoading && canAccess('manage', effectiveRole) && (
+          {activeTab === 'manage' && !eventLoading && canRunEvent && (
             <WorkflowFooter
               eventId={selectedEvent.id}
               step={workflowStep}
