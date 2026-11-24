@@ -56,7 +56,13 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
   const [weighError, setWeighError] = useState('');
   const [medicalClearedInput, setMedicalClearedInput] = useState<boolean>(true);
 
-  const filtered = inTournament.filter((p) => {
+  // One row per child: entries in kata and kumite are the same person (one weigh-in for all)
+  const personKey = (p: Participant) => (p.teamName ? p.id : `${p.tournamentId}|${p.lastName}|${p.firstName}|${p.birthDate}`);
+  const entriesOf = new Map<string, Participant[]>();
+  for (const p of inTournament) entriesOf.set(personKey(p), [...(entriesOf.get(personKey(p)) || []), p]);
+  const people = [...entriesOf.values()].map((list) => list[0]);
+  const clubOptions = [...new Map(inTournament.map((p) => [p.clubId, p.clubName || p.clubId] as const)).entries()].sort((a, b) => String(a[1]).localeCompare(String(b[1])));
+  const filtered = people.filter((p) => {
     const matchesSearch = search === '' || 
       `${p.lastName} ${p.firstName}`.toLowerCase().includes(search.toLowerCase()) ||
       p.licenseNumber.toLowerCase().includes(search.toLowerCase());
@@ -71,31 +77,41 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
     setWeighInAthlete(p);
     setActualWeightInput(p.actualWeightKg || p.declaredWeightKg || 0);
     setWeighError('');
-    setMedicalClearedInput(p.isMedicalCleared);
+    setMedicalClearedInput(p.isWeighedIn ? p.isMedicalCleared : true);
   };
 
   const handleSaveWeighIn = () => {
     if (!weighInAthlete) return;
-    const cat = catOf(weighInAthlete);
+    const a = weighInAthlete;
+    // One child, several entries (kata + kumite): one weigh-in for all entries of this tournament
+    const same = a.teamName
+      ? [a]
+      : inTournament.filter((p) => !p.teamName && p.lastName === a.lastName && p.firstName === a.firstName && p.birthDate === a.birthDate && p.tournamentId === a.tournamentId);
+    const records = same.some((p) => p.id === a.id) ? same : [a, ...same];
     // Empty weight = not given (kata, open weight): saved as «нет», never as 0 kg
     const kg = actualWeightInput > 0 ? actualWeightInput : null;
-    const needsWeight = !!cat && hasWeightClasses(cat) && (cat.weightMin != null || cat.weightMax != null);
+    const needsWeight = records.some((p) => {
+      const c = catOf(p);
+      return !!c && hasWeightClasses(c) && (c.weightMin != null || c.weightMax != null);
+    });
     if (kg == null && needsWeight) {
-      setWeighError(tl('Для этой весовой категории впишите вес.', 'Бул салмак категориясы үчүн салмакты жазыңыз.', 'Enter the weight for this weight category.'));
+      setWeighError(tl('Для весовой категории кумитэ впишите вес.', 'Кумитэнин салмак категориясы үчүн салмакты жазыңыз.', 'Enter the weight for the kumite weight category.'));
       return;
     }
-    const fits = weighInFits(cat, kg);
-    const updated: Participant = {
-      ...weighInAthlete,
-      actualWeightKg: kg,
-      // weight given later: it also becomes the declared weight
-      declaredWeightKg: weighInAthlete.declaredWeightKg > 0 ? weighInAthlete.declaredWeightKg : kg ?? 0,
-      isWeighedIn: true,
-      isMedicalCleared: medicalClearedInput,
-      status: medicalClearedInput ? 'weighed_in' : 'disqualified',
-      eligibilityNote: fits || !cat ? undefined : `${tl('Вес', 'Салмак', 'Weight')} ${actualWeightInput} ${tl('кг не подходит для', 'кг ылайык келбейт:', 'kg does not fit')} «${categoryName(cat)}»`
-    };
-    onUpdateParticipant(updated);
+    for (const p of records) {
+      const cat = catOf(p);
+      const fits = weighInFits(cat, kg);
+      onUpdateParticipant({
+        ...p,
+        actualWeightKg: kg,
+        // weight given later: it also becomes the declared weight
+        declaredWeightKg: p.declaredWeightKg > 0 ? p.declaredWeightKg : kg ?? 0,
+        isWeighedIn: true,
+        isMedicalCleared: medicalClearedInput,
+        status: medicalClearedInput ? 'weighed_in' : 'disqualified',
+        eligibilityNote: fits || !cat ? undefined : `${tl('Вес', 'Салмак', 'Weight')} ${kg} ${tl('кг не подходит для', 'кг ылайык келбейт:', 'kg does not fit')} «${categoryName(cat)}»`
+      });
+    }
     setWeighInAthlete(null);
   };
 
@@ -152,10 +168,11 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
 
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs tabular-nums">
             <div className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800">
-              {tl('Всего заявлено', 'Бардыгы катталган', 'Total entered')}: <span className="font-bold text-white">{participants.length}</span>
+              {tl('Спортсменов', 'Спортчулар', 'Athletes')}: <span className="font-bold text-white">{people.length}</span>
+              <span className="text-slate-400"> · {tl('заявок', 'өтүнмө', 'entries')} {inTournament.length}</span>
             </div>
             <div className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800">
-              {tl('Взвешено', 'Таразаланган', 'Weighed in')}: <span className="font-bold text-emerald-400">{participants.filter(p => p.isWeighedIn).length}</span>
+              {tl('Взвешено', 'Таразаланган', 'Weighed in')}: <span className="font-bold text-emerald-400">{people.filter(p => p.isWeighedIn).length}</span>
             </div>
             {onNavigateToRegister && (
               <button
@@ -191,9 +208,9 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
               className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-rose-500"
             >
               <option value="all">{tl('Все клубы', 'Бардык клубдар', 'All clubs')}</option>
-              {SAMPLE_CLUBS.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} ({c.city})
+              {clubOptions.map(([id, name]) => (
+                <option key={id} value={id}>
+                  {name}
                 </option>
               ))}
             </select>
@@ -239,7 +256,10 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
                         {p.lastName} {p.firstName}
                       </div>
                       <div className="text-[11px] text-slate-500 tabular-nums mt-0.5">
-                        {tl('Лицензия', 'Лицензия', 'Licence')}: {p.licenseNumber} · {p.gender === 'male' ? tl('Мужской', 'Эркек', 'Male') : tl('Женский', 'Аял', 'Female')}
+                        {p.licenseNumber ? `${tl('Лицензия', 'Лицензия', 'Licence')}: ${p.licenseNumber} · ` : ''}{p.gender === 'male' ? tl('Мужской', 'Эркек', 'Male') : tl('Женский', 'Аял', 'Female')}
+                      </div>
+                      <div className="text-[11px] text-slate-400 mt-0.5 max-w-xs">
+                        {(entriesOf.get(personKey(p)) || [p]).map((e) => { const c = catOf(e); return c ? categoryName(c) : ''; }).filter(Boolean).join(' / ')}
                       </div>
                     </td>
 
@@ -278,7 +298,9 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
 
                     {/* Medical clearance */}
                     <td className="px-5 py-4 text-center">
-                      {p.isMedicalCleared ? (
+                      {!p.isWeighedIn ? (
+                        <span className="text-slate-600">—</span>
+                      ) : p.isMedicalCleared ? (
                         <span className="inline-flex items-center gap-1 text-emerald-400 tabular-nums text-[11px]">
                           <CheckCircle2 className="w-3.5 h-3.5" /> {tl('Допущен', 'Уруксат берилди', 'Cleared')}
                         </span>
@@ -342,7 +364,7 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
             <div className="space-y-3">
               <div>
                 <span className="text-xs text-slate-500 tabular-nums">{tl('Спортсмен:', 'Спортчу:', 'Athlete:')}</span>
-                <div className="text-base font-bold text-white">
+                <div className="text-base font-bold text-[var(--app-text-primary)]">
                   {weighInAthlete.lastName} {weighInAthlete.firstName}
                 </div>
                 <div className="text-xs text-slate-400">
@@ -351,7 +373,7 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">
+                <label className="block text-xs font-medium text-[var(--app-text-secondary)] mb-1">
                   {tl('Фактический вес на весах (кг):', 'Таразадагы чыныгы салмак (кг):', 'Actual weight on the scales (kg):')}
                 </label>
                 <NumberField
@@ -371,7 +393,7 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
                   onChange={(e) => setMedicalClearedInput(e.target.checked)}
                   className="w-4 h-4 rounded bg-slate-950 border-slate-700 text-rose-600 focus:ring-0"
                 />
-                <label htmlFor="medClear" className="text-xs text-slate-300 cursor-pointer">
+                <label htmlFor="medClear" className="text-xs text-[var(--app-text-secondary)] cursor-pointer">
                   {tl('Медицинский допуск врача соревнований подтверждён', 'Мелдештин дарыгеринин медициналык уруксаты ырасталды', 'Medical clearance by the tournament doctor confirmed')}
                 </label>
               </div>
