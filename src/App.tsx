@@ -459,7 +459,8 @@ function AppContent() {
   const tatamiNumbers = React.useMemo(() => {
     const ev = selectedEvent as EventItem & { tatamiCount?: number };
     const planned = Math.min(12, Math.max(1, Number(ev.tatamiCount || ev.ringsCount) || 4));
-    const used = bouts.reduce((m, b) => Math.max(m, b.tatamiNumber || 0), 0);
+    // Only this tournament's bouts: another tournament's tatami 4 must not add a «Татами 4» here
+    const used = bouts.filter((b) => belongsToEvent(b.tournamentId, selectedEvent.id)).reduce((m, b) => Math.max(m, b.tatamiNumber || 0), 0);
     return Array.from({ length: Math.max(planned, Math.min(used, 12)) }, (_, i) => i + 1);
   }, [selectedEvent, bouts]);
 
@@ -499,7 +500,7 @@ function AppContent() {
     },
     [setBoutsState, boutSync, saveBouts]
   );
-  const [participants, setParticipants] = useServerSyncedState<Participant[]>('participants', [], {
+  const [participants, setParticipants, participantSync] = useServerSyncedState<Participant[]>('participants', [], {
     ...sharedStateOptions,
     pollMs: dataPollMs,
     // Athletes and coaches submit entries through /api/entries; only officials edit the list.
@@ -507,7 +508,7 @@ function AppContent() {
   });
   const [protocols, setProtocols] = useServerSyncedState<RefereeProtocol[]>('protocols', [], { ...sharedStateOptions, pollMs: standaloneScreen ? 60_000 : ['exports', 'scoreboard'].includes(activeTab) ? 10_000 : 60_000 });
   // Tournament categories created by the organizer (server-stored).
-  const [eventCategories, setEventCategories] = useServerSyncedState<EventCategory[]>('categories', [], {
+  const [eventCategories, setEventCategories, categorySync] = useServerSyncedState<EventCategory[]>('categories', [], {
     ...sharedStateOptions,
     pollMs: dataPollMs,
     canWrite: !!currentUser && ['admin', 'chief_referee'].includes(currentUser.role)
@@ -882,6 +883,8 @@ function AppContent() {
     const target = activeTab === 'manage' ? manageHash(selectedEvent.id, workflowStep) : hashForTab(activeTab, isEventTab(activeTab) ? selectedEvent.id : undefined);
     if (window.location.hash === target) return;
     const current = tabFromHash(window.location.hash);
+    // Same page, the link only adds details (e.g. the category of a bracket «;c=…»): keep it
+    if (activeTab !== 'manage' && current && current.tab === activeTab && current.eventId === selectedEvent.id) return;
     // Opening a link to a tournament page before the tournament list has loaded: keep it
     if (current && current.tab === activeTab && current.eventId && !tournaments.some((t) => t.id === current.eventId)) return;
     if (!window.location.hash && activeTab === 'tournaments') {
@@ -896,7 +899,7 @@ function AppContent() {
 
   // Automatic playoff bracket progression when a bout finishes
   /** Draw for one organizer category: bracket from its active entries on the chosen tatami. */
-  const handleDrawCategory = (def: EventCategory, tatamiNumber: number) => {
+  const handleDrawCategory = (def: EventCategory, tatamiNumber: number, startTime?: string) => {
     const entries = activeEntries(participants, def.id);
     const tatami = SAMPLE_TATAMIS.find((t) => t.number === tatamiNumber) || ({ ...SAMPLE_TATAMIS[0], id: `tatami-${tatamiNumber}`, number: tatamiNumber, name: `Татами ${tatamiNumber}` } as typeof SAMPLE_TATAMIS[0]);
     const generatorCategory = {
@@ -910,7 +913,8 @@ function AppContent() {
     } as unknown as TournamentCategory;
     const { bouts: catBouts } = generateProtectedWkfCategoryBouts(generatorCategory, entries, [tatami], {
       durationSeconds: def.durationSeconds,
-      categoryTitle: categoryName(def)
+      categoryTitle: categoryName(def),
+      startTime
     });
     setBouts((prev) => [...prev.filter((b) => b.categoryId !== def.id), ...catBouts]);
     setParticipants((prev) => prev.map((pp) => (entries.some((e) => e.id === pp.id) ? { ...pp, status: 'draw_seeded' } : pp)));
@@ -930,7 +934,8 @@ function AppContent() {
   const handleUpdateBout = (updatedBout: Bout) => {
     // Winner moves to the next round (any bracket size); repechage for the two bronzes is kept in sync.
     const find = (id?: string) => (id ? participants.find((p) => p.id === id) : undefined);
-    setBouts((prev) => applyBoutResult(prev, updatedBout, find));
+    const mode = eventCategories.find((c) => c.id === updatedBout.categoryId)?.thirdPlace;
+    setBouts((prev) => applyBoutResult(prev, updatedBout, find, mode));
   };
 
   const handleUpdateParticipant = (updatedParticipant: Participant) => {
@@ -962,7 +967,17 @@ function AppContent() {
   // ---------------------------------------------------------------------------
   // Printable documents: ?print=bracket|results|medals|entries|bout|diplomas&e=<event>&c=<category>&b=<bout>
   if (printRequest) {
-    return <PrintDocuments request={printRequest} tournaments={tournaments} categories={eventCategories} bouts={bouts} participants={participants} />;
+    // Documents wait for the server data: otherwise a sheet printed in the first seconds says «no draw yet»
+    return (
+      <PrintDocuments
+        request={printRequest}
+        tournaments={tournaments}
+        categories={eventCategories}
+        bouts={bouts}
+        participants={participants}
+        loading={!tournamentsLoaded || !boutSync.loaded || !categorySync.loaded || !participantSync.loaded}
+      />
+    );
   }
 
   if (screenMode) {
@@ -1724,6 +1739,7 @@ function AppContent() {
           {activeTab === 'event_brackets' && !eventLoading && (
             <PublicBracketsView
               event={selectedEvent}
+              eventCategories={eventCategories}
               loading={!boutSync.loaded}
               bouts={bouts}
               participants={participants}

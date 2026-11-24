@@ -1,4 +1,4 @@
-import type { Bout, RoundStage } from '../types/schema';
+import type { Bout, RoundStage, ThirdPlaceMode } from '../types/schema';
 
 /**
  * Bracket progression for elimination categories (WKF style):
@@ -109,11 +109,44 @@ export function syncRepechage(bouts: Bout[], categoryId: string, find: Participa
   return list;
 }
 
+/** Bout for 3rd place (mode 'bronze_match'): the two semi-final losers, created when both semis are over. */
+export function syncBronzeMatch(bouts: Bout[], categoryId: string, find: ParticipantLookup): Bout[] {
+  const semis = bouts.filter((b) => b.categoryId === categoryId && b.roundStage === 'semi_final');
+  const s1 = semis.find((b) => b.bracketPosition === 1);
+  const s2 = semis.find((b) => b.bracketPosition === 2);
+  if (!s1 || !s2) return bouts;
+  const akaId = done(s1) ? loserOf(s1) : undefined;
+  const aoId = done(s2) ? loserOf(s2) : undefined;
+  const existing = bouts.find((b) => b.categoryId === categoryId && b.roundStage === 'bronze_match');
+  if (existing) {
+    if (existing.status === 'completed') return bouts;
+    const updated = setSide(setSide(existing, 'aka', akaId, find), 'ao', aoId, find);
+    return updated === existing ? bouts : bouts.map((b) => (b.id === existing.id ? updated : b));
+  }
+  if (!akaId || !aoId) return bouts;
+  const final = bouts.find((b) => b.categoryId === categoryId && b.roundStage === 'final');
+  const maxNumber = Math.max(0, ...bouts.filter((b) => b.categoryId === categoryId).map((b) => b.boutNumber));
+  const created = {
+    ...(final || s2),
+    id: `${categoryId}_bronze_match`,
+    roundStage: 'bronze_match',
+    bracketPosition: 1,
+    // a new number: printed brackets keep the numbers of the draw
+    boutNumber: maxNumber + 1,
+    akaParticipantId: akaId, akaParticipant: find(akaId), aoParticipantId: aoId, aoParticipant: find(aoId),
+    akaScore: 0, aoScore: 0, akaSenshu: false, aoSenshu: false, akaPenaltiesC1: 0, aoPenaltiesC1: 0, akaPenaltiesC2: 0, aoPenaltiesC2: 0,
+    akaWazaAri: 0, aoWazaAri: 0, akaIppon: 0, aoIppon: 0, winnerId: undefined, winReason: undefined, status: 'scheduled',
+    actualStartTime: undefined, actualEndTime: undefined, timerSecondsRemaining: (final || s2).durationSeconds ?? 180, timerStartedAt: undefined,
+    overrideNotes: undefined, refereeProtocolId: undefined
+  } as Bout;
+  return [...bouts, created];
+}
+
 /**
  * Applies a saved bout to the list: replaces it, moves the winner to the next round
- * and keeps the repechage in sync.
+ * and keeps the third-place bouts in sync (repechage, one bronze bout, or none for two bronzes).
  */
-export function applyBoutResult(bouts: Bout[], updated: Bout, find: ParticipantLookup): Bout[] {
+export function applyBoutResult(bouts: Bout[], updated: Bout, find: ParticipantLookup, thirdPlace: ThirdPlaceMode = 'repechage'): Bout[] {
   let list = bouts.map((b) => (b.id === updated.id ? updated : b));
   const idx = stageIndex(updated.roundStage);
 
@@ -139,6 +172,8 @@ export function applyBoutResult(bouts: Bout[], updated: Bout, find: ParticipantL
     );
   }
 
+  if (thirdPlace === 'bronze_match') return syncBronzeMatch(list, updated.categoryId, find);
+  if (thirdPlace === 'two_bronze') return list;
   return syncRepechage(list, updated.categoryId, find);
 }
 
@@ -146,6 +181,8 @@ export interface CategoryStandings {
   gold?: string;
   silver?: string;
   bronze: string[];
+  /** 4th place: the loser of the bout for 3rd place (mode 'bronze_match' only) */
+  fourth?: string;
   /** true when all medals are decided */
   complete: boolean;
 }
@@ -160,27 +197,36 @@ export function computeStandings(bouts: Bout[], categoryId: string): CategorySta
     result.silver = loserOf(final!);
   }
 
-  // Legacy single bronze match
-  for (const b of cat.filter((x) => x.roundStage === 'bronze_match')) if (done(b)) result.bronze.push(b.winnerId!);
-
   const semis = cat.filter((b) => b.roundStage === 'semi_final');
+  // One bout for 3rd place: only its winner is third
+  const bronzeBouts = cat.filter((x) => x.roundStage === 'bronze_match');
+  if (bronzeBouts.length > 0) {
+    for (const b of bronzeBouts) if (done(b)) {
+      result.bronze.push(b.winnerId!);
+      result.fourth = loserOf(b);
+    }
+    result.complete = !!result.gold && result.bronze.length >= bronzeBouts.length;
+    return result;
+  }
+
   let halvesDecided = 0;
   for (const half of [1, 2] as const) {
     const semi = semis.find((b) => b.bracketPosition === half);
     if (!done(semi)) continue;
     const losers = losersTo(bouts, categoryId, semi!.winnerId!);
     const chain = cat.filter((b) => b.roundStage === 'repechage' && repechageHalf(b) === half).sort((a, b) => repechageStep(a) - repechageStep(b));
-    if (losers.length === 1) {
-      result.bronze.push(losers[0]);
+    if (chain.length === 0) {
+      // No repechage in this half: the semi-final loser is third (two bronzes, or nobody to fight)
+      const loser = loserOf(semi!);
+      if (loser) result.bronze.push(loser);
       halvesDecided++;
-    } else if (chain.length > 0 && chain.length === losers.length - 1 && done(chain[chain.length - 1])) {
+    } else if (chain.length === losers.length - 1 && done(chain[chain.length - 1])) {
       result.bronze.push(chain[chain.length - 1].winnerId!);
       halvesDecided++;
     }
   }
 
-  const expectedBronze = semis.length === 2 ? 2 : cat.some((b) => b.roundStage === 'bronze_match') ? 1 : 0;
-  result.complete = !!result.gold && (halvesDecided === 2 || result.bronze.length >= expectedBronze);
+  result.complete = !!result.gold && halvesDecided === semis.length;
   return result;
 }
 

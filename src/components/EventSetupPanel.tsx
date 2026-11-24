@@ -1,11 +1,11 @@
 import React from 'react';
 import { Plus, Trash2, Shuffle, Lock, Unlock, ChevronDown, Layers, Printer, ListChecks } from 'lucide-react';
-import { printUrl } from './PrintDocuments';
+import { printUrl, boutSlotSeconds, boutsFor, addToClock } from './PrintDocuments';
 import { useApp } from '../context/AppContext';
 import { localizeCategoryName } from '../utils/names';
 import { NumberField } from './NumberField';
 import { PricingEditor } from './PricingEditor';
-import type { Bout, EventCategory, Gender, Participant, Tournament } from '../types/schema';
+import type { Bout, EventCategory, Gender, Participant, ThirdPlaceMode, Tournament } from '../types/schema';
 import { WKF_AGE_GROUPS, buildWkfSet, categoryName, newCategoryId, activeEntries, DISCIPLINE_LABELS, isTeamCategory } from '../utils/eventCategories';
 
 interface EventSetupPanelProps {
@@ -18,7 +18,7 @@ interface EventSetupPanelProps {
   participants: Participant[];
   bouts: Bout[];
   tatamiNumbers: number[];
-  onDraw: (category: EventCategory, tatamiNumber: number) => void;
+  onDraw: (category: EventCategory, tatamiNumber: number, startTime?: string) => void;
   onWithdraw: (entryId: string) => void;
   currency?: string;
   /** Saves tournament fields (price periods). Without it the price editor is hidden. */
@@ -112,6 +112,36 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
   const remove = (id: string) => onChangeCategories(categories.filter((c) => c.id !== id));
 
   const entriesTotal = cats.reduce((n, c) => n + activeEntries(participants, c.id).length, 0);
+  // Third places: both semi-final losers (SKIF), repechage (WKF) or one bout for 3rd place
+  const thirdOptions: { v: ThirdPlaceMode; label: string }[] = [
+    { v: 'two_bronze', label: tl('Два 3-х места — проигравшие в полуфиналах (SKIF)', 'Эки 3-орун — жарым финалда утулгандар (SKIF)', 'Two 3rd places — semi-final losers (SKIF)') },
+    { v: 'repechage', label: tl('Два 3-х места через утешительные бои (WKF)', 'Утешителдик беттештер аркылуу эки 3-орун (WKF)', 'Two 3rd places via repechage (WKF)') },
+    { v: 'bronze_match', label: tl('Бой за 3-е место (одно 3-е место)', '3-орун үчүн беттеш (бир 3-орун)', 'Bout for 3rd place (one 3rd place)') }
+  ];
+  const thirdOf = (c: EventCategory): ThirdPlaceMode => c.thirdPlace || 'repechage';
+
+  // ---------- Draw timing: each tatami starts at 09:00, a category starts when the previous one there ends ----------
+  const DAY_START = '09:00';
+  const catSeconds = (c: EventCategory) => boutsFor(activeEntries(participants, c.id).length) * boutSlotSeconds(c);
+  const tatamiSeconds = (n: number, except?: string) =>
+    cats.filter((c) => c.id !== except && bouts.some((b) => b.categoryId === c.id && b.tatamiNumber === n)).reduce((sum, c) => sum + catSeconds(c), 0);
+  // ---------- Draw all: every category with 2+ entries and no bracket yet, spread over the tatamis evenly ----------
+  const undrawn = cats.filter((c) => activeEntries(participants, c.id).length >= 2 && !bouts.some((b) => b.categoryId === c.id));
+  const drawAll = () => {
+    const nums = tatamiNumbers.length ? tatamiNumbers : [1];
+    const load: Record<number, number> = Object.fromEntries(nums.map((n) => [n, tatamiSeconds(n)]));
+    const closed = new Set<string>();
+    for (const c of undrawn) {
+      const t = nums.reduce((a, b) => (load[b] < load[a] ? b : a));
+      onDraw(c, t, addToClock(DAY_START, load[t]));
+      load[t] += catSeconds(c);
+      closed.add(c.id);
+    }
+    // One save for all categories: entries close after the draw
+    onChangeCategories(categories.map((c) => (closed.has(c.id) ? { ...c, isClosed: true } : c)));
+  };
+  const allThird = cats.length && cats.every((c) => thirdOf(c) === thirdOf(cats[0])) ? thirdOf(cats[0]) : '';
+  const setThirdAll = (v: ThirdPlaceMode) => onChangeCategories(categories.map((c) => (c.tournamentId === tid ? { ...c, thirdPlace: v } : c)));
 
   return (
     <div className="theme-keep space-y-5 pb-8">
@@ -240,6 +270,30 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
         <div className="px-4 py-3 border-b border-[var(--app-border)] flex flex-wrap items-center gap-2">
           <h2 className="font-semibold text-[var(--app-text-primary)] flex-1">{tl('Категории турнира', 'Мелдештин категориялары', 'Tournament categories')} ({cats.length})</h2>
           <span className="text-sm text-[var(--app-text-muted)]">{tl('Заявок', 'Табыштамалар', 'Entries')}: {entriesTotal}</span>
+          {mode !== 'setup' && cats.length > 0 && (
+            <button
+              disabled={undrawn.length === 0}
+              onClick={() =>
+                setConfirm({
+                  text: `${tl('Провести жеребьёвку сразу для', 'Чүчүкулакты бир жолу өткөрүү:', 'Run the draw for')} ${undrawn.length} ${tl('категорий? Категории распределятся по татами поровну, время начала посчитается само, приём заявок в них закроется. Уже готовые сетки не изменятся.', 'категория? Категориялар татамилерге тең бөлүнөт, башталыш убактысы өзү эсептелет, табыштама кабыл алуу жабылат. Даяр торчолор өзгөрбөйт.', 'categories? They are spread evenly over the tatamis, start times are calculated, entries close. Brackets already made do not change.')}`,
+                  run: drawAll
+                })
+              }
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white text-sm font-semibold disabled:opacity-40 cursor-pointer"
+              title={undrawn.length === 0 ? tl('Все категории с 2+ участниками уже с сетками', '2+ катышуучусу бар бардык категориялардын торчолору бар', 'All categories with 2+ athletes already have brackets') : undefined}
+            >
+              <Shuffle className="w-4 h-4" /> {tl('Сгенерировать все сетки', 'Бардык торчолорду түзүү', 'Generate all brackets')} ({undrawn.length})
+            </button>
+          )}
+          {cats.length > 0 && (
+            <label className="w-full flex flex-wrap items-center gap-2 text-sm text-[var(--app-text-secondary)]">
+              {tl('3-и места во всех категориях:', 'Бардык категориялардагы 3-орундар:', '3rd places in all categories:')}
+              <select value={allThird} onChange={(e) => e.target.value && setThirdAll(e.target.value as ThirdPlaceMode)} className={`${field} h-8 py-0 max-w-full`}>
+                {!allThird && <option value="">{tl('разные', 'ар кандай', 'mixed')}</option>}
+                {thirdOptions.map((o) => <option key={o.v} value={o.v}>{o.label}</option>)}
+              </select>
+            </label>
+          )}
         </div>
         {cats.length === 0 ? (
           <div className="p-8 text-center text-sm text-[var(--app-text-muted)]">{tl('Категорий пока нет. Добавьте стандартный набор WKF или свою категорию.', 'Азырынча категориялар жок. WKF стандарттык топтомун же өз категорияңызды кошуңуз.', 'No categories yet. Add the standard WKF set or your own category.')}</div>
@@ -259,10 +313,23 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
                     </button>
                     <span className="text-xs text-[var(--app-text-muted)] w-24">{entries.length} {tl('заяв.', 'табыш.', 'entries')}</span>
                     <span className="text-xs text-[var(--app-text-muted)] w-20">{c.fee} {currency}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-md ${catBouts.length ? 'bg-emerald-600/10 text-emerald-700' : 'bg-[var(--app-surface-subtle)] text-[var(--app-text-muted)]'}`}>
-                      {catBouts.length ? (started ? tl('идут бои', 'беттештер жүрүүдө', 'bouts running') : tl('сетка готова', 'торчо даяр', 'bracket ready')) : c.isClosed ? tl('приём закрыт', 'кабыл алуу жабык', 'entries closed') : tl('приём заявок', 'табыштама кабыл алынат', 'entries open')}
+                    {/* One rule for every category: bracket → ready / running; on the draw page a category without a pair says why */}
+                    <span className={`text-xs px-2 py-0.5 rounded-md ${catBouts.length ? 'bg-emerald-600/10 text-emerald-700' : mode === 'draw' && entries.length < 2 ? 'bg-amber-500/10 text-amber-700' : 'bg-[var(--app-surface-subtle)] text-[var(--app-text-muted)]'}`}>
+                      {catBouts.length
+                        ? started
+                          ? tl('идут бои', 'беттештер жүрүүдө', 'bouts running')
+                          : tl('сетка готова', 'торчо даяр', 'bracket ready')
+                        : mode === 'draw' && entries.length === 0
+                          ? tl('нет участников', 'катышуучу жок', 'no athletes')
+                          : mode === 'draw' && entries.length === 1
+                            ? tl('1 участник — без боя', '1 катышуучу — беттешсиз', '1 athlete — no bout')
+                            : c.isClosed
+                              ? tl('приём закрыт', 'кабыл алуу жабык', 'entries closed')
+                              : mode === 'draw'
+                                ? tl('ждёт жеребьёвки', 'чүчүкулакты күтүүдө', 'waiting for the draw')
+                                : tl('приём заявок', 'табыштама кабыл алынат', 'entries open')}
                     </span>
-                    {mode !== 'setup' && <><select value={tatami} onChange={(e) => setTatamiFor({ ...tatamiFor, [c.id]: Number(e.target.value) })} className={`${field} h-8 py-0`} title={tl('Татами', 'Татами', 'Tatami')}>
+                    {mode !== 'setup' && entries.length >= 2 && <><select value={tatami} onChange={(e) => setTatamiFor({ ...tatamiFor, [c.id]: Number(e.target.value) })} className={`${field} h-8 py-0`} title={tl('Татами', 'Татами', 'Tatami')}>
                       {tatamiNumbers.map((n) => (
                         <option key={n} value={n}>{tl('Татами', 'Татами', 'Tatami')} {n}</option>
                       ))}
@@ -275,7 +342,7 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
                             ? `${tl('Провести жеребьёвку заново для', 'Чүчүкулакты кайра өткөрөсүзбү:', 'Redo the draw for')} «${catName(c)}»? ${tl('Текущая сетка будет заменена.', 'Учурдагы торчо алмаштырылат.', 'The current bracket will be replaced.')}`
                             : `${tl('Провести жеребьёвку для', 'Чүчүкулак өткөрөсүзбү:', 'Run the draw for')} «${catName(c)}» (${entries.length} ${tl('участн.', 'катыш.', 'athletes')}) — ${tl('татами', 'татами', 'tatami')} ${tatami}? ${tl('Приём заявок в категорию закроется.', 'Категорияга табыштама кабыл алуу жабылат.', 'Entries for this category will close.')}`,
                           run: () => {
-                            onDraw(c, tatami);
+                            onDraw(c, tatami, addToClock(DAY_START, tatamiSeconds(tatami, c.id)));
                             patch(c.id, { isClosed: true });
                           }
                         })
@@ -296,17 +363,23 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
                     <button onClick={() => patch(c.id, { isClosed: !c.isClosed })} className="p-1.5 rounded-lg text-[var(--app-text-muted)] hover:text-[var(--app-text-primary)] cursor-pointer" title={c.isClosed ? tl('Открыть приём заявок', 'Табыштама кабыл алууну ачуу', 'Open entries') : tl('Закрыть приём заявок', 'Табыштама кабыл алууну жабуу', 'Close entries')}>
                       {c.isClosed ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
                     </button>
-                    <button
+                    {mode !== 'draw' && <button
                       disabled={entries.length > 0 || catBouts.length > 0}
                       onClick={() => remove(c.id)}
                       className="p-1.5 rounded-lg text-[var(--app-text-muted)] hover:text-red-600 disabled:opacity-30 cursor-pointer"
                       title={entries.length ? tl('Сначала отзовите заявки', 'Адегенде табыштамаларды кайтарыңыз', 'Withdraw the entries first') : tl('Удалить категорию', 'Категорияны өчүрүү', 'Delete category')}
                     >
                       <Trash2 className="w-4 h-4" />
-                    </button>
+                    </button>}
                   </div>
                   {open === c.id && (
                     <div className="px-4 pb-3">
+                      <label className="flex flex-wrap items-center gap-2 text-sm text-[var(--app-text-secondary)] py-2">
+                        {tl('3-и места:', '3-орундар:', '3rd places:')}
+                        <select value={thirdOf(c)} onChange={(e) => patch(c.id, { thirdPlace: e.target.value as ThirdPlaceMode })} className={`${field} h-8 py-0 max-w-full`}>
+                          {thirdOptions.map((o) => <option key={o.v} value={o.v}>{o.label}</option>)}
+                        </select>
+                      </label>
                       {entries.length === 0 ? (
                         <div className="text-sm text-[var(--app-text-muted)] py-2">{tl('Заявок пока нет.', 'Азырынча табыштама жок.', 'No entries yet.')}</div>
                       ) : (
@@ -319,9 +392,9 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
                                 <td className="py-1.5 text-[var(--app-text-muted)] tabular-nums">{p.birthDate}</td>
                                 <td className="py-1.5 text-[var(--app-text-muted)] tabular-nums">{p.declaredWeightKg ? `${p.declaredWeightKg} ${tl('кг', 'кг', 'kg')}` : ''}</td>
                                 <td className="py-1.5 text-right">
-                                  <button onClick={() => setConfirm({ text: `${tl('Отозвать заявку', 'Табыштаманы кайтаруу', 'Withdraw entry')}: ${p.teamName || `${p.lastName} ${p.firstName}`}?`, run: () => onWithdraw(p.id) })} className="text-xs text-[var(--app-text-muted)] hover:text-red-600 cursor-pointer">
+                                  {catBouts.length === 0 && <button onClick={() => setConfirm({ text: `${tl('Отозвать заявку', 'Табыштаманы кайтаруу', 'Withdraw entry')}: ${p.teamName || `${p.lastName} ${p.firstName}`}?`, run: () => onWithdraw(p.id) })} className="text-xs text-[var(--app-text-muted)] hover:text-red-600 cursor-pointer">
                                     {tl('Отозвать', 'Кайтарып алуу', 'Withdraw')}
-                                  </button>
+                                  </button>}
                                 </td>
                               </tr>
                             ))}

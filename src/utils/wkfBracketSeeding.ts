@@ -202,8 +202,8 @@ function seedSlotOrder(size: number): number[] {
 }
 
 const BELT_WEIGHT: Record<string, number> = {
-  black_3dan_plus: 10, black_2dan: 9, black_1dan: 8, brown_1kyu: 7, brown_3kyu: 6,
-  blue_4kyu: 5, green_6kyu: 4, orange_7kyu: 3, yellow_8kyu: 2, white_10kyu: 1
+  black_3dan_plus: 10, black_2dan: 9, black_1dan: 8, brown_1kyu: 7, brown_2kyu: 6.5, brown_3kyu: 6,
+  blue_4kyu: 5, kyu_5: 4.5, green_6kyu: 4, orange_7kyu: 3, yellow_8kyu: 2, white_10kyu: 1
 };
 
 function shuffle<T>(arr: T[]): T[] {

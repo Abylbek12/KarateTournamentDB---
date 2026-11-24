@@ -186,7 +186,9 @@ export const EventBasicsForm: React.FC<{ event: Tournament; language: string; on
     status: (event.status || 'registration_open') as TournamentStatus,
     rulesType: (event.rulesType || 'wkf') as TournamentRules,
     rulesLabel: event.rulesLabel || '',
-    description: event.description || ''
+    description: event.description || '',
+    chiefRefereeName: event.chiefRefereeName || '',
+    chiefSecretaryName: event.chiefSecretaryName || ''
   }));
   const [saved, setSaved] = React.useState(false);
   const [error, setError] = React.useState('');
@@ -266,6 +268,14 @@ export const EventBasicsForm: React.FC<{ event: Tournament; language: string; on
         <div className="sm:col-span-2">
           <label className={label} htmlFor="wf-ruleslabel">{t3('Свои правила (необязательно)', 'Өз эрежелер (милдеттүү эмес)', 'Own rules (optional)')}</label>
           <input id="wf-ruleslabel" value={form.rulesLabel} onChange={set('rulesLabel')} placeholder={t3('напр. ФКР 2026', 'мис. ФКР 2026', 'e.g. National rules 2026')} className={field} />
+        </div>
+        <div className="sm:col-span-2">
+          <label className={label} htmlFor="wf-chief">{t3('Главный судья (для протоколов)', 'Башкы калыс (протоколдор үчүн)', 'Chief referee (for protocols)')}</label>
+          <input id="wf-chief" value={form.chiefRefereeName} onChange={set('chiefRefereeName')} placeholder={t3('напр. Кыдыралиев К.С. (3 дан)', 'мис. Кыдыралиев К.С. (3 дан)', 'e.g. Smith J. (3 dan)')} className={field} />
+        </div>
+        <div className="sm:col-span-2">
+          <label className={label} htmlFor="wf-secretary">{t3('Главный секретарь', 'Башкы катчы', 'Chief secretary')}</label>
+          <input id="wf-secretary" value={form.chiefSecretaryName} onChange={set('chiefSecretaryName')} className={field} />
         </div>
         <div className="sm:col-span-2 lg:col-span-4">
           <label className={label} htmlFor="wf-desc">{t3('Регламент допуска (для тренеров)', 'Уруксат эрежеси (машыктыруучулар үчүн)', 'Eligibility rules (for coaches)')}</label>

@@ -31,8 +31,10 @@ export type BeltRank =
   | 'yellow_8kyu'
   | 'orange_7kyu'
   | 'green_6kyu'
+  | 'kyu_5'
   | 'blue_4kyu'
   | 'brown_3kyu'
+  | 'brown_2kyu'
   | 'brown_1kyu'
   | 'black_1dan'
   | 'black_2dan'
@@ -173,6 +175,9 @@ export interface Tournament {
   liveStreams?: Record<string, string>;
   /** Price periods and the discount for next categories (src/utils/pricing.ts). */
   pricing?: TournamentPricing;
+  /** Printed under every bracket, e.g. «Кыдыралиев К.С. (3 дан)». */
+  chiefRefereeName?: string;
+  chiefSecretaryName?: string;
 }
 
 export interface Club {
@@ -310,7 +315,14 @@ export interface EventCategory {
   /** Name of the discipline when discipline is 'other' (e.g. «Кихон», «Тамешивари»). */
   customDiscipline?: string;
   isClosed?: boolean;
+  /**
+   * Third places: 'two_bronze' — both semi-final losers get bronze (SKIF);
+   * 'repechage' — repechage bouts, two bronzes (WKF, the default); 'bronze_match' — one bout for 3rd place.
+   */
+  thirdPlace?: ThirdPlaceMode;
 }
+
+export type ThirdPlaceMode = 'two_bronze' | 'repechage' | 'bronze_match';
 
 export interface Tatami {
   id: string;
