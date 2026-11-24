@@ -2,12 +2,12 @@ import React from 'react';
 import { ArrowLeft, Trophy, Radio, Medal, Printer, Youtube, ExternalLink, Volume2, VolumeX, Maximize2, Maximize, Minimize, ChevronLeft, ChevronRight, ChevronDown, Search } from 'lucide-react';
 import { printUrl } from './PrintDocuments';
 import type { Bout, Participant, TournamentCategory, EventCategory } from '../types/schema';
-import { categoryName, activeEntries, DISCIPLINE_LABELS } from '../utils/eventCategories';
+import { categoryName, categoryCode, disciplineName, activeEntries, DISCIPLINE_LABELS } from '../utils/eventCategories';
 import type { EventItem, EventActionType } from '../data/eventsData';
 import { belongsToEvent } from '../data/sampleTournamentData';
 import { computeStandings, stageLabel } from '../utils/bracketProgression';
 import { BracketTree } from './BracketTree';
-import type { ThirdPlaceMode } from '../types/schema';
+import { bracketHash, categoryFromHash } from '../utils/routes';
 import * as E from '../utils/boutEngine';
 import { clockNow } from '../utils/serverClock';
 import { displayName, displayClub, localizeCategoryName, nameModeFor, participantFlag, participantNoc, participantCountry, type NameMode } from '../utils/names';
@@ -366,12 +366,40 @@ const CategoryPicker: React.FC<{
 };
 
 /** Public bracket of each category, built from the real bouts. */
-export const PublicBracketsView: React.FC<BaseProps & { thirdPlaceOf?: (categoryId: string) => ThirdPlaceMode | undefined }> = (props) => {
+export const PublicBracketsView: React.FC<BaseProps & { eventCategories?: EventCategory[] }> = (props) => {
   const { event, bouts, categories, language } = props;
   const { eventBouts, cats } = useEventCategories(event, bouts, categories);
   useEventNameMode(eventBouts, language);
-  const [catId, setCatId] = React.useState<string | null>(null);
+  // The category can come from a link (#brackets;id=…;c=…), e.g. a click in «Категории»
+  const [catId, setCatIdState] = React.useState<string | null>(() => categoryFromHash(window.location.hash) || null);
+  React.useEffect(() => {
+    const sync = () => {
+      const c = categoryFromHash(window.location.hash);
+      if (c) setCatIdState(c);
+    };
+    window.addEventListener('hashchange', sync);
+    return () => window.removeEventListener('hashchange', sync);
+  }, []);
+  const setCatId = (id: string) => {
+    setCatIdState(id);
+    // The address names the open category, so the link can be shared or opened again
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${bracketHash(event.id, id)}`);
+  };
   const active = catId && cats.some((c) => c.id === catId) ? catId : cats[0]?.id;
+  // Protocol header: discipline, category, code, protocol number, tatami, date
+  const ownCats = (props.eventCategories || []).filter((c) => c.tournamentId === event.id);
+  const activeDef = ownCats.find((c) => c.id === active);
+  const activeName = activeDef ? categoryName(activeDef) : cats.find((c) => c.id === active)?.name || '';
+  const bracketInfo = active
+    ? {
+        discipline: activeDef ? disciplineName(activeDef) : activeName.split(' · ')[0],
+        category: activeName.split(' · ').slice(1).join(' · ') || activeName,
+        code: activeDef ? categoryCode(activeDef) : active,
+        protocol: activeDef ? ownCats.indexOf(activeDef) + 1 : undefined,
+        tatami: eventBouts.find((b) => b.categoryId === active)?.tatamiNumber,
+        date: event.startDate
+      }
+    : undefined;
   const findAthlete = (id?: string): Participant | undefined =>
     id
       ? props.participants.find((p) => p.id === id) ||
@@ -396,7 +424,8 @@ export const PublicBracketsView: React.FC<BaseProps & { thirdPlaceOf?: (category
                 categoryId={active}
                 lang={language}
                 variant="screen"
-                thirdPlace={props.thirdPlaceOf?.(active)}
+                thirdPlace={activeDef?.thirdPlace}
+                info={bracketInfo}
                 nameOf={(p) => fullName(p)}
                 clubOf={(p) => displayClub(p, currentMode)}
                 find={findAthlete}
@@ -948,8 +977,15 @@ export const PublicCategoriesView: React.FC<
               </thead>
               <tbody>
                 {list.map((c) => (
-                  <tr key={c.id} className="border-t border-[var(--app-border)]">
-                    <td className="px-4 py-2">{categoryName(c)}</td>
+                  <tr key={c.id} className="border-t border-[var(--app-border)] hover:bg-[var(--app-surface-subtle)]">
+                    <td className="px-4 py-2">
+                      {/* After the draw the category opens its bracket (a link: also in a new tab) */}
+                      {props.bouts.some((b) => b.categoryId === c.id) ? (
+                        <a href={bracketHash(event.id, c.id)} className="text-[var(--accent)] hover:underline font-medium">{categoryName(c)}</a>
+                      ) : (
+                        categoryName(c)
+                      )}
+                    </td>
                     <td className="px-4 py-2 text-right tabular-nums">{activeEntries(participants, c.id).length}</td>
                     <td className="px-4 py-2 text-right tabular-nums whitespace-nowrap">{money(categoryPrice(c, period))}</td>
                     {showNext && (

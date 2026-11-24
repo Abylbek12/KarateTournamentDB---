@@ -3,10 +3,9 @@ import { Printer } from 'lucide-react';
 import type { Bout, EventCategory, Participant, Tournament } from '../types/schema';
 import { belongsToEvent } from '../data/sampleTournamentData';
 import { computeStandings, stageLabel } from '../utils/bracketProgression';
-import { bracketLayout } from '../utils/bracketLayout';
-import { BracketTree, bracketCardWidth, bracketSize } from './BracketTree';
+import { BracketTree, bracketCardWidth, bracketPanelSize, type BracketInfo } from './BracketTree';
 import * as E from '../utils/boutEngine';
-import { categoryName, activeEntries, beltName, ageOn } from '../utils/eventCategories';
+import { categoryName, categoryCode, disciplineName, activeEntries, beltName, ageOn } from '../utils/eventCategories';
 import { displayName, displayClub, localizeCategoryName, nameModeFor, participantCountry, participantFlag, participantNoc, type NameMode } from '../utils/names';
 import { countryName, flagEmoji } from '../utils/countries';
 import { BrandMark } from './BrandLogo';
@@ -109,6 +108,8 @@ const PRINT_CSS = `
   .print-sheet.bracket-sheet { width: auto; }
   .bracket-scroll { overflow: visible; }
   .bracket-zoom { zoom: var(--print-zoom, 1); }
+  html, body { background: #fff !important; }
+  .bracket-panel-break { break-before: page; page-break-before: always; }
   .no-print { display: none !important; }
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }`;
@@ -188,26 +189,34 @@ export const PrintDocuments: React.FC<PrintDocumentsProps> = ({ request, tournam
   const bracketSheet = (cid: string) => {
     const cb = eventBouts.filter((b) => b.categoryId === cid);
     const def = categories.find((c) => c.id === cid);
-    // Width of the drawing → zoom so the whole bracket fits one landscape A4 sheet (277 mm ≈ 1047 px) when printed
+    // Size of the biggest panel → zoom so it fits one landscape A4 sheet (277 × ~120 mm under the header)
     const people = cb.flatMap((b) => [b.akaParticipantId, b.aoParticipantId]).map(find).filter((p): p is Participant => !!p);
-    const layout = bracketLayout(cb);
-    const size = bracketSize(layout.columns.length, layout.firstCount, bracketCardWidth(people.map((p) => ({ name: name(p), club: club(p) }))));
-    // Fit the width always; the height too (≈ 500 px under the title on a landscape sheet), but never smaller than 55 %
-    const zoom = Math.min(1, 1040 / size.width, Math.max(0.55, 500 / size.height));
+    const athleteName = (p: Participant) => `${name(p)} ${participantNoc(p)}`.trim();
+    const size = bracketPanelSize(cb, bracketCardWidth(people.map((p) => ({ name: athleteName(p), club: club(p) }))));
+    // Height budget: under the header on the first sheet; a 17–32 bracket has a subgroup per sheet
+    const split = size.splitPages;
+    const zoom = Math.min(1, 1010 / size.width, Math.max(0.55, (split ? 560 : 470) / size.height));
+    const title = catTitle(cid);
+    const info: BracketInfo = {
+      discipline: def ? disciplineName(def) : title.split(' · ')[0],
+      category: def ? title.split(' · ').slice(1).join(' · ') || title : title,
+      code: def ? categoryCode(def) : cid,
+      protocol: catIds.indexOf(cid) + 1,
+      tatami: tatamiOf(cid),
+      date: event.startDate
+    };
     return (
       <div className="print-sheet print-break bracket-sheet" key={`br-${cid}`}>
         <Header title={tr(lang, 'Турнирная сетка', 'Турнирдик торчо', 'Bracket')} />
-        {/* Category in big letters: discipline, qualification, age and weight class */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '4px 14px', margin: '-4px 0 12px' }}>
-          <div style={{ fontSize: 20, fontWeight: 800 }}>{catTitle(cid)}</div>
-          {tatamiOf(cid) && <div style={{ fontSize: 14, fontWeight: 600, color: '#333' }}>{tr(lang, 'Татами', 'Татами', 'Tatami')} {tatamiOf(cid)}</div>}
-        </div>
         {cb.length === 0 ? (
-          <p>{tr(lang, 'Жеребьёвка не проведена.', 'Чүчүкулак өткөрүлө элек.', 'The draw has not been made.')}</p>
+          <>
+            <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 8 }}>{title}</div>
+            <p>{tr(lang, 'Жеребьёвка не проведена.', 'Чүчүкулак өткөрүлө элек.', 'The draw has not been made.')}</p>
+          </>
         ) : (
           <div className="bracket-scroll">
             <div className="bracket-zoom" style={{ ['--print-zoom' as string]: zoom } as React.CSSProperties}>
-              <BracketTree bouts={eventBouts} categoryId={cid} lang={lang} variant="print" thirdPlace={def?.thirdPlace} nameOf={(p) => `${name(p)} ${participantNoc(p)}`.trim()} clubOf={(p) => club(p)} find={find} />
+              <BracketTree bouts={eventBouts} categoryId={cid} lang={lang} variant="print" thirdPlace={def?.thirdPlace} info={info} nameOf={athleteName} clubOf={(p) => club(p)} find={find} />
             </div>
           </div>
         )}

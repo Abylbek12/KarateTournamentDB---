@@ -3,6 +3,7 @@ import * as E from '../src/utils/boutEngine';
 import { applyBoutResult, computeStandings } from '../src/utils/bracketProgression';
 import { bracketLayout } from '../src/utils/bracketLayout';
 import { generateProtectedWkfCategoryBouts } from '../src/utils/wkfBracketSeeding';
+import { categoryCode } from '../src/utils/eventCategories';
 import type { ThirdPlaceMode } from '../src/types/schema';
 
 let failures = 0;
@@ -50,6 +51,21 @@ check('2: one column, one bout', bracketLayout(draw(2).bouts).columns.length ===
   check('16: slots 8/4/2/1', L.columns.map((c) => c.length).join('/') === '8/4/2/1');
 }
 
+// 32 athletes: 1/16 round, 16 + 16 slots → subgroups A and B
+{
+  const L = bracketLayout(draw(32).bouts);
+  check('32: slots 16/8/4/2/1', L.columns.map((c) => c.length).join('/') === '16/8/4/2/1');
+  const fin = L.columns[L.columns.length - 1][0];
+  check('32: final = winners of semi 1 (A) and semi 2 (B)', fin.aka.kind === 'winner' && fin.ao.kind === 'winner');
+}
+// 20 athletes: still 32 slots, byes in the first round
+check('20: 1/16 round with byes', bracketLayout(draw(20).bouts).firstCount === 16);
+
+// Category codes
+check('code: kumite boys 7–10 −27', categoryCode({ discipline: 'kumite', gender: 'male', ageMin: 7, ageMax: 10, weightMin: null, weightMax: 27 } as any) === 'KU-M7-10-27');
+check('code: kata girls 13–14', categoryCode({ discipline: 'kata', gender: 'female', ageMin: 13, ageMax: 14, weightMin: 50, weightMax: null } as any) === 'KA-F13-14');
+check('code: open weight kumite', categoryCode({ discipline: 'kumite', gender: 'male', ageMin: 18, ageMax: null, weightMin: null, weightMax: null } as any) === 'KU-M18+-ABS');
+
 // Third places
 const run = (n: number, mode: ThirdPlaceMode) => {
   let { bouts, find } = draw(n);
@@ -72,6 +88,7 @@ const run = (n: number, mode: ThirdPlaceMode) => {
   const { bouts, st } = run(8, 'bronze_match');
   const bm = bouts.filter((b) => b.roundStage === 'bronze_match');
   check('bronze bout: one bout between the semi-final losers', bm.length === 1 && bm[0].status === 'completed');
+  check('bronze bout: its loser is 4th', !!st.fourth && st.fourth !== st.bronze[0] && bm[0].akaParticipantId !== undefined && [bm[0].akaParticipantId, bm[0].aoParticipantId].includes(st.fourth));
   check('bronze bout: one 3rd place, its winner', st.complete && st.bronze.length === 1 && st.bronze[0] === bm[0].winnerId, JSON.stringify(st));
   const numbers = bouts.map((b) => b.boutNumber);
   check('bronze bout: bout numbers stay unique', new Set(numbers).size === numbers.length);

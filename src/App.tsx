@@ -882,6 +882,8 @@ function AppContent() {
     const target = activeTab === 'manage' ? manageHash(selectedEvent.id, workflowStep) : hashForTab(activeTab, isEventTab(activeTab) ? selectedEvent.id : undefined);
     if (window.location.hash === target) return;
     const current = tabFromHash(window.location.hash);
+    // Same page, the link only adds details (e.g. the category of a bracket «;c=…»): keep it
+    if (activeTab !== 'manage' && current && current.tab === activeTab && current.eventId === selectedEvent.id) return;
     // Opening a link to a tournament page before the tournament list has loaded: keep it
     if (current && current.tab === activeTab && current.eventId && !tournaments.some((t) => t.id === current.eventId)) return;
     if (!window.location.hash && activeTab === 'tournaments') {
@@ -1725,7 +1727,7 @@ function AppContent() {
           {activeTab === 'event_brackets' && !eventLoading && (
             <PublicBracketsView
               event={selectedEvent}
-              thirdPlaceOf={(cid) => eventCategories.find((c) => c.id === cid)?.thirdPlace}
+              eventCategories={eventCategories}
               loading={!boutSync.loaded}
               bouts={bouts}
               participants={participants}

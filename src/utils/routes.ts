@@ -22,6 +22,15 @@ export function hashForTab(tab: string, eventId?: string): string {
   return `#${tab}`;
 }
 
+/** Link to the bracket of one category, e.g. "#brackets;id=kg-cup;c=cat-1". */
+export const bracketHash = (eventId: string, categoryId: string) => `#brackets;id=${eventId};c=${encodeURIComponent(categoryId)}`;
+
+/** Category named in a link (";c=…"), if any. */
+export function categoryFromHash(hash: string): string | undefined {
+  const c = hash.replace(/^#/, '').split(';').find((p) => p.startsWith('c='));
+  return c ? decodeURIComponent(c.slice(2)) || undefined : undefined;
+}
+
 /** Link of a stage of the tournament workflow, e.g. "#manage;id=kg-cup;step=4". */
 export const manageHash = (eventId: string, step: number) => `#manage;id=${eventId};step=${step}`;
 

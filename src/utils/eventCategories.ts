@@ -96,6 +96,18 @@ export function categoryName(c: EventCategory): string {
   return parts.join(' · ');
 }
 
+/**
+ * Short code of a category for protocols, e.g. «KU-M7-10-27» (kumite, boys 7–10, −27 kg), «KA-F13-14», «KU-M15-16+60».
+ * KA kata, KU kumite, TKA / TKU teams, OT own discipline; M / F / X gender; ABS open weight in kumite.
+ */
+export function categoryCode(c: EventCategory): string {
+  const d = { kata: 'KA', kumite: 'KU', team_kata: 'TKA', team_kumite: 'TKU', other: 'OT' }[c.discipline] || 'OT';
+  const g = c.gender === 'male' ? 'M' : c.gender === 'female' ? 'F' : 'X';
+  const age = c.ageMax == null ? `${c.ageMin}+` : c.ageMin === c.ageMax ? `${c.ageMin}` : `${c.ageMin}-${c.ageMax}`;
+  const w = hasWeightClasses(c) ? (c.weightMax != null ? `-${c.weightMax}` : c.weightMin != null ? `+${c.weightMin}` : c.discipline === 'kumite' ? '-ABS' : '') : '';
+  return `${d}-${g}${age}${w}`;
+}
+
 export interface FitResult {
   ok: boolean;
   reasons: string[];

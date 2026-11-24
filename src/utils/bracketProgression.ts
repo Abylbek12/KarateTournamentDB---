@@ -181,6 +181,8 @@ export interface CategoryStandings {
   gold?: string;
   silver?: string;
   bronze: string[];
+  /** 4th place: the loser of the bout for 3rd place (mode 'bronze_match' only) */
+  fourth?: string;
   /** true when all medals are decided */
   complete: boolean;
 }
@@ -199,7 +201,10 @@ export function computeStandings(bouts: Bout[], categoryId: string): CategorySta
   // One bout for 3rd place: only its winner is third
   const bronzeBouts = cat.filter((x) => x.roundStage === 'bronze_match');
   if (bronzeBouts.length > 0) {
-    for (const b of bronzeBouts) if (done(b)) result.bronze.push(b.winnerId!);
+    for (const b of bronzeBouts) if (done(b)) {
+      result.bronze.push(b.winnerId!);
+      result.fourth = loserOf(b);
+    }
     result.complete = !!result.gold && result.bronze.length >= bronzeBouts.length;
     return result;
   }
