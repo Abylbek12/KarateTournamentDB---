@@ -80,6 +80,7 @@ import { DEMO_EVENTS } from './src/data/eventsData';
 import { sanitizeLiveStreams } from './src/utils/youtube';
 import { cleanTitleTranslation } from './src/utils/eventI18n';
 import { askGemini, hasGeminiKey } from './server/geminiSensei';
+import { ownedEventIds, mergeOrganizerList } from './server/ownership';
 import { sanitizePricing, quoteEntries, countPaidBefore, athleteKey, bishkekDate } from './src/utils/pricing';
 import {
   sanitizeAthlete,
@@ -134,6 +135,17 @@ const isEventDatePast = (endDateStr?: string): boolean => {
 
 // Admin rights come only from the server-side session, never from client headers/body.
 const isRequestAuthorizedAdmin = (req: Request): boolean => isAdminRequest(req);
+/** Organizer: runs only the tournaments they created (ownerId). */
+const organizerUser = (req: Request): StoredUserAccount | null => {
+  const u = getSessionUser(req);
+  return u && u.role === 'organizer' ? u : null;
+};
+/** May this request change this tournament? Admin: any; organizer: only their own. */
+const canEditEvent = (req: Request, event: { ownerId?: string } | undefined): boolean => {
+  if (isRequestAuthorizedAdmin(req)) return true;
+  const org = organizerUser(req);
+  return !!(org && event && event.ownerId === org.id);
+};
 
 app.get('/api/events', (_req: Request, res: Response) => {
   // Automatically transition concluded events to 'completed' (Archive) instead of deleting them
@@ -160,7 +172,7 @@ const ALLOWED_EVENT_IMAGE_EXTS = /\.(jpe?g|webp)$/i;
 
 app.post('/api/upload/event-image', (req: Request, res: Response) => {
   try {
-    if (!isRequestAuthorizedAdmin(req)) {
+    if (!isRequestAuthorizedAdmin(req) && !organizerUser(req)) {
       res.status(403).json({
         error: 'Доступ запрещён (RBAC): загрузка и изменение изображений турниров доступны только Администратору.'
       });
@@ -240,9 +252,10 @@ app.get('/api/uploads/:filename', async (req: Request, res: Response) => {
 });
 
 app.post('/api/events', (req: Request, res: Response) => {
-  if (!isRequestAuthorizedAdmin(req)) {
+  const creator = getSessionUser(req);
+  if (!isRequestAuthorizedAdmin(req) && !organizerUser(req)) {
     res.status(403).json({
-      error: 'Доступ запрещён (RBAC): создание турниров доступно только Администратору.'
+      error: 'Доступ запрещён (RBAC): создание турниров доступно только Администратору и организатору.'
     });
     return;
   }
@@ -253,12 +266,21 @@ app.post('/api/events', (req: Request, res: Response) => {
     return;
   }
 
-  const id = newEvent.id || `event_${Date.now()}`;
+  // An organizer cannot overwrite somebody else's tournament by sending its id
+  const requestedId = newEvent.id;
+  const taken = requestedId ? eventsList().find((e) => e.id === requestedId) : undefined;
+  if (taken && !canEditEvent(req, taken)) {
+    res.status(403).json({ error: 'Этот турнир принадлежит другому организатору.' });
+    return;
+  }
+  const id = requestedId || `event_${Date.now()}`;
   const imageUrl = newEvent.imageUrl || newEvent.image_url || undefined;
   const expired = isEventDatePast(newEvent.endDate);
   const preparedEvent = {
     ...newEvent,
     id,
+    // Who runs this tournament: set by the server, never taken from the request
+    ownerId: taken?.ownerId ?? creator?.id,
     status: expired ? 'completed' : (newEvent.status || 'registration_open'),
     isArchived: expired || newEvent.status === 'completed',
     imageUrl,
@@ -282,13 +304,6 @@ app.post('/api/events', (req: Request, res: Response) => {
 });
 
 app.put('/api/events/:id', (req: Request, res: Response) => {
-  if (!isRequestAuthorizedAdmin(req)) {
-    res.status(403).json({
-      error: 'Доступ запрещён (RBAC): редактирование турниров доступно только Администратору.'
-    });
-    return;
-  }
-
   const { id } = req.params;
   const updateData = req.body;
   const index = eventsList().findIndex((e) => e.id === id);
@@ -299,6 +314,12 @@ app.put('/api/events/:id', (req: Request, res: Response) => {
   }
 
   const existing = eventsList()[index];
+  if (!canEditEvent(req, existing)) {
+    res.status(403).json({
+      error: 'Доступ запрещён (RBAC): менять турнир может только Администратор или его организатор.'
+    });
+    return;
+  }
   const resolvedImageUrl =
     updateData.imageUrl !== undefined
       ? updateData.imageUrl
@@ -311,6 +332,7 @@ app.put('/api/events/:id', (req: Request, res: Response) => {
     ...existing,
     ...updateData,
     id,
+    ownerId: existing.ownerId, // the owner never changes through an edit
     status: expired ? 'completed' : (updateData.status || existing.status),
     isArchived: expired || (updateData.status || existing.status) === 'completed',
     imageUrl: resolvedImageUrl,
@@ -331,14 +353,13 @@ app.put('/api/events/:id', (req: Request, res: Response) => {
 });
 
 app.delete('/api/events/:id', (req: Request, res: Response) => {
-  if (!isRequestAuthorizedAdmin(req)) {
+  const { id } = req.params;
+  if (!canEditEvent(req, eventsList().find((e) => e.id === id))) {
     res.status(403).json({
-      error: 'Доступ запрещён (RBAC): удаление турниров доступно только Администратору.'
+      error: 'Доступ запрещён (RBAC): удалить турнир может только Администратор или его организатор.'
     });
     return;
   }
-
-  const { id } = req.params;
   const initialLength = eventsList().length;
   db.events = eventsList().filter((e) => e.id !== id);
 
@@ -675,7 +696,7 @@ app.post('/api/auth/logout', (req: Request, res: Response) => {
 
 // ---------------- Invite links ----------------
 // Staff roles are never self-selected: the admin creates a secret, expiring link for them.
-const INVITE_ROLES = new Set(['tatami_referee', 'scorekeeper', 'chief_referee', 'medical_officer', 'club_coach']);
+const INVITE_ROLES = new Set(['tatami_referee', 'scorekeeper', 'chief_referee', 'medical_officer', 'club_coach', 'organizer']);
 
 function findValidInvite(token: string) {
   const record = db.invites[token];
@@ -742,7 +763,7 @@ app.delete('/api/admin/invites/:token', (req: Request, res: Response) => {
 });
 
 // 10. Admin: list users and assign roles (referees, medical officers, etc.)
-const ALL_ROLES = new Set(['admin', 'chief_referee', 'tatami_referee', 'scorekeeper', 'club_coach', 'athlete', 'medical_officer']);
+const ALL_ROLES = new Set(['admin', 'organizer', 'chief_referee', 'tatami_referee', 'scorekeeper', 'club_coach', 'athlete', 'medical_officer']);
 
 // ========================================================
 // BACKUP AND LAUNCH PREPARATION (admin only)
@@ -902,10 +923,11 @@ app.put('/api/admin/users/:id/role', (req: Request, res: Response) => {
 // ========================================================
 const SHARED_STATE_WRITERS: Record<string, Set<string>> = {
   // Athletes and coaches add entries through POST /api/entries, never by rewriting the list.
-  participants: new Set(['admin', 'chief_referee', 'scorekeeper', 'medical_officer']),
-  bouts: new Set(['admin', 'chief_referee', 'tatami_referee', 'scorekeeper']),
-  protocols: new Set(['admin', 'chief_referee', 'tatami_referee', 'scorekeeper']),
-  categories: new Set(['admin', 'chief_referee'])
+  // organizer: only records of their own tournaments are taken (mergeOrganizerList in PUT below)
+  participants: new Set(['admin', 'organizer', 'chief_referee', 'scorekeeper', 'medical_officer']),
+  bouts: new Set(['admin', 'organizer', 'chief_referee', 'tatami_referee', 'scorekeeper']),
+  protocols: new Set(['admin', 'organizer', 'chief_referee', 'tatami_referee', 'scorekeeper']),
+  categories: new Set(['admin', 'organizer', 'chief_referee'])
 };
 
 const stateEnvelope = (key: string) => {
@@ -946,8 +968,11 @@ app.get('/api/state/:key', (req: Request, res: Response) => {
 const PERSONAL_DATA_ROLES = new Set(['admin', 'chief_referee', 'scorekeeper', 'medical_officer', 'tatami_referee']);
 function visibleParticipants(list: any[], user: StoredUserAccount | null): any[] {
   if (user && PERSONAL_DATA_ROLES.has(user.role)) return list;
+  // An organizer sees the entries of their own tournaments in full (weigh-in, fees, start lists)
+  const owned = user?.role === 'organizer' ? ownedEventIds(eventsList(), user.id) : new Set<string>();
   return list.map((p) => {
     if (user && p?.createdBy === user.id) return p;
+    if (owned.has(String(p?.tournamentId))) return p;
     const { birthDate, declaredWeightKg, actualWeightKg, licenseNumber, feePaymentStatus, feeAmountRub, feeAmount, eligibilityNote, isMedicalCleared, createdBy, athleteId, ...rest } = p || {};
     return { ...rest, birthDate: '', declaredWeightKg: 0, actualWeightKg: null, licenseNumber: '', isMedicalCleared: false };
   });
@@ -985,10 +1010,12 @@ app.put('/api/state/:key', (req: Request, res: Response) => {
     res.status(403).json({ error: 'Тренер или спортсмен может только добавлять заявки, но не менять чужие.' });
     return;
   }
+  // Organizer: other tournaments stay exactly as they are on the server
+  const saved = user.role === 'organizer' ? mergeOrganizerList(current?.value, value, ownedEventIds(eventsList(), user.id)).value : value;
 
   db.state[key] = {
     version: currentVersion + 1,
-    value,
+    value: saved,
     updatedAt: new Date().toISOString(),
     updatedBy: user.id
   };
@@ -1117,7 +1144,7 @@ app.post('/api/athletes/:id/archive', (req: Request, res: Response) => {
 // ENTRIES (заявки): athletes, parents and coaches enter tournaments.
 // Each entry is appended on its own, so many coaches can submit at once.
 // ========================================================
-const ENTRY_ROLES = new Set(['athlete', 'club_coach', 'admin', 'chief_referee', 'scorekeeper']);
+const ENTRY_ROLES = new Set(['athlete', 'club_coach', 'admin', 'organizer', 'chief_referee', 'scorekeeper']);
 
 const participantsList = (): any[] => (Array.isArray(db.state.participants?.value) ? (db.state.participants!.value as any[]) : []);
 
