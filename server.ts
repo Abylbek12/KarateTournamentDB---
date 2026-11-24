@@ -1084,10 +1084,13 @@ app.post('/api/athletes', (req: Request, res: Response) => {
 });
 
 /** Adds several athletes from past entries at once (button «Добавить из прошлых заявок»). */
+// Entries become roster cards only for coaches, parents and athletes (an admin's / organizer's entries are tournament lists)
+const AUTO_CARD_ROLES = new Set(['club_coach', 'athlete']);
+
 app.post('/api/athletes/import-from-entries', (req: Request, res: Response) => {
   const user = rosterUser(req, res);
   if (!user) return;
-  const candidates = suggestFromEntries(participantsList(), db.athletes as ClubAthlete[], user.id);
+  const candidates = AUTO_CARD_ROLES.has(user.role) ? suggestFromEntries(participantsList(), db.athletes as ClubAthlete[], user.id) : [];
   let added = 0;
   for (const c of candidates) {
     const r = addAthlete(user.id, c);
@@ -1101,7 +1104,35 @@ app.post('/api/athletes/import-from-entries', (req: Request, res: Response) => {
 app.get('/api/athletes/suggest-from-entries', (req: Request, res: Response) => {
   const user = rosterUser(req, res);
   if (!user) return;
-  res.json({ candidates: suggestFromEntries(participantsList(), db.athletes as ClubAthlete[], user.id) });
+  res.json({ candidates: AUTO_CARD_ROLES.has(user.role) ? suggestFromEntries(participantsList(), db.athletes as ClubAthlete[], user.id) : [] });
+});
+
+/**
+ * Unlink from «Мои спортсмены» the cards made automatically when this account loaded a tournament's entries.
+ * Nothing is deleted: the cards stay in the database (without an owner) and every entry of the tournament
+ * keeps its data, weigh-in and bracket. Admin, or the organizer of that tournament.
+ */
+app.post('/api/athletes/unlink-tournament', (req: Request, res: Response) => {
+  const user = rosterUser(req, res);
+  if (!user) return;
+  const tournamentId = String(req.body?.tournamentId || '');
+  const event = eventsList().find((e) => e.id === tournamentId);
+  if (!event || !canEditEvent(req, event)) {
+    res.status(403).json({ error: 'Только для администратора или организатора этого турнира.' });
+    return;
+  }
+  const linked = new Set(participantsList().filter((p) => p.tournamentId === tournamentId && p.createdBy === user.id && p.athleteId).map((p) => p.athleteId));
+  let unlinked = 0;
+  for (const a of db.athletes as ClubAthlete[]) {
+    if (a.ownerId === user.id && linked.has(a.id) && !a.isSelf) {
+      (a as ClubAthlete & { unlinkedFrom?: string }).unlinkedFrom = `${user.id}|${tournamentId}`;
+      a.ownerId = '';
+      a.updatedAt = new Date().toISOString();
+      unlinked++;
+    }
+  }
+  if (unlinked) saveDb();
+  res.json({ unlinked, athletes: visibleAthletes(db.athletes as ClubAthlete[], user) });
 });
 
 app.put('/api/athletes/:id', (req: Request, res: Response) => {
@@ -1284,10 +1315,11 @@ app.post('/api/entries', (req: Request, res: Response) => {
   }
   // «Мои спортсмены»: a new athlete entered by hand lands in the roster; a chosen one gets the newest weight.
   // A full roster never blocks the entry itself.
-  // Coaches, parents and the organizer get automatic cards (the owner asked the organizer to work like a coach).
-  // Other officials (chief referee, secretary) enter athletes without keeping a roster.
+  // Only coaches, parents and athletes get automatic cards in «Мои спортсмены» from their entries.
+  // An admin or organizer loading a tournament's list (bulk import) does not: «Мои спортсмены» holds only
+  // the athletes they add there by hand (the owner's rule, 24 Nov 2026).
   let rosterChanged = false;
-  if (ROSTER_ROLES.has(user.role)) {
+  if (AUTO_CARD_ROLES.has(user.role)) {
     for (const p of created) {
       if (p.teamName) continue;
       const card = p.athleteId ? (db.athletes as ClubAthlete[]).find((a) => a.id === p.athleteId) : undefined;
