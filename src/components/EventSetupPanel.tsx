@@ -1,6 +1,6 @@
 import React from 'react';
 import { Plus, Trash2, Shuffle, Lock, Unlock, ChevronDown, Layers, Printer, ListChecks } from 'lucide-react';
-import { printUrl } from './PrintDocuments';
+import { printUrl, boutSlotSeconds, boutsFor, addToClock } from './PrintDocuments';
 import { useApp } from '../context/AppContext';
 import { localizeCategoryName } from '../utils/names';
 import { NumberField } from './NumberField';
@@ -18,7 +18,7 @@ interface EventSetupPanelProps {
   participants: Participant[];
   bouts: Bout[];
   tatamiNumbers: number[];
-  onDraw: (category: EventCategory, tatamiNumber: number) => void;
+  onDraw: (category: EventCategory, tatamiNumber: number, startTime?: string) => void;
   onWithdraw: (entryId: string) => void;
   currency?: string;
   /** Saves tournament fields (price periods). Without it the price editor is hidden. */
@@ -119,6 +119,27 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
     { v: 'bronze_match', label: tl('Бой за 3-е место (одно 3-е место)', '3-орун үчүн беттеш (бир 3-орун)', 'Bout for 3rd place (one 3rd place)') }
   ];
   const thirdOf = (c: EventCategory): ThirdPlaceMode => c.thirdPlace || 'repechage';
+
+  // ---------- Draw timing: each tatami starts at 09:00, a category starts when the previous one there ends ----------
+  const DAY_START = '09:00';
+  const catSeconds = (c: EventCategory) => boutsFor(activeEntries(participants, c.id).length) * boutSlotSeconds(c);
+  const tatamiSeconds = (n: number, except?: string) =>
+    cats.filter((c) => c.id !== except && bouts.some((b) => b.categoryId === c.id && b.tatamiNumber === n)).reduce((sum, c) => sum + catSeconds(c), 0);
+  // ---------- Draw all: every category with 2+ entries and no bracket yet, spread over the tatamis evenly ----------
+  const undrawn = cats.filter((c) => activeEntries(participants, c.id).length >= 2 && !bouts.some((b) => b.categoryId === c.id));
+  const drawAll = () => {
+    const nums = tatamiNumbers.length ? tatamiNumbers : [1];
+    const load: Record<number, number> = Object.fromEntries(nums.map((n) => [n, tatamiSeconds(n)]));
+    const closed = new Set<string>();
+    for (const c of undrawn) {
+      const t = nums.reduce((a, b) => (load[b] < load[a] ? b : a));
+      onDraw(c, t, addToClock(DAY_START, load[t]));
+      load[t] += catSeconds(c);
+      closed.add(c.id);
+    }
+    // One save for all categories: entries close after the draw
+    onChangeCategories(categories.map((c) => (closed.has(c.id) ? { ...c, isClosed: true } : c)));
+  };
   const allThird = cats.length && cats.every((c) => thirdOf(c) === thirdOf(cats[0])) ? thirdOf(cats[0]) : '';
   const setThirdAll = (v: ThirdPlaceMode) => onChangeCategories(categories.map((c) => (c.tournamentId === tid ? { ...c, thirdPlace: v } : c)));
 
@@ -249,6 +270,21 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
         <div className="px-4 py-3 border-b border-[var(--app-border)] flex flex-wrap items-center gap-2">
           <h2 className="font-semibold text-[var(--app-text-primary)] flex-1">{tl('Категории турнира', 'Мелдештин категориялары', 'Tournament categories')} ({cats.length})</h2>
           <span className="text-sm text-[var(--app-text-muted)]">{tl('Заявок', 'Табыштамалар', 'Entries')}: {entriesTotal}</span>
+          {mode !== 'setup' && cats.length > 0 && (
+            <button
+              disabled={undrawn.length === 0}
+              onClick={() =>
+                setConfirm({
+                  text: `${tl('Провести жеребьёвку сразу для', 'Чүчүкулакты бир жолу өткөрүү:', 'Run the draw for')} ${undrawn.length} ${tl('категорий? Категории распределятся по татами поровну, время начала посчитается само, приём заявок в них закроется. Уже готовые сетки не изменятся.', 'категория? Категориялар татамилерге тең бөлүнөт, башталыш убактысы өзү эсептелет, табыштама кабыл алуу жабылат. Даяр торчолор өзгөрбөйт.', 'categories? They are spread evenly over the tatamis, start times are calculated, entries close. Brackets already made do not change.')}`,
+                  run: drawAll
+                })
+              }
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white text-sm font-semibold disabled:opacity-40 cursor-pointer"
+              title={undrawn.length === 0 ? tl('Все категории с 2+ участниками уже с сетками', '2+ катышуучусу бар бардык категориялардын торчолору бар', 'All categories with 2+ athletes already have brackets') : undefined}
+            >
+              <Shuffle className="w-4 h-4" /> {tl('Сгенерировать все сетки', 'Бардык торчолорду түзүү', 'Generate all brackets')} ({undrawn.length})
+            </button>
+          )}
           {cats.length > 0 && (
             <label className="w-full flex flex-wrap items-center gap-2 text-sm text-[var(--app-text-secondary)]">
               {tl('3-и места во всех категориях:', 'Бардык категориялардагы 3-орундар:', '3rd places in all categories:')}
@@ -293,7 +329,7 @@ export const EventSetupPanel: React.FC<EventSetupPanelProps> = ({
                             ? `${tl('Провести жеребьёвку заново для', 'Чүчүкулакты кайра өткөрөсүзбү:', 'Redo the draw for')} «${catName(c)}»? ${tl('Текущая сетка будет заменена.', 'Учурдагы торчо алмаштырылат.', 'The current bracket will be replaced.')}`
                             : `${tl('Провести жеребьёвку для', 'Чүчүкулак өткөрөсүзбү:', 'Run the draw for')} «${catName(c)}» (${entries.length} ${tl('участн.', 'катыш.', 'athletes')}) — ${tl('татами', 'татами', 'tatami')} ${tatami}? ${tl('Приём заявок в категорию закроется.', 'Категорияга табыштама кабыл алуу жабылат.', 'Entries for this category will close.')}`,
                           run: () => {
-                            onDraw(c, tatami);
+                            onDraw(c, tatami, addToClock(DAY_START, tatamiSeconds(tatami, c.id)));
                             patch(c.id, { isClosed: true });
                           }
                         })

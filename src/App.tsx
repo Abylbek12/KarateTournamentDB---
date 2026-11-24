@@ -898,7 +898,7 @@ function AppContent() {
 
   // Automatic playoff bracket progression when a bout finishes
   /** Draw for one organizer category: bracket from its active entries on the chosen tatami. */
-  const handleDrawCategory = (def: EventCategory, tatamiNumber: number) => {
+  const handleDrawCategory = (def: EventCategory, tatamiNumber: number, startTime?: string) => {
     const entries = activeEntries(participants, def.id);
     const tatami = SAMPLE_TATAMIS.find((t) => t.number === tatamiNumber) || ({ ...SAMPLE_TATAMIS[0], id: `tatami-${tatamiNumber}`, number: tatamiNumber, name: `Татами ${tatamiNumber}` } as typeof SAMPLE_TATAMIS[0]);
     const generatorCategory = {
@@ -912,7 +912,8 @@ function AppContent() {
     } as unknown as TournamentCategory;
     const { bouts: catBouts } = generateProtectedWkfCategoryBouts(generatorCategory, entries, [tatami], {
       durationSeconds: def.durationSeconds,
-      categoryTitle: categoryName(def)
+      categoryTitle: categoryName(def),
+      startTime
     });
     setBouts((prev) => [...prev.filter((b) => b.categoryId !== def.id), ...catBouts]);
     setParticipants((prev) => prev.map((pp) => (entries.some((e) => e.id === pp.id) ? { ...pp, status: 'draw_seeded' } : pp)));

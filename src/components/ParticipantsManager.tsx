@@ -73,6 +73,64 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
     return matchesSearch && matchesClub && matchesStatus;
   });
 
+  // ---------- Bulk approval: the filtered (or ticked) athletes become «weighed in, admitted» in one click ----------
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [bulkAsk, setBulkAsk] = useState(false);
+  const [bulkMsg, setBulkMsg] = useState('');
+  const pendingShown = filtered.filter((p) => !p.isWeighedIn);
+  const pickedPending = pendingShown.filter((p) => picked.has(personKey(p)));
+  const bulkTargets = pickedPending.length ? pickedPending : pendingShown;
+  const togglePick = (p: Participant) =>
+    setPicked((prev) => {
+      const next = new Set(prev);
+      const k = personKey(p);
+      if (next.has(k)) next.delete(k);
+      else next.add(k);
+      return next;
+    });
+  const allPicked = pendingShown.length > 0 && pendingShown.every((p) => picked.has(personKey(p)));
+  const approveBulk = () => {
+    let done = 0;
+    const noWeight: string[] = [];
+    let wrongWeight = 0;
+    for (const person of bulkTargets) {
+      const records = entriesOf.get(personKey(person)) || [person];
+      // The weight from the entry is taken as the weigh-in weight
+      const known = person.actualWeightKg || person.declaredWeightKg;
+      const kg = known && known > 0 ? known : null;
+      const needsWeight = records.some((r) => {
+        const c = catOf(r);
+        return !!c && hasWeightClasses(c) && (c.weightMin != null || c.weightMax != null);
+      });
+      // A weight category without any weight cannot be checked: left for the usual weigh-in
+      if (kg == null && needsWeight) {
+        noWeight.push(`${person.lastName} ${person.firstName}`);
+        continue;
+      }
+      for (const r of records) {
+        const cat = catOf(r);
+        const fits = weighInFits(cat, kg);
+        if (!fits) wrongWeight++;
+        onUpdateParticipant({
+          ...r,
+          actualWeightKg: kg,
+          isWeighedIn: true,
+          isMedicalCleared: true,
+          status: 'weighed_in',
+          eligibilityNote: fits || !cat ? undefined : `${tl('Вес', 'Салмак', 'Weight')} ${kg} ${tl('кг не подходит для', 'кг ылайык келбейт:', 'kg does not fit')} «${categoryName(cat)}»`
+        });
+      }
+      done++;
+    }
+    setPicked(new Set());
+    setBulkAsk(false);
+    setBulkMsg(
+      `${tl('Допущены и взвешены', 'Уруксат берилди жана таразаланды', 'Weighed in and admitted')}: ${done}.` +
+        (noWeight.length ? ` ${tl('Без веса в весовой категории (взвесьте вручную)', 'Салмак категориясында салмагы жок (кол менен таразалаңыз)', 'No weight in a weight category (weigh by hand)')}: ${noWeight.join(', ')}.` : '') +
+        (wrongWeight ? ` ${tl('Вес не подходит к категории — смотрите блок «Не прошли по весу»', 'Салмак категорияга туура келбейт — «Салмагы туура келген жок» блогун караңыз', 'Weight does not fit — see «Failed the weigh-in»')}: ${wrongWeight}.` : '')
+    );
+  };
+
   const handleOpenWeighIn = (p: Participant) => {
     setWeighInAthlete(p);
     setActualWeightInput(p.actualWeightKg || p.declaredWeightKg || 0);
@@ -226,7 +284,28 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
               <option value="pending">{tl('Ожидают взвешивания', 'Таразалоону күтүүдө', 'Waiting for weigh-in')}</option>
             </select>
           </div>
+          {/* Bulk approval of the athletes shown (or ticked) */}
+          <button
+            disabled={bulkTargets.length === 0}
+            onClick={() => { setBulkMsg(''); setBulkAsk(true); }}
+            className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 disabled:opacity-40 cursor-pointer shrink-0"
+          >
+            <CheckCircle2 className="w-4 h-4" />
+            {pickedPending.length ? tl('Допустить выбранных', 'Тандалгандарга уруксат', 'Admit selected') : tl('Допустить всех', 'Баарына уруксат', 'Admit all')} ({bulkTargets.length})
+          </button>
         </div>
+        {bulkAsk && (
+          <div className="theme-keep mt-4 rounded-xl border border-emerald-500 bg-[var(--app-surface)] p-4 space-y-3">
+            <div className="text-sm text-[var(--app-text-primary)]">
+              {tl('Отметить', 'Белгилөө', 'Mark')} <b>{bulkTargets.length}</b> {tl('спортсменов как «взвешен и допущен»? Вес берётся из заявки, допуск врача — да. Кого нет в списке фильтра, не изменится.', 'спортчуну «таразаланды жана уруксат берилди» деп белгилейсизби? Салмак табыштамадан алынат, дарыгердин уруксаты — ооба. Чыпкада жоктор өзгөрбөйт.', 'athletes as «weighed in and admitted»? The weight comes from the entry, medical clearance — yes. Athletes outside the filter do not change.')}
+            </div>
+            <div className="flex gap-2">
+              <button onClick={approveBulk} className="h-9 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold cursor-pointer">{tl('Да, допустить', 'Ооба, уруксат берүү', 'Yes, admit')}</button>
+              <button onClick={() => setBulkAsk(false)} className="h-9 px-4 rounded-lg border border-[var(--app-border)] text-sm text-[var(--app-text-primary)] cursor-pointer">{tl('Отмена', 'Жокко чыгаруу', 'Cancel')}</button>
+            </div>
+          </div>
+        )}
+        {bulkMsg && <div role="status" className="theme-keep mt-4 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 text-sm text-[var(--app-text-primary)]">{bulkMsg}</div>}
       </div>
 
       {/* Participants Table */}
@@ -235,6 +314,10 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-950 text-slate-400 uppercase tabular-nums text-[11px] border-b border-slate-800">
               <tr>
+                <th className="pl-4 pr-1 py-3.5 w-8">
+                  <input type="checkbox" aria-label={tl('Выбрать всех ожидающих', 'Күтүп жаткандардын баарын тандоо', 'Select all waiting')} checked={allPicked} disabled={pendingShown.length === 0}
+                    onChange={() => setPicked(allPicked ? new Set() : new Set(pendingShown.map(personKey)))} className="w-4 h-4 cursor-pointer" />
+                </th>
                 <th className="px-5 py-3.5">{tl('Спортсмен', 'Спортчу', 'Athlete')}</th>
                 <th className="px-5 py-3.5">{tl('Клуб / Город', 'Клуб / Шаар', 'Club / City')}</th>
                 <th className="px-5 py-3.5">{tl('Квалификация', 'Квалификация', 'Grade')}</th>
@@ -250,6 +333,9 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
                 const club = SAMPLE_CLUBS.find(c => c.id === p.clubId);
                 return (
                   <tr key={p.id} className="hover:bg-slate-900/50 transition-colors">
+                    <td className="pl-4 pr-1 py-4">
+                      <input type="checkbox" aria-label={`${p.lastName} ${p.firstName}`} disabled={p.isWeighedIn} checked={!p.isWeighedIn && picked.has(personKey(p))} onChange={() => togglePick(p)} className="w-4 h-4 cursor-pointer disabled:opacity-30" />
+                    </td>
                     {/* Athlete name */}
                     <td className="px-5 py-4">
                       <div className="font-bold text-white text-sm">
