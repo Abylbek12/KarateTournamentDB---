@@ -1319,7 +1319,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--accent)] text-white">{tr('★ Выбран', '★ Тандалган', '★ Selected')}</span>
                         )}
                       </div>
-                      <h4 className="mt-1.5 text-[15px] leading-snug font-bold text-[var(--app-text-primary)] line-clamp-2" title={t.title}>
+                      <h4 className="mt-0.5 text-[15px] leading-tight font-bold text-[var(--app-text-primary)] break-words [overflow-wrap:anywhere]" title={t.title}>
                         {t.title}
                       </h4>
                     </div>
@@ -1333,7 +1333,7 @@ export const TournamentEventsManager: React.FC<TournamentEventsManagerProps> = (
                     </div>
                     <div className="flex items-center gap-1.5 min-w-0">
                       <MapPin className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate">{[t.city, t.venueName].filter(Boolean).join(' · ')}</span>
+                      <span className="break-words [overflow-wrap:anywhere] leading-tight">{[t.city, t.venueName].filter(Boolean).join(' · ')}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Building2 className="w-3.5 h-3.5 shrink-0" />

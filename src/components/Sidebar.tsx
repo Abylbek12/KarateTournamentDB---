@@ -423,7 +423,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {!compact && (
                 <div className="px-2 pt-1 pb-1.5">
                   <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">{tr('Управление турниром', 'Мелдешти башкаруу', 'Run the tournament')}</div>
-                  <div className="text-sm font-semibold text-[var(--app-text-primary)] truncate" translate="no" title={workflow.title}>{workflow.title}</div>
+                  <div className="text-sm font-semibold leading-tight text-[var(--app-text-primary)] break-words [overflow-wrap:anywhere]" translate="no" title={workflow.title}>{workflow.title}</div>
                 </div>
               )}
               <ol className="space-y-0.5">

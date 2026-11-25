@@ -160,7 +160,7 @@ export const TournamentInfoDetailView: React.FC<TournamentInfoDetailViewProps> =
             <span>{tr('Главная', 'Башкы бет', 'Home')}</span>
           </button>
           <span>/</span>
-          <span translate="no" className="text-slate-400 truncate max-w-[200px] sm:max-w-md">{tournament.title}</span>
+          <span translate="no" className="text-slate-400 leading-tight break-words [overflow-wrap:anywhere] min-w-0">{tournament.title}</span>
           <span>/</span>
           <span className="text-slate-800 font-semibold">{tr('Информация', 'Маалымат', 'Information')}</span>
         </div>
@@ -298,7 +298,7 @@ export const TournamentInfoDetailView: React.FC<TournamentInfoDetailViewProps> =
         <div className="grid grid-cols-2 md:grid-cols-4 border-t border-slate-100 bg-slate-50/50">
           <div className="p-4 border-r border-b md:border-b-0 border-slate-100 text-center">
             <div className="text-xs text-slate-500">{tr('Организатор', 'Уюштуруучу', 'Organization')}</div>
-            <div translate="no" className="text-sm md:text-base font-bold text-slate-800 mt-1 truncate">{tournament.organization || '—'}</div>
+            <div translate="no" className="text-sm md:text-base font-bold text-slate-800 mt-0.5 leading-tight break-words [overflow-wrap:anywhere]">{tournament.organization || '—'}</div>
           </div>
           <div className="p-4 border-r border-b md:border-b-0 border-slate-100 text-center">
             <div className="text-xs text-slate-500">{tr('Татами / Рингов', 'Татами / Рингдер', 'Tatami / Rings')}</div>
@@ -314,7 +314,7 @@ export const TournamentInfoDetailView: React.FC<TournamentInfoDetailViewProps> =
           </div>
           <div className="p-4 text-center">
             <div className="text-xs text-slate-500">{tr('Регламент', 'Регламент', 'Rules Standard')}</div>
-            <div className="text-sm md:text-base font-bold text-[var(--accent)] mt-1 truncate" title={rulesText}>{rulesText}</div>
+            <div className="text-sm md:text-base font-bold text-[var(--accent)] mt-0.5 leading-tight break-words [overflow-wrap:anywhere]" title={rulesText}>{rulesText}</div>
           </div>
         </div>
       </div>

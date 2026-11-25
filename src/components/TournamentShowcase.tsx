@@ -181,7 +181,7 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
       </span>
       <span className="inline-flex items-center gap-1.5 min-w-0">
         <MapPin className="w-4 h-4 text-[var(--app-text-muted)] shrink-0" />
-        <span className="truncate">{item.city}</span>
+        <span className="break-words [overflow-wrap:anywhere] leading-tight">{item.city}</span>
       </span>
       {!!item.athleteCount && (
         <span className="inline-flex items-center gap-1.5" title={tr('Участников', 'Катышуучулар', 'Athletes')}>
@@ -357,10 +357,10 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
                     />
                     <div className="min-w-0 flex-1">
                       <span className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-semibold ${toneCls[st.tone]}`}>{st.label}</span>
-                      <h4 className="mt-1 sm:mt-1.5 text-[15px] sm:text-[17px] font-semibold leading-snug text-[var(--app-text-primary)] line-clamp-2">
+                      <h4 className="mt-0.5 sm:mt-1 text-[15px] sm:text-[17px] font-semibold leading-tight text-[var(--app-text-primary)] break-words [overflow-wrap:anywhere]">
                         <a href={hashForTab('event_info', item.id)} onClick={(e) => openInfo(e, item)} translate="no">{item.title}</a>
                       </h4>
-                      <div className="mt-1.5 sm:mt-2">{renderMeta(item)}</div>
+                      <div className="mt-1">{renderMeta(item)}</div>
                     </div>
                   </div>
                   <div className="px-3 sm:px-5 py-2 sm:py-3 border-t border-[var(--app-border)] flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
@@ -466,7 +466,7 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
                     className="w-10 h-10 text-[10px] shrink-0"
                   />
                   <div className="min-w-0 flex-1">
-                    <div className="text-[15px] font-medium text-[var(--app-text-primary)] truncate">{item.title}</div>
+                    <div className="text-[15px] font-medium leading-tight text-[var(--app-text-primary)] break-words [overflow-wrap:anywhere]">{item.title}</div>
                     <div className="text-sm text-[var(--app-text-muted)]">
                       {formatRange(item.startDate, item.endDate, language)} · {item.city}
                     </div>
