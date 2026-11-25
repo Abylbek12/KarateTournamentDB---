@@ -7,7 +7,9 @@ type T3 = [ru: string, ky: string, en: string];
 
 /** Who processes the personal data. Filled in by the owner before publishing. */
 export const OPERATOR = {
-  name: 'Abylbek Amirbek uulu' as string,
+  name: 'Абылбек Амирбек уулу' as string,
+  /** The same name in Latin letters, for the English version */
+  nameLatin: 'Abylbek Amirbek uulu' as string,
   contact: 'abylbek12@gmail.com' as string,
   city: 'Кыргызская Республика'
 };
@@ -27,11 +29,12 @@ export interface LegalSection {
 
 const op = (): T3 => {
   const n = OPERATOR.name || '—';
+  const nLat = OPERATOR.nameLatin || n;
   const c = OPERATOR.contact || '—';
   return [
     `Оператор: ${n}. Контакт для вопросов о данных: ${c}. Сайт работает в Кыргызской Республике.`,
     `Оператор: ${n}. Маалыматтар боюнча суроолор үчүн байланыш: ${c}. Сайт Кыргыз Республикасында иштейт.`,
-    `Operator: ${n}. Contact for data questions: ${c}. The site operates in the Kyrgyz Republic.`
+    `Operator: ${nLat}. Contact for data questions: ${c}. The site operates in the Kyrgyz Republic.`
   ];
 };
 
