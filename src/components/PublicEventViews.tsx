@@ -1,4 +1,5 @@
 import React from 'react';
+import { BracketSkeleton, CardsSkeleton, TableSkeleton } from './Skeletons';
 import { ArrowLeft, Trophy, Radio, Medal, Printer, Youtube, ExternalLink, Volume2, VolumeX, Maximize2, Maximize, Minimize, ChevronLeft, ChevronRight, ChevronDown, Search } from 'lucide-react';
 import { printUrl } from './PrintDocuments';
 import type { Bout, Participant, TournamentCategory, EventCategory } from '../types/schema';
@@ -141,16 +142,15 @@ const EventHeader: React.FC<{
   );
 };
 
-const LoadingState: React.FC<{ language: Lang; text: [string, string, string] }> = ({ language, text }) => (
-  <div className="rounded-2xl border border-[var(--app-border)] p-10 flex flex-col items-center gap-3 text-[var(--app-text-muted)]">
-    <span className="w-7 h-7 rounded-full border-2 border-[var(--app-border)] border-t-[var(--accent)] animate-spin" />
-    <span className="text-sm">{t(language, ...text)}</span>
-  </div>
-);
+// While data is on its way: grey shapes of the future content (skeleton), not a spinner
+const LoadingState: React.FC<{ language: Lang; text: [string, string, string]; variant?: 'bracket' | 'table' | 'cards' }> = ({ text, variant = 'table' }) =>
+  variant === 'bracket' ? <BracketSkeleton /> : variant === 'cards' ? <CardsSkeleton count={2} label={text} /> : <TableSkeleton rows={6} cols={4} label={text} />;
 
 const EmptyState: React.FC<{ language: Lang; text: [string, string, string] }> = ({ language, text }) => (
-  <div className="rounded-2xl border border-dashed border-[var(--app-border)] p-10 text-center">
-    <Trophy className="w-8 h-8 mx-auto text-[var(--app-text-muted)]" />
+  <div className="animate-fadeIn rounded-2xl border border-dashed border-[var(--app-border-strong)] bg-[var(--app-surface)] px-6 py-12 text-center">
+    <span className="mx-auto w-14 h-14 rounded-full bg-[var(--app-surface-subtle)] flex items-center justify-center">
+      <Trophy className="w-7 h-7 text-[var(--app-text-muted)]" aria-hidden />
+    </span>
     <div className="mt-3 font-semibold text-[var(--app-text-primary)]">{t(language, ...text)}</div>
     <div className="text-sm text-[var(--app-text-muted)] mt-1">
       {t(language, 'Они появятся здесь, когда организатор проведёт жеребьёвку.', 'Уюштуруучу чүчүкулак өткөргөндөн кийин бул жерде пайда болот.', 'They will appear here after the draw.')}
@@ -311,7 +311,7 @@ const CategoryPicker: React.FC<{
       </div>
 
       {open && (
-        <div className="absolute z-30 left-0 right-0 mt-2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-xl p-3 space-y-3">
+        <div className="pop-in absolute z-30 left-0 right-0 mt-2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-xl p-3 space-y-3">
           <label className="flex items-center gap-2 h-10 px-3 rounded-xl border border-[var(--app-border)] focus-within:border-[var(--accent)]">
             <Search className="w-4 h-4 text-[var(--app-text-muted)] shrink-0" />
             <input
@@ -411,7 +411,7 @@ export const PublicBracketsView: React.FC<BaseProps & { eventCategories?: EventC
     <div className="theme-keep space-y-5 pb-8">
       <EventHeader {...props} active="brackets" printCategoryId={active} printAllCount={cats.length} />
       {cats.length === 0 && props.loading ? (
-        <LoadingState language={language} text={['Загружаем сетки…', 'Торчолор жүктөлүүдө…', 'Loading brackets…']} />
+        <LoadingState variant="bracket" language={language} text={['Загружаем сетки…', 'Торчолор жүктөлүүдө…', 'Loading brackets…']} />
       ) : cats.length === 0 ? (
         <EmptyState language={language} text={['Сетки ещё не опубликованы', 'Торчолор али жарыялана элек', 'Brackets are not published yet']} />
       ) : (
@@ -798,7 +798,9 @@ export const PublicLiveView: React.FC<BaseProps> = (props) => {
     <div className="theme-keep space-y-5 pb-8">
       <EventHeader {...props} active="live_scoring" />
       {videoTatamis.length > 0 && <LiveVideo streams={streams} tatamis={videoTatamis} selected={videoTatami} onSelect={setVideoTatami} language={language} />}
-      {tatamis.length === 0 ? (
+      {tatamis.length === 0 && videoTatamis.length === 0 && props.loading ? (
+        <LoadingState variant="cards" language={language} text={['Загружаем бои…', 'Беттештер жүктөлүүдө…', 'Loading bouts…']} />
+      ) : tatamis.length === 0 ? (
         videoTatamis.length > 0 ? null : <EmptyState language={language} text={['Трансляция ещё не началась', 'Түз эфир али башталган жок', 'Live scoring has not started yet']} />
       ) : (
         <div className="grid gap-4 md:grid-cols-2">

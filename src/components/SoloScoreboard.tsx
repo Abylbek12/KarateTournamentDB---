@@ -153,7 +153,7 @@ export const SoloScoreboard: React.FC<SoloScoreboardProps> = ({ bout, rules, tat
   );
 
   return (
-    <div className="theme-keep fixed inset-0 z-[60]">
+    <div className="theme-keep motion-fast fixed inset-0 z-[60]">
       <TatamiDisplay tatamiNumber={bout.tatamiNumber ?? 1} bouts={tatamiBouts.length ? tatamiBouts : [bout]} rules={rules} boutOverride={bout} />
 
       {/* Discreet hint for the secretary */}

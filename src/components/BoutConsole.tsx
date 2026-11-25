@@ -266,7 +266,7 @@ export const BoutConsole: React.FC<BoutConsoleProps> = ({ bout, rules, onChange,
   }
 
   return (
-    <div className="theme-keep fixed inset-0 z-50 bg-black/60 flex items-stretch sm:items-center justify-center p-0 sm:p-4" role="dialog" aria-label={tr('Пульт боя', 'Беттеш пульту', 'Bout console')}>
+    <div className="theme-keep motion-fast fixed inset-0 z-50 bg-black/60 flex items-stretch sm:items-center justify-center p-0 sm:p-4" role="dialog" aria-label={tr('Пульт боя', 'Беттеш пульту', 'Bout console')}>
       <div className="w-full max-w-6xl max-h-full overflow-y-auto bg-[var(--app-bg)] sm:rounded-2xl shadow-2xl">
         {/* Header */}
         <div className="sticky top-0 z-10 flex flex-wrap items-center gap-3 px-4 py-3 bg-[var(--app-surface)] border-b border-[var(--app-border)]">

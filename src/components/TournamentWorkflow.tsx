@@ -120,7 +120,7 @@ export const WorkflowHeader: React.FC<{
                 <span className="flex flex-col leading-tight">
                   <span className="text-sm font-semibold whitespace-nowrap">{stepText(language, s.label)}</span>
                   {COUNT_WORDS[s.n] && (
-                    <span className={`text-[11px] ${active ? 'text-white/80' : 'text-[var(--app-text-muted)]'}`}>
+                    <span className={`text-[11px] ${active ? 'text-white' : 'text-[var(--app-text-muted)]'}`}>
                       {count} {stepText(language, COUNT_WORDS[s.n])}
                     </span>
                   )}
@@ -137,7 +137,7 @@ export const WorkflowHeader: React.FC<{
         </b>{' '}
         — {stepText(language, def.hint)}.
         {status.current !== step && !status.done[step] && step > status.current && (
-          <span className="block text-amber-700 mt-0.5">
+          <span className="block text-amber-800 dark:text-amber-300 mt-0.5">
             {tl(language, `Сначала стоит закончить этап ${status.current}.`, `Адегенде ${status.current}-кадамды бүтүргөн жакшы.`, `Finish stage ${status.current} first.`)}
           </span>
         )}

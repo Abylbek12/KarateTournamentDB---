@@ -288,7 +288,7 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
           <button
             disabled={bulkTargets.length === 0}
             onClick={() => { setBulkMsg(''); setBulkAsk(true); }}
-            className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 disabled:opacity-40 cursor-pointer shrink-0"
+            className="px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold flex items-center gap-1.5 disabled:opacity-40 cursor-pointer shrink-0"
           >
             <CheckCircle2 className="w-4 h-4" />
             {pickedPending.length ? tl('Допустить выбранных', 'Тандалгандарга уруксат', 'Admit selected') : tl('Допустить всех', 'Баарына уруксат', 'Admit all')} ({bulkTargets.length})

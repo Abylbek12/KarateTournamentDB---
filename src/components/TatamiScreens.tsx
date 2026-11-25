@@ -117,7 +117,7 @@ export const TatamiDisplay: React.FC<{
 
   if (!bout) {
     return (
-      <div className="theme-keep fixed inset-0 bg-[#0b1220] text-white flex flex-col items-center justify-center gap-6">
+      <div className="theme-keep motion-instant fixed inset-0 bg-[#0b1220] text-white flex flex-col items-center justify-center gap-6">
         <BrandMark className="w-24 h-24" />
         <div className="text-[5vh] font-bold">{tr(lang, 'Татами', 'Татами', 'Tatami')} {tatamiNumber}</div>
         <div className="text-[2.5vh] opacity-70">{tr(lang, 'Поединков пока нет', 'Беттештер азырынча жок', 'No bouts yet')}</div>
@@ -163,7 +163,7 @@ export const TatamiDisplay: React.FC<{
   };
 
   return (
-    <div className="theme-keep fixed inset-0 bg-[#0b1220] text-white flex flex-col select-none">
+    <div className="theme-keep motion-instant fixed inset-0 bg-[#0b1220] text-white flex flex-col select-none">
       <div className="flex items-center gap-[2vh] px-[3vh] py-[1.5vh] bg-black/40">
         <BrandMark className="w-[4vh] h-[4vh]" />
         <div className="text-[2.6vh] font-bold">{tr(lang, 'Татами', 'Татами', 'Tatami')} {tatamiNumber}</div>
@@ -229,7 +229,7 @@ export const CallRoomDisplay: React.FC<{ bouts: Bout[]; tatamiNumbers: number[] 
     document.title = `${tr(lang, 'Зона разминки', 'Жылытуу аймагы', 'Warm-up area')} · Apsatarov`;
   }, []);
   return (
-    <div className="theme-keep fixed inset-0 bg-[#0b1220] text-white flex flex-col">
+    <div className="theme-keep motion-instant fixed inset-0 bg-[#0b1220] text-white flex flex-col">
       <div className="flex items-center gap-3 px-6 py-4 bg-black/40">
         <ListOrdered className="w-7 h-7" />
         <div className="text-2xl font-bold flex-1">{tr(lang, 'Вызов спортсменов · зона разминки', 'Спортчуларды чакыруу · жылытуу аймагы', 'Call room · warm-up area')}</div>

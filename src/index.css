@@ -2,69 +2,96 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* =============================================================================
-   EYE-FRIENDLY DUAL-THEME DESIGN SYSTEM (Apsatarov)
-   1. Soft Dark ("Чёрная") — Velvet Obsidian & Warm Alabaster (Zero glare/halation)
-   2. Soft Bright ("Яркая / Белая") — Warm Pearl & Soft Charcoal (Zero eye fatigue)
+   APSATAROV DESIGN SYSTEM — sport contrast + Japanese minimalism
+   Light: washi white, sumi-ink text, hinomaru red accent.
+   Dark:  ink black surfaces, white text, the same red (lighter shade for text).
+   Every text colour pair below passes WCAG AA (4.5:1) on its surfaces.
+   AKA / AO colours and the Uventex bracket style use their own classes and are not touched here.
    ============================================================================= */
 
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  /* Stricter, calmer corners */
+  --radius-2xl: 0.75rem;
+  --radius-3xl: 1rem;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 :root {
-  font-family: 'Plus Jakarta Sans', 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-weight: 450;
-  letter-spacing: 0.01em;
+  font-family: var(--font-sans);
+  font-weight: 400;
+  letter-spacing: -0.003em;
   line-height: 1.55;
+  font-feature-settings: 'cv11', 'ss03';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 
-  /* Default variables (Soft Bright / Light mode) */
-  --app-bg: #f2f5f9;
-  --app-surface: #fbfcfe;
-  --app-surface-subtle: #eef2f7;
-  --app-surface-muted: #e6ebf3;
-  --app-border: #dde5f0;
-  --app-border-strong: #cbd5e3;
-  --app-text-primary: #1e293b;
-  --app-text-secondary: #4b5c73;
-  --app-text-muted: #6c7e95;
-  --app-shadow-card: 0 2px 10px -2px rgba(15, 23, 42, 0.04), 0 1px 3px -1px rgba(15, 23, 42, 0.03);
+  /* Light theme */
+  --app-bg: #f4f4f2;
+  --app-surface: #ffffff;
+  --app-surface-subtle: #efefec;
+  --app-surface-muted: #e6e6e2;
+  --app-border: #dcdcd7;
+  --app-border-strong: #b9b9b2;
+  --app-text-primary: #111214;
+  --app-text-secondary: #3b3e45;
+  --app-text-muted: #5f636b;
+  --app-shadow-card: 0 1px 2px rgba(17, 18, 20, 0.05), 0 1px 1px rgba(17, 18, 20, 0.03);
 
-  /* Brand accent (buttons, links, chat) */
-  --accent: #2563a6;
-  --accent-strong: #1d4f86;
-  --accent-soft: #e3edf8;
+  /* Brand accent: hinomaru red (buttons, links, active tabs) */
+  --accent: #c8102e;
+  --accent-fill: #c8102e;
+  --accent-strong: #a00d25;
+  --accent-soft: #fbe9ec;
   --danger-soft: #fdf0f0;
   --danger-border: #f3caca;
+
+  /* Motion */
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+  --motion-slow: 260ms;
+  --motion-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --focus-ring: color-mix(in srgb, var(--accent) 70%, transparent);
 }
 
 html.dark {
-  --app-bg: #111620;
-  --app-surface: #171e2b;
-  --app-surface-subtle: #1d2636;
-  --app-surface-muted: #141a26;
-  --app-border: #263244;
-  --app-border-strong: #324158;
-  --app-text-primary: #e6edf5;
-  --app-text-secondary: #9fb0c4;
-  --app-text-muted: #73859c;
-  --app-shadow-card: 0 4px 16px -4px rgba(4, 8, 16, 0.45), 0 1px 4px -1px rgba(4, 8, 16, 0.3);
+  --app-bg: #0b0d10;
+  --app-surface: #14171c;
+  --app-surface-subtle: #1b1f26;
+  --app-surface-muted: #111418;
+  --app-border: #2a2f38;
+  --app-border-strong: #3a414d;
+  --app-text-primary: #f3f4f6;
+  --app-text-secondary: #b6bcc6;
+  --app-text-muted: #8f97a3;
+  --app-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.02);
 
-  --accent: #3b82c4;
-  --accent-strong: #2f6fae;
-  --accent-soft: #1c2b40;
+  /* In the dark theme the accent used for text and borders is lighter (readable on black);
+     filled buttons keep the deep red so white text on them stays readable. */
+  --accent: #ff6b7d;
+  --accent-fill: #c41e3a;
+  --accent-strong: #a8182f;
+  --accent-soft: #2a1418;
   --danger-soft: #2a1b20;
   --danger-border: #4a2a31;
 }
+html.dark .bg-\[var\(--accent\)\],
+html.dark .hover\:bg-\[var\(--accent\)\]:hover {
+  background-color: var(--accent-fill);
+}
 
-/* Balanced, Clear & Soft Typography Hierarchy */
+/* Strict typography: one family, tight headings, calm body */
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Plus Jakarta Sans', 'Montserrat', system-ui, sans-serif;
+  font-family: var(--font-sans);
   font-weight: 700;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
   color: var(--app-text-primary);
 }
 
 code, pre, kbd, samp, .font-mono {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
@@ -81,27 +108,121 @@ strong, b {
 }
 
 /* =============================================================================
-   SMOOTH THEME TRANSITIONS
+   MICRO-ANIMATIONS & TRANSITIONS
+   Only interactive elements animate (not every div): cheap for phones and the tatami screens.
+   Kept in @layer base so any Tailwind class on an element still wins.
    ============================================================================= */
-body,
-aside,
-header,
-footer,
-main,
-nav,
-section,
-div,
-button,
-input,
-select,
-textarea,
-table,
-tr,
-td,
-th {
-  transition-property: background-color, border-color, color, box-shadow;
-  transition-duration: 180ms;
-  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+@layer base {
+  :where(button, a, [role="button"], [role="tab"], [role="menuitem"], summary, label, input, select, textarea, article) {
+    transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, box-shadow, opacity, translate, scale;
+    transition-duration: var(--motion-base);
+    transition-timing-function: var(--motion-ease);
+  }
+
+  /* Press feedback: a 1px push, no layout shift */
+  :where(button, [role="button"], [role="tab"], a[class*="rounded"]):not(:disabled, [aria-disabled="true"]):active {
+    translate: 0 1px;
+    transition-duration: var(--motion-fast);
+  }
+
+  /* Visible keyboard focus everywhere (mouse clicks do not show it) */
+  :where(button, a, [role="button"], [role="tab"], summary, input, select, textarea):focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  :where(button, [role="button"]):disabled {
+    cursor: not-allowed;
+  }
+
+  /* Cards that open something lift a little on hover */
+  @media (hover: hover) {
+    :where(article.cursor-pointer, a[class*="rounded-2xl"][class*="border"]):hover {
+      translate: 0 -2px;
+      box-shadow: 0 8px 24px -12px rgba(17, 18, 20, 0.25);
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; translate: 0 4px; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes overlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes popIn {
+  from { opacity: 0; transform: translateY(6px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes skeletonShimmer {
+  from { background-position: 150% 0; }
+  to { background-position: -50% 0; }
+}
+
+.animate-fadeIn {
+  animation: fadeIn var(--motion-slow) var(--motion-ease) both;
+}
+.pop-in {
+  animation: popIn var(--motion-base) var(--motion-ease) both;
+}
+
+/* Modal backgrounds fade in, the window itself pops in */
+.fixed.inset-0:is([class*="bg-black/"], [class*="bg-slate-900/"]) {
+  animation: overlayIn var(--motion-base) ease-out both;
+}
+.fixed.inset-0:is([class*="bg-black/"], [class*="bg-slate-900/"]) > :not(.fixed) {
+  animation: popIn var(--motion-slow) var(--motion-ease) both;
+}
+
+/* Skeleton placeholders while data loads */
+.skeleton {
+  background-color: color-mix(in srgb, var(--app-text-primary) 11%, var(--app-surface));
+  background-image: linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--app-surface) 70%, transparent) 50%, transparent 100%);
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: skeletonShimmer 1.4s ease-in-out infinite;
+  border-radius: 0.375rem;
+}
+html.dark .skeleton {
+  background-color: color-mix(in srgb, var(--app-text-primary) 10%, var(--app-surface));
+  background-image: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.05) 50%, transparent 100%);
+}
+
+/* Theme switch: everything fades to the new colours once (class set for ~300 ms by AppContext) */
+html.theme-switching,
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow !important;
+  transition-duration: 260ms !important;
+  transition-timing-function: ease !important;
+}
+
+/* Tatami screens and the secretary console: instant updates, nothing animates colours.
+   Press feedback stays (it is on the GPU and very short). */
+.motion-instant,
+.motion-instant * {
+  transition-duration: 0s !important;
+}
+.motion-fast :where(button, [role="button"]) {
+  transition-duration: 80ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  :where(button, [role="button"], [role="tab"], a):active,
+  :where(article.cursor-pointer, a[class*="rounded-2xl"][class*="border"]):hover {
+    translate: none;
+  }
 }
 
 html, body {

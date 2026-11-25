@@ -90,7 +90,7 @@ export const TatamiOverview: React.FC<TatamiOverviewProps> = ({ tournaments, ini
           {tl('Поединков пока нет. Проведите жеребьёвку в разделе «Категории и жеребьёвка».', 'Азырынча беттештер жок. «Категориялар жана чүчүкулак» бөлүмүндө чүчүкулак өткөрүңүз.', 'No bouts yet. Run the draw in «Categories & draw».')}
         </div>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
           {tatamiNumbers.map((t) => {
             const cur = currentBoutOf(eventBouts, t);
             const live = cur && cur.status !== 'completed' ? cur : undefined;
@@ -112,8 +112,8 @@ export const TatamiOverview: React.FC<TatamiOverviewProps> = ({ tournaments, ini
                     </div>
                     <div className="mt-1 flex items-center gap-3">
                       <div className="flex-1 min-w-0">
-                        <div className="truncate text-red-600 font-medium">{name(live.akaParticipant as Participant)}</div>
-                        <div className="truncate text-blue-600 font-medium">{name(live.aoParticipant as Participant)}</div>
+                        <div className="truncate text-red-600 dark:text-red-400 font-medium">{name(live.akaParticipant as Participant)}</div>
+                        <div className="truncate text-blue-600 dark:text-blue-400 font-medium">{name(live.aoParticipant as Participant)}</div>
                       </div>
                       <div className="text-right tabular-nums">
                         <div className="text-xl font-bold text-[var(--app-text-primary)]">{live.akaScore} : {live.aoScore}</div>
@@ -142,7 +142,7 @@ export const TatamiOverview: React.FC<TatamiOverviewProps> = ({ tournaments, ini
                           <span className="flex-1 min-w-0 truncate text-[var(--app-text-primary)]">
                             {b.akaParticipantId && b.aoParticipantId ? (
                               <>
-                                <span className="text-red-600">{name(b.akaParticipant as Participant)}</span> — <span className="text-blue-600">{name(b.aoParticipant as Participant)}</span>
+                                <span className="text-red-600 dark:text-red-400">{name(b.akaParticipant as Participant)}</span> — <span className="text-blue-600 dark:text-blue-400">{name(b.aoParticipant as Participant)}</span>
                               </>
                             ) : (
                               <span className="text-[var(--app-text-muted)]">{stageLabel(b.roundStage, language)} · {tl('ждёт победителей', 'жеңүүчүлөрдү күтөт', 'waiting for winners')}</span>

@@ -1,15 +1,21 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Search, X, Plus, CalendarDays, MapPin, Users, ChevronDown, ArrowRight, Trophy, Trash2, Clock } from 'lucide-react';
+import { Search, X, Plus, CalendarDays, MapPin, Users, ChevronDown, ArrowRight, Trophy, Trash2, Clock, WifiOff, RefreshCw } from 'lucide-react';
 import { Tournament, UserRole } from '../types/schema';
 import { useApp } from '../context/AppContext';
 import { EventItem, EventActionType } from '../data/eventsData';
 import { EventEmblem } from './EventEmblems';
+import { TournamentListSkeleton } from './Skeletons';
 import { hashForTab, isPlainClick } from '../utils/routes';
 import { trLang, localizeEventItem } from '../utils/globalDomTranslator';
 import { isTournamentArchived } from './TournamentEventsManager';
 
 interface TournamentShowcaseProps {
   tournaments: Tournament[];
+  /** The list has not arrived from the server yet: show the skeleton, not «no tournaments». */
+  loading?: boolean;
+  /** The server did not give the list: a calm message with «Повторить». */
+  loadFailed?: boolean;
+  onRetry?: () => void;
   currentUserRole?: UserRole;
   onRoleChange?: (role: UserRole) => void;
   onSelectTournament: (tournament: Tournament) => void;
@@ -68,6 +74,9 @@ const daysUntil = (iso: string) => {
 
 export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
   tournaments,
+  loading = false,
+  loadFailed = false,
+  onRetry,
   currentUserRole = 'club_coach',
   onSelectAction,
   onStartRegistration,
@@ -143,7 +152,7 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
 
   const toneCls = {
     live: 'bg-red-600 text-white',
-    open: 'bg-emerald-600/10 text-emerald-700 border border-emerald-600/25',
+    open: 'bg-emerald-600/10 text-emerald-700 dark:text-emerald-300 border border-emerald-600/25',
     closed: 'bg-[var(--app-surface-subtle)] text-[var(--app-text-muted)] border border-[var(--app-border)]'
   };
 
@@ -380,7 +389,34 @@ export const TournamentShowcase: React.FC<TournamentShowcaseProps> = ({
         </section>
       )}
 
-      {upcoming.length === 0 && (
+      {/* Waiting for the server: grey outline of the calendar */}
+      {loading && tournaments.length === 0 && <TournamentListSkeleton />}
+
+      {loadFailed && !loading && (
+        <div role="alert" className="animate-fadeIn rounded-2xl border border-[var(--danger-border)] bg-[var(--danger-soft)] px-6 py-10 text-center">
+          <span className="mx-auto w-14 h-14 rounded-full bg-[var(--app-surface)] flex items-center justify-center">
+            <WifiOff className="w-7 h-7 text-[var(--accent)]" aria-hidden />
+          </span>
+          <div className="mt-3 font-semibold text-[var(--app-text-primary)]">
+            {tr('Не удалось загрузить турниры', 'Мелдештерди жүктөө мүмкүн болгон жок', 'Could not load tournaments')}
+          </div>
+          <div className="text-sm text-[var(--app-text-secondary)] mt-1">
+            {tr('Проверьте интернет и попробуйте ещё раз.', 'Интернетти текшерип, кайра аракет кылыңыз.', 'Check the internet connection and try again.')}
+          </div>
+          {onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="mt-4 inline-flex items-center gap-2 h-10 px-5 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white text-sm font-semibold cursor-pointer"
+            >
+              <RefreshCw className="w-4 h-4" aria-hidden />
+              {tr('Повторить', 'Кайталоо', 'Try again')}
+            </button>
+          )}
+        </div>
+      )}
+
+      {upcoming.length === 0 && !loadFailed && !(loading && tournaments.length === 0) && (
         <div className="rounded-2xl border border-dashed border-[var(--app-border)] p-10 text-center">
           <div className="text-[var(--app-text-primary)] font-semibold">
             {query || region !== 'all' ? tr('Турниров не найдено', 'Мелдеш табылган жок', 'No tournaments found') : tr('Скоро здесь появятся турниры', 'Жакында бул жерде мелдештер пайда болот', 'Tournaments will appear here soon')}

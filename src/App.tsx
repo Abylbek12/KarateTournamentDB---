@@ -106,6 +106,10 @@ import { LaunchPanel } from './components/LaunchPanel';
 import { TatamiOverview } from './components/TatamiOverview';
 import { OfflinePanel } from './components/OfflinePanel';
 import { AUTH_CACHE_KEY, readCachedUser, writeCachedUser } from './utils/authCache';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { ScreenSkeleton, EventPageSkeleton, EventHeaderSkeleton, TableSkeleton } from './components/Skeletons';
+import { animate } from 'motion/mini';
+import { fetchJson } from './utils/globalErrors';
 
 // Heavy screens are loaded on demand so the first page opens faster.
 const ParticipantsManager = React.lazy(() => import('./components/ParticipantsManager').then((m) => ({ default: m.ParticipantsManager })));
@@ -115,9 +119,8 @@ const TournamentDivisionsPricingView = React.lazy(() => import('./components/Tou
 const ScreensQrPanel = React.lazy(() => import('./components/ScreensQrPanel').then((m) => ({ default: m.ScreensQrPanel })));
 const TournamentPlan = React.lazy(() => import('./components/TournamentPlan').then((m) => ({ default: m.TournamentPlan })));
 
-const ScreenLoader = () => (
-  <div className="flex items-center justify-center py-16 text-sm text-slate-500">Загрузка…</div>
-);
+// A screen still downloading: its grey outline instead of «Загрузка…»
+const ScreenLoader = () => <ScreenSkeleton />;
 
 function AppContent() {
   const { 
@@ -152,6 +155,19 @@ function AppContent() {
     }
   });
   const inStep = (n: number) => activeTab === 'manage' && workflowStep === n;
+  // Moving to another screen: the content fades in softly (opacity only — nothing jumps, cheap on phones)
+  const mainRef = React.useRef<HTMLElement>(null);
+  const firstScreenRef = React.useRef(true);
+  React.useEffect(() => {
+    if (firstScreenRef.current) {
+      firstScreenRef.current = false;
+      return;
+    }
+    const el = mainRef.current;
+    if (!el || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    const a = animate(el, { opacity: [0.35, 1] }, { duration: 0.24, ease: [0.16, 1, 0.3, 1] });
+    return () => a.stop();
+  }, [activeTab, workflowStep]);
   useGlobalDomTranslator(language, activeTab);
   const [tournaments, setTournaments] = useState<EventItem[]>([]);
   // Until the server list arrives, tournament pages show «loading», not the demo placeholder tournament
@@ -224,13 +240,19 @@ function AppContent() {
   // One clock for every device (bout timers are timestamps)
   React.useEffect(() => startServerClock(), []);
 
-  // Unified tournaments registry fetch on mount
-  React.useEffect(() => {
-    fetch('/api/events')
-      .then((r) => r.json())
-      .then((data) => {
+  // Unified tournaments registry fetch on mount (and again from «Повторить» after a failure)
+  const [tournamentsError, setTournamentsError] = useState(false);
+  const loadTournaments = React.useCallback(() => {
+    setTournamentsError(false);
+    setTournamentsLoaded(false);
+    fetchJson<{ events?: EventItem[] }>('/api/events')
+      .then(({ ok, data }) => {
+        if (!ok) {
+          setTournamentsError(true);
+          return;
+        }
         // The server list is the truth: after «Подготовка к запуску» it can be empty.
-        if (data.events && Array.isArray(data.events)) {
+        if (data?.events && Array.isArray(data.events)) {
           setTournaments(data.events);
           if (data.events.length > 0) {
             // A tournament named in the link wins over the default one
@@ -243,9 +265,9 @@ function AppContent() {
           }
         }
       })
-      .catch(() => {})
       .finally(() => setTournamentsLoaded(true));
   }, []);
+  React.useEffect(() => loadTournaments(), [loadTournaments]);
 
   // Verify and fetch authenticated session on mount
   React.useEffect(() => {
@@ -1016,15 +1038,26 @@ function AppContent() {
   }
 
   if (screenMode) {
-    if (screenMode.kind === 'tatami') return <TatamiDisplay tatamiNumber={screenMode.tatami} bouts={bouts} rules={tournamentRules} />;
-    if (screenMode.kind === 'calls') return <CallRoomDisplay bouts={bouts} tatamiNumbers={tatamiNumbers} />;
+    // A crash on a tatami screen tries again with the next data update (nobody may be near the TV)
+    if (screenMode.kind === 'tatami')
+      return (
+        <ErrorBoundary scope="app" resetKey={bouts}>
+          <TatamiDisplay tatamiNumber={screenMode.tatami} bouts={bouts} rules={tournamentRules} />
+        </ErrorBoundary>
+      );
+    if (screenMode.kind === 'calls')
+      return (
+        <ErrorBoundary scope="app" resetKey={bouts}>
+          <CallRoomDisplay bouts={bouts} tatamiNumbers={tatamiNumbers} />
+        </ErrorBoundary>
+      );
     return (
-      <>
+      <ErrorBoundary scope="app">
         <TatamiControl tatamiNumber={screenMode.tatami} bouts={bouts} rules={tournamentRules} deviceOk={deviceOk} onChange={handleUpdateBout} />
         {globalSystemToast && (
           <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[70] rounded-xl bg-black/85 text-white text-sm px-4 py-2">{globalSystemToast}</div>
         )}
-      </>
+      </ErrorBoundary>
     );
   }
 
@@ -1164,7 +1197,7 @@ function AppContent() {
               {isProfileMenuOpen && (
                 <>
 
-                  <div className="fixed left-3 right-3 top-14 max-h-[calc(100dvh-8rem)] overflow-y-auto sm:absolute sm:left-auto sm:top-auto sm:right-0 sm:mt-2 sm:w-80 sm:max-h-none sm:overflow-visible rounded-2xl bg-white border border-slate-200 shadow-2xl p-3 z-50 text-xs space-y-3 animate-fadeIn">
+                  <div className="pop-in fixed left-3 right-3 top-14 max-h-[calc(100dvh-8rem)] overflow-y-auto sm:absolute sm:left-auto sm:top-auto sm:right-0 sm:mt-2 sm:w-80 sm:max-h-none sm:overflow-visible rounded-2xl bg-white border border-slate-200 shadow-2xl p-3 z-50 text-xs space-y-3 animate-fadeIn">
                     {/* 1. User Account Header */}
                     <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
                       <div className="flex items-center justify-between gap-2">
@@ -1494,11 +1527,14 @@ function AppContent() {
 
         {/* Full-width Stretched Content Area */}
         <main
+          ref={mainRef}
           className={`flex-1 w-full min-w-0 mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-4 space-y-4 ${
             // Video pages use the whole width so several tatami fit side by side
             activeTab === 'virtual_studios' || activeTab === 'event_live_scoring' ? 'max-w-none' : 'max-w-7xl'
           }`}
         >
+          {/* A crash in one screen shows a calm message here; the menu and the rest of the site keep working */}
+          <ErrorBoundary scope="section" resetKey={`${activeTab}|${workflowStep}|${selectedEvent.id}`}>
           <React.Suspense fallback={<ScreenLoader />}>
           {/* One «current tournament» for every working screen: chosen here, used by tatami, weigh-in, draw, screens, fees, documents */}
           {canAccess(activeTab, effectiveRole) &&
@@ -1511,11 +1547,11 @@ function AppContent() {
               const running = !!ev.startDate && ev.startDate <= today && !!end && end >= today;
               const days = ev.startDate ? Math.round((new Date(ev.startDate).getTime() - new Date(today).getTime()) / 86400000) : null;
               const badge = running
-                ? { text: tr('Идёт сегодня', 'Бүгүн өтүүдө', 'Running today'), cls: 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30' }
+                ? { text: tr('Идёт сегодня', 'Бүгүн өтүүдө', 'Running today'), cls: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30' }
                 : end && end < today
-                  ? { text: tr('Завершён', 'Аяктады', 'Finished'), cls: 'bg-slate-500/10 text-slate-600 border-slate-500/30' }
+                  ? { text: tr('Завершён', 'Аяктады', 'Finished'), cls: 'bg-slate-500/10 text-slate-600 dark:text-slate-300 border-slate-500/30' }
                   : days !== null && days > 0
-                    ? { text: tr(`Через ${days} дн.`, `${days} күндөн кийин`, `In ${days} days`), cls: 'bg-sky-500/10 text-sky-700 border-sky-500/30' }
+                    ? { text: tr(`Через ${days} дн.`, `${days} күндөн кийин`, `In ${days} days`), cls: 'bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30' }
                     : null;
               return (
                 <div className="theme-keep rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2.5 flex flex-wrap items-center gap-2">
@@ -1568,6 +1604,9 @@ function AppContent() {
           {activeTab === 'tournaments' && (
             <TournamentShowcase
               tournaments={tournaments}
+              loading={!tournamentsLoaded}
+              loadFailed={tournamentsError && tournaments.length === 0}
+              onRetry={loadTournaments}
               currentUserRole={currentUserRole}
               onRoleChange={requestRoleChange}
               onSelectTournament={(t) => {
@@ -1596,12 +1635,7 @@ function AppContent() {
           )}
 
           {/* Tournament pages wait for the tournament list (slow mobile internet) */}
-          {eventLoading && (
-            <div className="py-24 flex flex-col items-center gap-3 text-[var(--app-text-muted)]">
-              <span className="w-8 h-8 rounded-full border-2 border-[var(--app-border)] border-t-[var(--accent)] animate-spin" />
-              <span className="text-sm">{tr('Загружаем турнир…', 'Мелдеш жүктөлүүдө…', 'Loading the tournament…')}</span>
-            </div>
-          )}
+          {eventLoading && <EventPageSkeleton />}
 
           {/* ===== Tournament workflow: numbered stages on one page ===== */}
           {activeTab === 'manage' && !eventLoading && canAccess('manage', effectiveRole) && (
@@ -1761,7 +1795,14 @@ function AppContent() {
           )}
 
           {/* 1.2 Категории и цены (Matching video at 00:32-00:36) */}
-          {activeTab === 'event_categories_prices' && !eventLoading && eventCategories.some((c) => c.tournamentId === selectedEvent.id) && (
+          {/* Categories are still on their way: outline of the page, not the «no categories» variant */}
+          {activeTab === 'event_categories_prices' && !eventLoading && !categorySync.loaded && (
+            <div className="space-y-5 pb-8">
+              <EventHeaderSkeleton />
+              <TableSkeleton rows={7} cols={4} label={['Загружаем категории…', 'Категориялар жүктөлүүдө…', 'Loading categories…']} />
+            </div>
+          )}
+          {activeTab === 'event_categories_prices' && !eventLoading && categorySync.loaded && eventCategories.some((c) => c.tournamentId === selectedEvent.id) && (
             <PublicCategoriesView
               event={selectedEvent}
               bouts={bouts}
@@ -1777,7 +1818,7 @@ function AppContent() {
               }}
             />
           )}
-          {activeTab === 'event_categories_prices' && !eventLoading && !eventCategories.some((c) => c.tournamentId === selectedEvent.id) && (
+          {activeTab === 'event_categories_prices' && !eventLoading && categorySync.loaded && !eventCategories.some((c) => c.tournamentId === selectedEvent.id) && (
             <TournamentDivisionsPricingView
               tournament={selectedEvent}
               onBack={() => setActiveTab('tournaments')}
@@ -1832,6 +1873,7 @@ function AppContent() {
           {activeTab === 'event_live_scoring' && !eventLoading && (
             <PublicLiveView
               event={selectedEvent}
+              loading={!boutSync.loaded}
               bouts={bouts}
               participants={participants}
               categories={SAMPLE_TOURNAMENT_CATEGORIES}
@@ -1848,7 +1890,10 @@ function AppContent() {
 
 
           {/* 3.1 Личный кабинет тренера (Командная заявка) */}
-          {(activeTab === 'coach' || (activeTab === 'acquiring' && effectiveRole !== 'admin')) && currentUser && (
+          {(activeTab === 'coach' || (activeTab === 'acquiring' && effectiveRole !== 'admin')) && currentUser && !participantSync.loaded && (
+            <TableSkeleton rows={5} cols={4} label={['Загружаем заявки…', 'Табыштамалар жүктөлүүдө…', 'Loading entries…']} />
+          )}
+          {(activeTab === 'coach' || (activeTab === 'acquiring' && effectiveRole !== 'admin')) && currentUser && participantSync.loaded && (
             <MyEntriesPanel
               user={currentUser}
               tournaments={tournaments}
@@ -2007,7 +2052,10 @@ function AppContent() {
           {activeTab === 'lan' && <OfflinePanel onOpenScreens={() => navigateWithHash('screens')} />}
 
 
-          {(activeTab === 'participants' || (inStep(3) && !eventLoading && canRunEvent)) && (
+          {(activeTab === 'participants' || (inStep(3) && !eventLoading && canRunEvent)) && !participantSync.loaded && (
+            <TableSkeleton rows={8} cols={5} label={['Загружаем участников…', 'Катышуучулар жүктөлүүдө…', 'Loading participants…']} />
+          )}
+          {(activeTab === 'participants' || (inStep(3) && !eventLoading && canRunEvent)) && participantSync.loaded && (
             <ParticipantsManager
               key={selectedEvent.id}
               hidePicker
@@ -2022,7 +2070,7 @@ function AppContent() {
 
 
           {activeTab === 'virtual_studios' && (
-            <LiveNowPanel tournaments={tournaments} bouts={bouts} participants={participants} onOpen={(ev) => handleSelectTournamentAction(ev as EventItem, 'live_scoring')} />
+            <LiveNowPanel loading={!tournamentsLoaded || !boutSync.loaded} tournaments={tournaments} bouts={bouts} participants={participants} onOpen={(ev) => handleSelectTournamentAction(ev as EventItem, 'live_scoring')} />
           )}
 
           {activeTab === 'about' && (
@@ -2050,6 +2098,7 @@ function AppContent() {
 
           </>)}
           </React.Suspense>
+          </ErrorBoundary>
         </main>
 
         {/* ========================================================
@@ -2172,12 +2221,14 @@ function AppContent() {
 
       {/* AI assistant «Сенсей» (Claude) — only when the server has an AI key */}
       {aiAssistantEnabled && (
+        <ErrorBoundary silent>
         <SenseiAiChatbot
           currentTournament={selectedTournament}
           tournamentRules={tournamentRules}
           participantCount={participants.length}
           tatamiCount={tatamiNumbers.length}
         />
+        </ErrorBoundary>
       )}
 
 
@@ -2272,11 +2323,7 @@ function AppContent() {
           MOBILE & TABLET THUMB-ZONE BOTTOM NAVIGATION BAR (lg:hidden)
          ======================================================== */}
       <nav
-        className={`lg:hidden fixed bottom-0 left-0 right-0 z-30 h-16 pb-safe border-t backdrop-blur-md grid grid-cols-5 items-center px-1 select-none ${
-          theme === 'dark'
-            ? 'bg-[#111722]/95 border-[#253042] text-[#9aa8bc]'
-            : 'bg-white/95 border-slate-200/90 text-slate-600'
-        }`}
+        className="theme-keep lg:hidden fixed bottom-0 left-0 right-0 z-30 h-16 pb-safe border-t backdrop-blur-md grid grid-cols-5 items-center px-1 select-none bg-[var(--app-surface)]/95 border-[var(--app-border)] text-[var(--app-text-secondary)]"
         aria-label={tr('Нижняя панель быстрой навигации', 'Төмөнкү ыкчам навигация панели', 'Mobile Bottom Navigation Bar')}
       >
         {/* Five buttons chosen for the role: what each person needs most at the tournament */}
@@ -2336,7 +2383,7 @@ function AppContent() {
                 onClick={item.onClick}
                 aria-current={item.active ? 'page' : undefined}
                 className={`relative flex flex-col items-center justify-center gap-1 h-full rounded-xl transition-colors cursor-pointer ${
-                  item.active ? 'text-sky-500 font-semibold' : 'hover:text-sky-500'
+                  item.active ? 'text-[var(--accent)] font-semibold' : 'hover:text-[var(--app-text-primary)]'
                 }`}
               >
                 <Icon className="w-5 h-5" />

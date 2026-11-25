@@ -80,7 +80,7 @@ export const TournamentDivisionsPricingView: React.FC<TournamentDivisionsPricing
         <div className="flex items-center gap-2 text-xs text-slate-500 min-w-0">
           <button
             onClick={onBack}
-            className="flex items-center gap-1 text-sky-600 hover:text-sky-700 font-semibold cursor-pointer transition-colors"
+            className="flex items-center gap-1 text-[var(--accent)] hover:text-[var(--accent-strong)] font-semibold cursor-pointer transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>{language !== 'en' ? 'Главная' : 'Home'}</span>
@@ -130,7 +130,7 @@ export const TournamentDivisionsPricingView: React.FC<TournamentDivisionsPricing
                 onClick={() => setSelectedTierIndex(idx)}
                 className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border ${
                   selectedTierIndex === idx
-                    ? 'bg-teal-600 text-white border-teal-600 shadow-2xs'
+                    ? 'bg-[var(--accent)] text-white border-[var(--accent)] shadow-2xs'
                     : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
                 }`}
               >
@@ -163,7 +163,7 @@ export const TournamentDivisionsPricingView: React.FC<TournamentDivisionsPricing
               onClick={() => setSelectedCategoryType('forms')}
               className={`px-3 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
                 selectedCategoryType === 'forms'
-                  ? 'bg-sky-600 text-white'
+                  ? 'bg-[var(--accent)] text-white'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >

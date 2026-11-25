@@ -118,7 +118,7 @@ export const TournamentInfoDetailView: React.FC<TournamentInfoDetailViewProps> =
       label: tr('Даты проведения', 'Өтүүчү күндөрү', 'Dates'),
       value: formatDayRange(rawTournament.startDate, rawTournament.endDate, language) || tournament.dateLabel || [rawTournament.startDate, rawTournament.endDate].filter(Boolean).join(' — ') || '—',
       icon: Calendar,
-      tone: 'bg-sky-50 border-sky-200 text-sky-600',
+      tone: 'bg-sky-50 border-sky-200 text-sky-700',
     },
     {
       key: 'venue',
@@ -154,7 +154,7 @@ export const TournamentInfoDetailView: React.FC<TournamentInfoDetailViewProps> =
         <div className="flex items-center gap-2 text-xs text-slate-500 min-w-0">
           <button
             onClick={onBack}
-            className="flex items-center gap-1 text-sky-600 hover:text-sky-700 font-semibold cursor-pointer transition-colors"
+            className="flex items-center gap-1 text-[var(--accent)] hover:text-[var(--accent-strong)] font-semibold cursor-pointer transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>{tr('Главная', 'Башкы бет', 'Home')}</span>
@@ -234,7 +234,7 @@ export const TournamentInfoDetailView: React.FC<TournamentInfoDetailViewProps> =
             <div className="pt-2 flex flex-wrap items-center gap-3 justify-center md:justify-start">
               <button
                 onClick={onStartRegistration}
-                className="px-6 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold shadow-sm hover:shadow transition-all cursor-pointer flex items-center gap-2"
+                className="px-6 py-2.5 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white text-sm font-semibold shadow-sm hover:shadow transition-all cursor-pointer flex items-center gap-2"
               >
                 <Ticket className="w-4 h-4" />
                 <span>{tr('Зарегистрироваться на событие', 'Иш-чарага катталуу', 'Register for Event')}</span>
@@ -282,7 +282,7 @@ export const TournamentInfoDetailView: React.FC<TournamentInfoDetailViewProps> =
                 <div className="text-[9px] text-slate-400 font-sans uppercase">{tr('Мин', 'Мүн', 'Min')}</div>
               </div>
               <div className="bg-white rounded-xl p-2 border border-slate-200 shadow-2xs">
-                <div className="text-lg font-black text-teal-600">{String(timeLeft.seconds).padStart(2, '0')}</div>
+                <div className="text-lg font-black text-[var(--accent)]">{String(timeLeft.seconds).padStart(2, '0')}</div>
                 <div className="text-[9px] text-slate-400 font-sans uppercase">{tr('Сек', 'Сек', 'Sec')}</div>
               </div>
             </div>
@@ -314,7 +314,7 @@ export const TournamentInfoDetailView: React.FC<TournamentInfoDetailViewProps> =
           </div>
           <div className="p-4 text-center">
             <div className="text-xs text-slate-500">{tr('Регламент', 'Регламент', 'Rules Standard')}</div>
-            <div className="text-sm md:text-base font-bold text-sky-600 mt-1 truncate" title={rulesText}>{rulesText}</div>
+            <div className="text-sm md:text-base font-bold text-[var(--accent)] mt-1 truncate" title={rulesText}>{rulesText}</div>
           </div>
         </div>
       </div>

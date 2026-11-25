@@ -136,7 +136,8 @@ for (const t of parsed) {
   if ((t.kind === 'from' || t.kind === 'via' || t.kind === 'to') && COLORED.includes(t.family) && t.shade >= 900) {
     add(L, t, `--tw-gradient-${t.kind}: color-mix(in oklab, var(--color-${t.family}-500) 10%, var(--app-surface));`, notKeep);
   }
-  if (t.kind === 'text' && (t.family === 'white' || (NEUTRAL.includes(t.family) && t.shade <= 400))) {
+  // Mid grey (500) also becomes the theme's «muted» text: plain slate-500 is below WCAG AA on tinted cards
+  if (t.kind === 'text' && (t.family === 'white' || (NEUTRAL.includes(t.family) && t.shade <= 500))) {
     const v = t.family === 'white' || t.shade <= 100 ? 'var(--app-text-primary)' : t.shade <= 300 ? 'var(--app-text-secondary)' : 'var(--app-text-muted)';
     add('lightText', t, `color: ${v};`);
   }
@@ -177,8 +178,8 @@ for (const t of parsed) {
   if ((t.kind === 'from' || t.kind === 'via' || t.kind === 'to') && COLORED.includes(t.family) && t.shade <= 100) {
     add(D, t, `--tw-gradient-${t.kind}: color-mix(in oklab, var(--color-${t.family}-500) 12%, var(--app-surface));`, notKeep);
   }
-  if (t.kind === 'text' && (t.family === 'black' || (NEUTRAL.includes(t.family) && t.shade >= 600))) {
-    const v = t.family === 'black' || t.shade >= 800 ? 'var(--app-text-primary)' : 'var(--app-text-secondary)';
+  if (t.kind === 'text' && (t.family === 'black' || (NEUTRAL.includes(t.family) && t.shade >= 500))) {
+    const v = t.family === 'black' || t.shade >= 800 ? 'var(--app-text-primary)' : t.shade >= 600 ? 'var(--app-text-secondary)' : 'var(--app-text-muted)';
     add('darkText', t, `color: ${v};`);
   }
   if (t.kind === 'text' && t.family === 'hex' && t.lum < 0.2) {

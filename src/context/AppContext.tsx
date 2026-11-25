@@ -51,9 +51,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   // Synchronize DOM root classes with Theme
+  const themeMounted = React.useRef(false);
   useEffect(() => {
     try {
       const root = document.documentElement;
+      // A switch (not the first paint) fades every colour once; see .theme-switching in index.css
+      let fadeTimer: ReturnType<typeof setTimeout> | undefined;
+      if (themeMounted.current) {
+        root.classList.add('theme-switching');
+        fadeTimer = setTimeout(() => root.classList.remove('theme-switching'), 320);
+      }
+      themeMounted.current = true;
       if (theme === 'dark') {
         root.classList.add('dark');
         root.classList.remove('theme-light');
@@ -61,9 +69,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         root.classList.remove('dark');
         root.classList.add('theme-light');
       }
-      localStorage.setItem('tatami_theme', theme);
+      try {
+        localStorage.setItem('tatami_theme', theme);
+      } catch {
+        // Ignore storage errors in restricted contexts
+      }
+      return () => {
+        if (fadeTimer) clearTimeout(fadeTimer);
+        root.classList.remove('theme-switching');
+      };
     } catch {
-      // Ignore storage errors in restricted contexts
+      // No DOM (tests): nothing to sync
     }
   }, [theme]);
 

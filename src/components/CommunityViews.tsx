@@ -1,5 +1,6 @@
 import React from 'react';
-import { Trophy, Building2, Search } from 'lucide-react';
+import { Trophy, Building2, Search, Radio } from 'lucide-react';
+import { CardsSkeleton } from './Skeletons';
 import type { Bout, Participant, Tournament } from '../types/schema';
 import { computeStandings } from '../utils/bracketProgression';
 import { displayName, participantFlag, participantNoc } from '../utils/names';
@@ -263,7 +264,7 @@ const LiveNowCard: React.FC<{ ev: Tournament; live: Bout[]; tatamis: number[]; v
   );
 };
 
-export const LiveNowPanel: React.FC<CommunityProps & { onOpen: (t: Tournament) => void }> = ({ tournaments, bouts, onOpen }) => {
+export const LiveNowPanel: React.FC<CommunityProps & { onOpen: (t: Tournament) => void; loading?: boolean }> = ({ tournaments, bouts, onOpen, loading = false }) => {
   const { language } = useApp();
   const lang = (language || 'ru') as Lang;
   const today = new Date().toISOString().slice(0, 10);
@@ -289,9 +290,19 @@ export const LiveNowPanel: React.FC<CommunityProps & { onOpen: (t: Tournament) =
           {t(lang, 'Видеотрансляции и турниры, где сейчас идут поединки: видео, счёт, время и следующий бой на каждом татами.', 'Видео түз эфирлер жана азыр беттештер өтүп жаткан мелдештер: видео, эсеп, убакыт жана ар бир татамидеги кийинки беттеш.', 'Live videos and tournaments with bouts going on now: video, score, clock and next bout on every tatami.')}
         </p>
       </div>
-      {rows.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-[var(--app-border)] p-10 text-center text-sm text-[var(--app-text-muted)]">
-          {t(lang, 'Сейчас нет идущих турниров.', 'Азыр өтүп жаткан мелдеш жок.', 'No tournament is running right now.')}
+      {rows.length === 0 && loading ? (
+        <CardsSkeleton count={2} label={['Загружаем бои…', 'Беттештер жүктөлүүдө…', 'Loading bouts…']} />
+      ) : rows.length === 0 ? (
+        <div className="animate-fadeIn rounded-2xl border border-dashed border-[var(--app-border-strong)] bg-[var(--app-surface)] px-6 py-12 text-center">
+          <span className="mx-auto w-14 h-14 rounded-full bg-[var(--app-surface-subtle)] flex items-center justify-center">
+            <Radio className="w-7 h-7 text-[var(--app-text-muted)]" aria-hidden />
+          </span>
+          <div className="mt-3 font-semibold text-[var(--app-text-primary)]">
+            {t(lang, 'Сейчас нет идущих турниров', 'Азыр өтүп жаткан мелдеш жок', 'No tournament is running right now')}
+          </div>
+          <div className="mt-1 text-sm text-[var(--app-text-muted)]">
+            {t(lang, 'Когда начнутся бои или видеотрансляция, они появятся здесь сами.', 'Беттештер же видео түз эфир башталганда, бул жерде өзү пайда болот.', 'When bouts or a live video start, they will appear here by themselves.')}
+          </div>
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
