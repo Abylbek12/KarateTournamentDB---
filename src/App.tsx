@@ -105,6 +105,7 @@ import { DocumentsPanel } from './components/DocumentsPanel';
 import { LaunchPanel } from './components/LaunchPanel';
 import { TatamiOverview } from './components/TatamiOverview';
 import { OfflinePanel } from './components/OfflinePanel';
+import { AUTH_CACHE_KEY, readCachedUser, writeCachedUser } from './utils/authCache';
 
 // Heavy screens are loaded on demand so the first page opens faster.
 const ParticipantsManager = React.lazy(() => import('./components/ParticipantsManager').then((m) => ({ default: m.ParticipantsManager })));
@@ -158,8 +159,14 @@ function AppContent() {
   const [selectedTournament, setSelectedTournament] = useState<Tournament>(DEMO_EVENTS[0]);
   const [selectedEvent, setSelectedEvent] = useState<EventItem>(DEMO_EVENTS[0]);
   const [tournamentRules, setTournamentRules] = useState<TournamentRules>('wkf');
-  const [currentUser, setCurrentUser] = useState<AuthenticatedUserProfile | null>(null);
-  const [currentUserRole, setCurrentUserRole] = useState<UserRole>('club_coach');
+  // Signed-in user: restored at once from the browser (no «please sign in» flash on reload), then confirmed by the server
+  const [currentUser, setCurrentUserState] = useState<AuthenticatedUserProfile | null>(() => readCachedUser());
+  const [currentUserRole, setCurrentUserRole] = useState<UserRole>(() => readCachedUser()?.role || 'club_coach');
+  // Every change of the signed-in user is remembered in the browser for the next reload
+  const setCurrentUser = React.useCallback((u: AuthenticatedUserProfile | null) => {
+    setCurrentUserState(u);
+    writeCachedUser(u);
+  }, []);
   // What the visitor may see: 'guest' until signed in.
   const effectiveRole: AccessRole = currentUser ? currentUserRole : 'guest';
   // Organizer: runs only the tournaments they created; admin: all. The server checks the same rule.
@@ -243,15 +250,33 @@ function AppContent() {
   // Verify and fetch authenticated session on mount
   React.useEffect(() => {
     fetch('/api/auth/me')
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(String(r.status));
+        return r.json();
+      })
       .then((data) => {
         if (data.authenticated && data.user) {
           setCurrentUser(data.user);
+          // The role from the server wins (it may have been changed by the admin)
           if (data.user.role) setCurrentUserRole(data.user.role);
+        } else {
+          // The session ended (signed out elsewhere, expired): forget the remembered profile
+          setCurrentUser(null);
+          setCurrentUserRole('club_coach');
         }
       })
+      // No answer (no internet, server error): keep the remembered profile, the server still checks every action
       .catch(() => {});
-  }, []);
+    // Sign-in / sign-out in another tab of this browser
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== AUTH_CACHE_KEY) return;
+      const u = readCachedUser();
+      setCurrentUserState(u);
+      setCurrentUserRole(u?.role || 'club_coach');
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [setCurrentUser]);
 
   const handleLogout = async () => {
     try {
