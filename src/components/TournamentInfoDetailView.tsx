@@ -17,6 +17,50 @@ import { EventEmblem } from './EventEmblems';
 import { useApp } from '../context/AppContext';
 import { localizeEventItem, trLang } from '../utils/globalDomTranslator';
 import { disciplineLabel } from '../utils/eventI18n';
+import { splitDescription, descriptionLead } from '../utils/eventDescription';
+
+/** "2026-12-01" → "1 декабря 2026" in the interface language; any other text is shown as is. */
+const parseIsoDay = (value: string | undefined): Date | null => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value || '').trim());
+  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
+};
+const dayFormat = (language: string) =>
+  new Intl.DateTimeFormat(language === 'ky' ? 'ky-KG' : language === 'en' ? 'en-GB' : 'ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+const dropRuYear = (s: string) => s.replace(/\s?г\.$/, '');
+// Browsers often ship without Kyrgyz calendar data, so Kyrgyz dates are written by hand: "28-ноябрь 2026-ж."
+const KY_MONTHS = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'];
+const kyDay = (d: Date) => `${d.getDate()}-${KY_MONTHS[d.getMonth()]}`;
+function kyRange(a: Date, b: Date | null): string {
+  if (!b || b.getTime() === a.getTime()) return `${kyDay(a)} ${a.getFullYear()}-ж.`;
+  if (a.getFullYear() !== b.getFullYear()) return `${kyDay(a)} ${a.getFullYear()}-ж. – ${kyDay(b)} ${b.getFullYear()}-ж.`;
+  if (a.getMonth() === b.getMonth()) return `${a.getDate()}–${kyDay(b)} ${a.getFullYear()}-ж.`;
+  return `${kyDay(a)} – ${kyDay(b)} ${a.getFullYear()}-ж.`;
+}
+
+function formatDay(value: string | undefined, language: string): string {
+  const date = parseIsoDay(value);
+  if (!date) return String(value || '').trim();
+  if (language === 'ky') return kyRange(date, null);
+  try {
+    return dropRuYear(dayFormat(language).format(date));
+  } catch {
+    return String(value);
+  }
+}
+
+/** "2026-11-28" + "2026-11-29" → "28–29 ноября 2026"; empty string if the dates are not ISO. */
+function formatDayRange(start: string | undefined, end: string | undefined, language: string): string {
+  const a = parseIsoDay(start);
+  const b = parseIsoDay(end);
+  if (!a) return '';
+  if (language === 'ky') return kyRange(a, b);
+  try {
+    if (!b || b.getTime() === a.getTime()) return dropRuYear(dayFormat(language).format(a));
+    return dropRuYear(dayFormat(language).formatRange(a, b));
+  } catch {
+    return '';
+  }
+}
 
 interface TournamentInfoDetailViewProps {
   tournament: EventItem;
@@ -64,6 +108,43 @@ export const TournamentInfoDetailView: React.FC<TournamentInfoDetailViewProps> =
     seconds: Math.floor(msLeft / 1000) % 60
   };
   const rulesText = (rawTournament as any).rulesLabel || RULES_NAMES[rawTournament.rulesType] || 'WKF';
+  const descriptionBlocks = splitDescription(rawTournament.description);
+  const deadlineText = formatDay(rawTournament.registrationDeadline, language) || '—';
+  const venueLine = rawTournament.venueName || '';
+  const placeLine = [rawTournament.city, rawTournament.country].filter(Boolean).join(', ') || tournament.locationLabel || '';
+  const keyFacts: Array<{ key: string; label: string; value: string; sub?: string; icon: typeof Calendar; tone: string; noTranslate?: boolean }> = [
+    {
+      key: 'dates',
+      label: tr('Даты проведения', 'Өтүүчү күндөрү', 'Dates'),
+      value: formatDayRange(rawTournament.startDate, rawTournament.endDate, language) || tournament.dateLabel || [rawTournament.startDate, rawTournament.endDate].filter(Boolean).join(' — ') || '—',
+      icon: Calendar,
+      tone: 'bg-sky-50 border-sky-200 text-sky-600',
+    },
+    {
+      key: 'venue',
+      label: tr('Место проведения', 'Өтүүчү жери', 'Venue'),
+      value: venueLine || placeLine || '—',
+      sub: venueLine ? placeLine : undefined,
+      icon: MapPin,
+      tone: 'bg-rose-50 border-rose-200 text-rose-600',
+      noTranslate: Boolean(venueLine),
+    },
+    {
+      key: 'deadline',
+      label: tr('Приём заявок до', 'Өтүнмөлөр кабыл алынат', 'Entries until'),
+      value: deadlineText,
+      icon: Clock,
+      tone: 'bg-amber-50 border-amber-200 text-amber-600',
+    },
+    {
+      key: 'organizer',
+      label: tr('Организатор', 'Уюштуруучу', 'Organizer'),
+      value: rawTournament.organization || '—',
+      icon: Building2,
+      tone: 'bg-indigo-50 border-indigo-200 text-indigo-600',
+      noTranslate: true,
+    },
+  ];
   const showDetails = () => document.getElementById('event-details')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   return (
@@ -120,31 +201,29 @@ export const TournamentInfoDetailView: React.FC<TournamentInfoDetailViewProps> =
               <span>{tournament.league || tr('Официальный турнир', 'Расмий мелдеш', 'Official Tournament')}</span>
             </div>
 
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 leading-tight" translate="no">
+            <h1
+              className="text-3xl! sm:text-4xl! lg:text-5xl! leading-[1.1]! font-extrabold tracking-tight text-slate-900 [text-wrap:balance] break-words"
+              translate="no"
+            >
               {tournament.title}
             </h1>
 
-            <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-xs text-slate-600 justify-center md:justify-start">
+            <div className="flex flex-wrap items-center gap-y-2 gap-x-5 text-sm text-slate-600 justify-center md:justify-start">
               <div className="flex items-center gap-1.5">
-                <Calendar className="w-4 h-4 text-sky-500" />
-                <span className="font-medium text-slate-800">{tournament.dateLabel}</span>
+                <Calendar className="w-4 h-4 text-sky-500 shrink-0" />
+                <span className="font-semibold text-slate-800">{formatDayRange(rawTournament.startDate, rawTournament.endDate, language) || tournament.dateLabel}</span>
               </div>
               {tournament.locationLabel && (
                 <div className="flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 text-rose-500" />
+                  <MapPin className="w-4 h-4 text-rose-500 shrink-0" />
                   <span>{tournament.locationLabel}</span>
-                </div>
-              )}
-              {tournament.venueName && (
-                <div className="flex items-center gap-1.5">
-                  <Building2 className="w-4 h-4 text-indigo-500" />
-                  <span translate="no">{tournament.venueName}</span>
                 </div>
               )}
             </div>
 
-            <p translate={tournament.description ? 'no' : undefined} className="text-sm text-slate-600 leading-relaxed max-w-2xl pt-1">
-              {tournament.description || tr(
+            {/* Short lead only: the full description is below, split into paragraphs */}
+            <p translate={tournament.description ? 'no' : undefined} className="text-base text-slate-600 leading-relaxed max-w-prose pt-1 line-clamp-3 [text-wrap:pretty]">
+              {descriptionLead(tournament.description) || tr(
                 'Официальные спортивные соревнования. Регистрация открыта для индивидуальных спортсменов и клубов.',
                 'Расмий спорттук мелдештер. Каттоо жеке спортчулар жана клубдар үчүн ачык.',
                 'Official sports competition. Registration is open for individual athletes and clubs.'
@@ -218,67 +297,94 @@ export const TournamentInfoDetailView: React.FC<TournamentInfoDetailViewProps> =
         {/* Quick Feature Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 border-t border-slate-100 bg-slate-50/50">
           <div className="p-4 border-r border-b md:border-b-0 border-slate-100 text-center">
-            <div className="text-[11px] text-slate-400">{tr('Организатор', 'Уюштуруучу', 'Organization')}</div>
-            <div translate="no" className="text-xs font-bold text-slate-800 mt-0.5 truncate">{tournament.organization || '—'}</div>
+            <div className="text-xs text-slate-500">{tr('Организатор', 'Уюштуруучу', 'Organization')}</div>
+            <div translate="no" className="text-sm md:text-base font-bold text-slate-800 mt-1 truncate">{tournament.organization || '—'}</div>
           </div>
           <div className="p-4 border-r border-b md:border-b-0 border-slate-100 text-center">
-            <div className="text-[11px] text-slate-400">{tr('Татами / Рингов', 'Татами / Рингдер', 'Tatami / Rings')}</div>
-            <div className="text-xs font-bold text-slate-800 mt-0.5">
+            <div className="text-xs text-slate-500">{tr('Татами / Рингов', 'Татами / Рингдер', 'Tatami / Rings')}</div>
+            <div className="text-sm md:text-base font-bold text-slate-800 mt-1">
               {tournament.tatamiCount || tournament.ringsCount || 1} {tr('татами', 'татами', 'tatami')}
             </div>
           </div>
           <div className="p-4 border-r border-slate-100 text-center">
-            <div className="text-[11px] text-slate-400">{tr('Участников заявлено', 'Катталган катышуучулар', 'Registered Athletes')}</div>
-            <div className="text-xs font-bold text-slate-800 mt-0.5">
+            <div className="text-xs text-slate-500">{tr('Участников заявлено', 'Катталган катышуучулар', 'Registered Athletes')}</div>
+            <div className="text-sm md:text-base font-bold text-slate-800 mt-1">
               {entriesCount ?? 0} {tr('заявок', 'өтүнмө', 'entries')}
             </div>
           </div>
           <div className="p-4 text-center">
-            <div className="text-[11px] text-slate-400">{tr('Регламент', 'Регламент', 'Rules Standard')}</div>
-            <div className="text-xs font-bold text-sky-600 mt-0.5 truncate" title={rulesText}>{rulesText}</div>
+            <div className="text-xs text-slate-500">{tr('Регламент', 'Регламент', 'Rules Standard')}</div>
+            <div className="text-sm md:text-base font-bold text-sky-600 mt-1 truncate" title={rulesText}>{rulesText}</div>
           </div>
         </div>
       </div>
 
       {/* Full information: what the organizer entered */}
-      <div id="event-details" className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-6 space-y-4 scroll-mt-20">
-        <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-sky-600" />
+      <section id="event-details" aria-labelledby="event-details-title" className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-5 sm:p-6 md:p-8 space-y-6 md:space-y-8 scroll-mt-20">
+        <h2 id="event-details-title" className="text-xl! md:text-2xl! font-bold text-slate-900 flex items-center gap-2.5">
+          <ShieldCheck className="w-5 h-5 md:w-6 md:h-6 text-sky-600 shrink-0" />
           <span>{tr('Информация о турнире', 'Мелдеш жөнүндө маалымат', 'Tournament information')}</span>
-        </h3>
-        <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2 text-sm">
-          {[
-            [tr('Даты', 'Даталар', 'Dates'), [rawTournament.startDate, rawTournament.endDate].filter(Boolean).join(' — ')],
-            [tr('Приём заявок до', 'Өтүнмөлөр кабыл алынат', 'Entries until'), rawTournament.registrationDeadline || '—'],
-            [tr('Место', 'Орун', 'Venue'), [rawTournament.venueName, rawTournament.city, rawTournament.country].filter(Boolean).join(', ') || '—'],
-            [tr('Организатор', 'Уюштуруучу', 'Organizer'), rawTournament.organization || '—'],
-            [tr('Правила и регламент', 'Эрежелер жана регламент', 'Rules'), rulesText],
-            [tr('Татами', 'Татами', 'Tatami'), String(rawTournament.tatamiCount || 1)]
-          ].map(([k, v]) => (
-            <div key={k}>
-              <dt className="text-[11px] uppercase tracking-wide text-slate-400">{k}</dt>
-              <dd className="text-slate-800 font-medium">{v}</dd>
+        </h2>
+
+        {/* Key facts: one card per fact, value large and bold */}
+        <dl className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+          {keyFacts.map(({ key, label, value, sub, icon: Icon, tone, noTranslate }) => (
+            <div key={key} className="flex items-start gap-3.5 rounded-xl border border-slate-200 bg-slate-50 p-4 md:p-5 min-w-0">
+              <span className={`shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-lg border ${tone}`}>
+                <Icon className="w-5 h-5" aria-hidden="true" />
+              </span>
+              <div className="min-w-0">
+                <dt className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</dt>
+                <dd translate={noTranslate ? 'no' : undefined} className="mt-1 text-base md:text-lg font-bold text-slate-900 leading-snug break-words">
+                  {value}
+                </dd>
+                {sub && <dd translate="no" className="mt-0.5 text-sm text-slate-600 leading-snug break-words">{sub}</dd>}
+              </div>
             </div>
           ))}
         </dl>
+
+        {/* Secondary facts: rules and tatami */}
+        <div className="flex flex-wrap gap-x-8 gap-y-3 border-t border-slate-100 pt-5">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">{tr('Правила и регламент', 'Эрежелер жана регламент', 'Rules')}</div>
+            <div className="mt-0.5 text-base font-bold text-slate-900">{rulesText}</div>
+          </div>
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">{tr('Татами', 'Татами', 'Tatami')}</div>
+            <div className="mt-0.5 text-base font-bold text-slate-900 tabular-nums">{rawTournament.tatamiCount || 1}</div>
+          </div>
+        </div>
+
         {rawTournament.disciplines && rawTournament.disciplines.length > 0 && (
           <div>
-            <div className="text-[11px] uppercase tracking-wide text-slate-400 mb-1.5">{tr('Дисциплины в программе', 'Программадагы дисциплиналар', 'Disciplines')}</div>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2.5">{tr('Дисциплины в программе', 'Программадагы дисциплиналар', 'Disciplines')}</div>
+            <div className="flex flex-wrap gap-2">
               {/* Same discipline written two ways (old and new wording) is shown once */}
               {Array.from(new Set(rawTournament.disciplines.map((d) => disciplineLabel(d, language)))).map((label) => (
-                <span key={label} translate="no" className="px-2.5 py-1 rounded-lg bg-sky-50 border border-sky-200 text-sky-800 text-xs">{label}</span>
+                <span key={label} translate="no" className="px-3 py-1.5 rounded-lg bg-sky-50 border border-sky-200 text-sky-800 text-sm font-medium">{label}</span>
               ))}
             </div>
           </div>
         )}
-        {rawTournament.description && (
-          <div>
-            <div className="text-[11px] uppercase tracking-wide text-slate-400 mb-1">{tr('Описание и условия допуска', 'Сүрөттөмө жана шарттар', 'Description & eligibility')}</div>
-            <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">{rawTournament.description}</p>
+
+        {descriptionBlocks.length > 0 && (
+          <div className="border-t border-slate-100 pt-6">
+            <h3 className="text-lg! md:text-xl! font-bold text-slate-900 mb-4">{tr('Описание и условия допуска', 'Сүрөттөмө жана шарттар', 'Description & eligibility')}</h3>
+            <div translate="no" className="max-w-prose space-y-4 text-base text-slate-700 leading-7 md:leading-8 [text-wrap:pretty]">
+              {descriptionBlocks.map((block, i) =>
+                block.type === 'list' ? (
+                  <ul key={i} className="list-disc pl-6 space-y-2 marker:text-sky-500">
+                    {block.items.map((item, j) => <li key={j} className="pl-1">{item}</li>)}
+                  </ul>
+                ) : (
+                  <p key={i}>{block.text}</p>
+                )
+              )}
+            </div>
           </div>
         )}
-      </div>
+      </section>
 
       {/* Available Modules for this Sport Category */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-6 space-y-4">
