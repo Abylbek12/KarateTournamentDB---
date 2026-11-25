@@ -6,6 +6,6 @@ coverage/
 *.log
 .env*
 !.env.example
-data/
+/data/
 api/_server.mjs
 .vercel
