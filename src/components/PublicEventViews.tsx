@@ -8,6 +8,7 @@ import { belongsToEvent } from '../data/sampleTournamentData';
 import { computeStandings, stageLabel } from '../utils/bracketProgression';
 import { BracketTree } from './BracketTree';
 import { bracketHash, categoryFromHash } from '../utils/routes';
+import { legalHash } from './LegalPage';
 import * as E from '../utils/boutEngine';
 import { clockNow } from '../utils/serverClock';
 import { displayName, displayClub, localizeCategoryName, nameModeFor, participantFlag, participantNoc, participantCountry, type NameMode } from '../utils/names';
@@ -914,7 +915,8 @@ export const PublicCategoriesView: React.FC<
       <EventHeader {...props} active="categories_prices" />
       <div className="flex flex-wrap items-center gap-3">
         <p className="flex-1 text-sm text-[var(--app-text-secondary)]">
-          {t(language, 'Возраст считается на первый день турнира. Вес — по взвешиванию.', 'Жаш мелдештин биринчи күнүнө эсептелет.', 'Age is counted on the first day of the tournament.')}
+          {t(language, 'Возраст считается на первый день турнира. Вес — по взвешиванию.', 'Жаш мелдештин биринчи күнүнө эсептелет.', 'Age is counted on the first day of the tournament.')}{' '}
+          <a href={legalHash('payment')} className="text-[var(--accent)] underline whitespace-nowrap">{t(language, 'Оплата взносов и возврат', 'Төгүмдөрдү төлөө жана кайтаруу', 'Entry fees and refunds')}</a>
         </p>
         <button onClick={onEnter} className="h-10 px-5 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white text-sm font-semibold cursor-pointer">
           {t(language, 'Подать заявку', 'Табыштама берүү', 'Enter')}

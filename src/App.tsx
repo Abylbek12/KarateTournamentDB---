@@ -56,6 +56,7 @@ import { RankingsPanel, ClubsPanel, LiveNowPanel } from './components/CommunityV
 import { MyEntriesPanel, FeesPanel } from './components/EntriesPanels';
 import { AthletesPanel } from './components/AthletesPanel';
 import { AuthModal, PrivacyPolicyModal } from './components/AuthAndPrivacyModals';
+import { LegalPage, legalHash } from './components/LegalPage';
 import { SAMPLE_NOTIFICATIONS, playNotificationSound } from './data/sampleAcquiringAndExports';
 import { generateProtectedWkfCategoryBouts } from './utils/wkfBracketSeeding';
 import { Language } from './utils/translations';
@@ -893,7 +894,7 @@ function AppContent() {
     if (window.location.hash === target) return;
     const current = tabFromHash(window.location.hash);
     // Same page, the link only adds details (e.g. the category of a bracket «;c=…»): keep it
-    if (activeTab !== 'manage' && current && current.tab === activeTab && current.eventId === selectedEvent.id) return;
+    if (activeTab !== 'manage' && current && current.tab === activeTab && (!isEventTab(activeTab) || current.eventId === selectedEvent.id) && window.location.hash.includes(';')) return;
     // Opening a link to a tournament page before the tournament list has loaded: keep it
     if (current && current.tab === activeTab && current.eventId && !tournaments.some((t) => t.id === current.eventId)) return;
     if (!window.location.hash && activeTab === 'tournaments') {
@@ -1020,7 +1021,7 @@ function AppContent() {
         isMobileOpen={isMobileNavOpen}
         onToggleMobile={() => setIsMobileNavOpen(!isMobileNavOpen)}
         language={language}
-        onOpenPrivacyModal={() => setIsPrivacyModalOpen(true)}
+        onOpenPrivacyModal={() => { window.location.hash = legalHash('privacy'); }}
         onLockedTab={showLockedNotice}
         workflow={
           activeTab === 'manage' && canAccess('manage', effectiveRole) && tournamentsLoaded
@@ -2003,6 +2004,8 @@ function AppContent() {
             <AboutUsView language={language} />
           )}
 
+          {activeTab === 'legal' && <LegalPage language={language as 'ru' | 'ky' | 'en'} />}
+
           {activeTab === 'help' && <RoleGuide initial={effectiveRole === 'club_coach' ? 'coach' : effectiveRole === 'admin' ? 'organizer' : ['tatami_referee', 'scorekeeper', 'chief_referee', 'medical_officer'].includes(effectiveRole) ? 'official' : 'athlete'} />}
           {activeTab === 'help' && (
             <HelpFaqView language={language} />
@@ -2084,9 +2087,19 @@ function AppContent() {
                   </a>
                 </li>
                 <li>
-                  <button onClick={() => setIsPrivacyModalOpen(true)} className="text-left text-[var(--app-text-secondary)] hover:text-[var(--accent)] transition-colors cursor-pointer">
-                    {tr('Политика конфиденциальности', 'Купуялуулук саясаты', 'Privacy policy')}
-                  </button>
+                  <a href={legalHash('privacy')} className="text-[var(--app-text-secondary)] hover:text-[var(--accent)] transition-colors">
+                    {tr('Политика обработки персональных данных', 'Жеке маалыматтарды иштетүү саясаты', 'Personal data policy')}
+                  </a>
+                </li>
+                <li>
+                  <a href={legalHash('terms')} className="text-[var(--app-text-secondary)] hover:text-[var(--accent)] transition-colors">
+                    {tr('Пользовательское соглашение', 'Колдонуучу келишими', 'Terms of use')}
+                  </a>
+                </li>
+                <li>
+                  <a href={legalHash('payment')} className="text-[var(--app-text-secondary)] hover:text-[var(--accent)] transition-colors">
+                    {tr('Оплата взносов и возврат', 'Төгүмдөрдү төлөө жана кайтаруу', 'Entry fees and refunds')}
+                  </a>
                 </li>
                 {aiAssistantEnabled && (
                   <li>

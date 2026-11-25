@@ -1,3 +1,4 @@
+import { legalHash } from './LegalPage';
 import React from 'react';
 import { UserPlus, Trash2, Users, CheckCircle2, AlertTriangle, ClipboardList, X } from 'lucide-react';
 import type { AuthenticatedUserProfile, BeltRank, EventCategory, Gender, Participant, Tournament } from '../types/schema';
@@ -351,6 +352,9 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
   const total = quote.total;
   const discounted = quote.lines.filter((l) => l.kind === 'additional').length;
 
+  // Consents for the entry: parent / coach with the parents' consent + publication of results (required); photo / video (optional)
+  const [guardianOk, setGuardianOk] = React.useState(false);
+  const [mediaOk, setMediaOk] = React.useState(true);
   const submit = async () => {
     setError(null);
     setDone(null);
@@ -358,12 +362,16 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
       setError(tl(language, 'Отметьте хотя бы одну категорию.', 'Жок дегенде бир категорияны белгилеңиз.', 'Tick at least one category.'));
       return;
     }
+    if (!guardianOk) {
+      setError(tl(language, 'Подтвердите согласие родителей и публикацию результатов (галочка над кнопкой).', 'Ата-энелердин макулдугун жана жыйынтыктарды жарыялоону ырастаңыз (баскычтын үстүндөгү белги).', 'Confirm the parents\u2019 consent and publication of results (the tick above the button).'));
+      return;
+    }
     setBusy(true);
     try {
       const res = await fetch('/api/entries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entries })
+        body: JSON.stringify({ entries, consent: { guardian: guardianOk, media: mediaOk } })
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || tl(language, 'Заявка не отправлена', 'Табыштама жөнөтүлгөн жок', 'The entry was not sent'));
@@ -715,6 +723,27 @@ export const EntryForm: React.FC<EntryFormProps> = ({ tournaments, categories, p
           </div>
         </section>
       ))}
+
+      <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 space-y-2 text-sm text-[var(--app-text-primary)]">
+        <label className="flex items-start gap-2 cursor-pointer">
+          <input type="checkbox" checked={guardianOk} onChange={(e) => setGuardianOk(e.target.checked)} className="mt-1 w-4 h-4" />
+          <span>
+            {tl(
+              language,
+              'Я родитель (законный представитель) спортсмена или тренер, получивший согласие родителей; согласен на обработку указанных данных и публикацию фамилии, имени, клуба и результатов в сетках и протоколах турнира.',
+              'Мен спортчунун ата-энесимин (мыйзамдуу өкүлүмүн) же ата-энелердин макулдугун алган машыктыруучумун; көрсөтүлгөн маалыматтарды иштетүүгө жана аты-жөнүн, клубун жана жыйынтыктарын мелдештин торчолорунда жана протоколдорунда жарыялоого макулмун.',
+              'I am the athlete\u2019s parent (legal guardian) or a coach with the parents\u2019 consent; I agree to the processing of these data and to publishing the name, club and results in the tournament brackets and protocols.'
+            )}{' '}
+            <a href={`/${legalHash('privacy')}`} target="_blank" rel="noreferrer" className="text-[var(--accent)] underline">{tl(language, 'Политика', 'Саясат', 'Policy')}</a>
+          </span>
+        </label>
+        <label className="flex items-start gap-2 cursor-pointer">
+          <input type="checkbox" checked={mediaOk} onChange={(e) => setMediaOk(e.target.checked)} className="mt-1 w-4 h-4" />
+          <span>
+            {tl(language, 'Согласен на фото- и видеосъёмку и трансляцию боёв (YouTube). Можно снять галочку — организатор увидит отметку «без фото/видео».', 'Сүрөткө жана видеого тартууга жана беттештерди көрсөтүүгө (YouTube) макулмун. Белгини алып салсаңыз болот — уюштуруучу «сүрөт/видеосуз» белгисин көрөт.', 'I agree to photos, video and broadcasting of bouts (YouTube). You may untick it — the organizer will see a «no photo/video» mark.')}
+          </span>
+        </label>
+      </section>
 
       <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 flex flex-wrap items-center gap-3">
         <div className="flex-1 min-w-[200px] text-[var(--app-text-primary)]">

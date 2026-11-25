@@ -8,6 +8,7 @@ import path from 'path';
 import { sanitizeAthlete, findSameAthlete, suggestFromEntries, visibleAthletes, type ClubAthlete } from '../src/utils/athletes';
 
 let failures = 0;
+const OK_CONSENTS = { terms: true, personalData: true, version: 'test' };
 const check = (name: string, ok: boolean, detail = '') => {
   console.log(`${ok ? '✓' : '✗'} ${name}${detail ? ' — ' + detail : ''}`);
   if (!ok) failures++;
@@ -94,9 +95,12 @@ async function main() {
     const referee = client();
     const login = await admin.call('POST', '/api/auth/login', ADMIN);
     check('server: admin signs in', login.status === 200, login.status === 200 ? '' : log.slice(-500));
-    await coach.call('POST', '/api/auth/register', { fullName: 'Тренер Один', email: 'coach1@test.localhost', password: 'coach-pass-1', role: 'club_coach', clubName: 'Клуб А' });
-    await other.call('POST', '/api/auth/register', { fullName: 'Тренер Два', email: 'coach2@test.localhost', password: 'coach-pass-2', role: 'club_coach' });
-    const ref = await referee.call('POST', '/api/auth/register', { fullName: 'Судья', email: 'ref@test.localhost', password: 'ref-pass-123', role: 'athlete' });
+    // Sign-up needs both consents (terms + personal data)
+    const noConsent = await coach.call('POST', '/api/auth/register', { fullName: 'Без согласия', email: 'nocons@test.localhost', password: 'pass-12345', role: 'athlete' });
+    check('sign-up: refused without the two consents', noConsent.status === 400);
+    await coach.call('POST', '/api/auth/register', { fullName: 'Тренер Один', email: 'coach1@test.localhost', password: 'coach-pass-1', role: 'club_coach', clubName: 'Клуб А', consents: OK_CONSENTS });
+    await other.call('POST', '/api/auth/register', { fullName: 'Тренер Два', email: 'coach2@test.localhost', password: 'coach-pass-2', role: 'club_coach', consents: OK_CONSENTS });
+    const ref = await referee.call('POST', '/api/auth/register', { fullName: 'Судья', email: 'ref@test.localhost', password: 'ref-pass-123', role: 'athlete', consents: OK_CONSENTS });
     await admin.call('PUT', `/api/admin/users/${ref.data.user.id}/role`, { role: 'scorekeeper' });
 
     // tournament + two categories
@@ -129,8 +133,8 @@ async function main() {
     check('archive: back', (await coach.call('POST', `/api/athletes/${id}/archive`, { archived: false })).data.athlete?.archived === undefined);
 
     // entries with athleteId
-    check('entry: someone else’s athleteId → 404', (await other.call('POST', '/api/entries', { entries: [{ categoryId: 'c-kumite', athleteId: id }] })).status === 404);
-    const entry = await coach.call('POST', '/api/entries', { entries: [{ categoryId: 'c-kumite', athleteId: id, lastName: 'Подмена', birthDate: '2000-01-01', declaredWeightKg: 36 }] });
+    check('entry: someone else’s athleteId → 404', (await other.call('POST', '/api/entries', { consent: { guardian: true }, entries: [{ categoryId: 'c-kumite', athleteId: id }] })).status === 404);
+    const entry = await coach.call('POST', '/api/entries', { consent: { guardian: true }, entries: [{ categoryId: 'c-kumite', athleteId: id, lastName: 'Подмена', birthDate: '2000-01-01', declaredWeightKg: 36 }] });
     const p = entry.data.entries?.[0];
     check('entry: data from the card, not from the request', entry.status === 201 && p.lastName === 'Асанов' && p.birthDate === '2014-03-05' && p.beltRank === 'blue_4kyu' && p.athleteId === id, JSON.stringify(p));
     check('entry: weight from the entry updates the card', (await coach.call('GET', '/api/athletes')).data.athletes?.[0]?.weightKg === 36);
@@ -139,14 +143,16 @@ async function main() {
 
     // a new athlete typed by hand lands in the roster, once
     const hand = { categoryId: 'c-kumite', lastName: 'Иванов', firstName: 'Петр', birthDate: '2013-02-02', gender: 'male', beltRank: 'white_10kyu', declaredWeightKg: 40 };
-    const typed = await coach.call('POST', '/api/entries', { entries: [hand, { ...hand, categoryId: 'c-kata' }] });
+    const noConsentEntry = await coach.call('POST', '/api/entries', { entries: [{ categoryId: 'c-kumite', athleteId: id }] });
+    check('entry: refused without the parents\u2019 consent tick', noConsentEntry.status === 400);
+    const typed = await coach.call('POST', '/api/entries', { consent: { guardian: true }, entries: [hand, { ...hand, categoryId: 'c-kata' }] });
     const roster2 = (await coach.call('GET', '/api/athletes')).data.athletes || [];
     check('entry by hand: card created once for two categories', typed.status === 201 && roster2.length === 2 && typed.data.entries.every((e: any) => e.athleteId === roster2.find((a: any) => a.lastName === 'Иванов')?.id));
     check('entry by hand: server reports the roster changed', typed.data.rosterChanged === true);
-    const adminEntry = await admin.call('POST', '/api/entries', { entries: [{ ...hand, lastName: 'Организаторов' }] });
+    const adminEntry = await admin.call('POST', '/api/entries', { consent: { guardian: true }, entries: [{ ...hand, lastName: 'Организаторов' }] });
     // Owner's rule (24 Nov 2026): an admin / organizer loading a tournament list gets no cards in «Мои спортсмены»
     check('entry by the organizer: no automatic card', adminEntry.status === 201 && !adminEntry.data.entries?.[0]?.athleteId && ((await admin.call('GET', '/api/athletes')).data.athletes?.length ?? 0) === 0);
-    const secretaryEntry = await referee.call('POST', '/api/entries', { entries: [{ ...hand, lastName: 'Секретарев' }] });
+    const secretaryEntry = await referee.call('POST', '/api/entries', { consent: { guardian: true }, entries: [{ ...hand, lastName: 'Секретарев' }] });
     check('entry by the secretary: no automatic card', secretaryEntry.status === 201 && !secretaryEntry.data.entries?.[0]?.athleteId);
 
     // import from past entries

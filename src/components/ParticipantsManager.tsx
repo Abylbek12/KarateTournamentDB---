@@ -343,6 +343,9 @@ export const ParticipantsManager: React.FC<ParticipantsManagerProps> = ({
                       </div>
                       <div className="text-[11px] text-slate-500 tabular-nums mt-0.5">
                         {p.licenseNumber ? `${tl('Лицензия', 'Лицензия', 'Licence')}: ${p.licenseNumber} · ` : ''}{p.gender === 'male' ? tl('Мужской', 'Эркек', 'Male') : tl('Женский', 'Аял', 'Female')}
+                        {(entriesOf.get(personKey(p)) || [p]).some((e) => e.mediaConsent === false) && (
+                          <span className="ml-2 px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500 font-semibold">{tl('без фото/видео', 'сүрөт/видеосуз', 'no photo/video')}</span>
+                        )}
                       </div>
                       <div className="text-[11px] text-slate-400 mt-0.5 max-w-xs">
                         {(entriesOf.get(personKey(p)) || [p]).map((e) => { const c = catOf(e); return c ? categoryName(c) : ''; }).filter(Boolean).join(' / ')}

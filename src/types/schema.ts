@@ -293,6 +293,10 @@ export interface Participant {
   teamMembers?: string[];
   /** Set at weigh-in when the athlete does not fit the category. */
   eligibilityNote?: string;
+  /** When the parent / coach confirmed consent and publication of results */
+  consentAt?: string;
+  /** false = no photo / video / broadcasting of this athlete */
+  mediaConsent?: boolean;
 }
 
 /**

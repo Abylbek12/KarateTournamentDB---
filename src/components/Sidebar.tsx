@@ -591,7 +591,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {!compact && onOpenPrivacyModal && (
           <div className="px-5 py-3 border-t border-[var(--app-border)] text-xs">
             <button onClick={onOpenPrivacyModal} className="text-[var(--app-text-muted)] hover:text-[var(--app-text-primary)] cursor-pointer">
-              {tr('Политика конфиденциальности', 'Купуялуулук саясаты', 'Privacy policy')}
+              {tr('Правовая информация', 'Укуктук маалымат', 'Legal information')}
             </button>
           </div>
         )}

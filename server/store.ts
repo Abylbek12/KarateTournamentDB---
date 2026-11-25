@@ -25,6 +25,8 @@ export interface StoredUserAccount {
   clubName?: string;
   licenseCode?: string;
   alsoCompetes?: boolean;
+  /** Consents given at sign-up: which document version and when (proof of consent) */
+  consents?: { terms: boolean; personalData: boolean; version: string; at: string };
   isVerified: boolean;
   confirmedAt?: string;
   createdAt: string;

@@ -23,6 +23,7 @@ export const TAB_ACCESS: Record<string, 'public' | AccessRole[]> = {
   virtual_studios: 'public',
   rankings: 'public',
   about: 'public',
+  legal: 'public',
   help: 'public',
 
   // Personal / club area (sign-in required)

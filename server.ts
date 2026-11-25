@@ -585,7 +585,7 @@ app.post('/api/auth/login', authLimiter, (req: Request, res: Response) => {
 
 // 5. Registration (self-service roles only) — also opens a session.
 app.post('/api/auth/register', authLimiter, (req: Request, res: Response) => {
-  const { fullName, email, phone, password, role, inviteToken, clubName, alsoCompetes } = req.body || {};
+  const { fullName, email, phone, password, role, inviteToken, clubName, alsoCompetes, consents } = req.body || {};
 
   // An invite link fixes the role (e.g. referee). Without one, only self-service roles are possible.
   let invite: ReturnType<typeof findValidInvite> = null;
@@ -609,6 +609,11 @@ app.post('/api/auth/register', authLimiter, (req: Request, res: Response) => {
     res.status(400).json({ error: 'Пароль должен состоять минимум из 8 символов.' });
     return;
   }
+  // Two separate consents: terms of use and processing of personal data (both required)
+  if (consents?.terms !== true || consents?.personalData !== true) {
+    res.status(400).json({ error: 'Нужно принять пользовательское соглашение и дать согласие на обработку персональных данных.' });
+    return;
+  }
   if (findAccountByEmail(email)) {
     res.status(409).json({ error: 'Пользователь с таким email уже зарегистрирован. Пожалуйста, выполните вход.' });
     return;
@@ -628,6 +633,7 @@ app.post('/api/auth/register', authLimiter, (req: Request, res: Response) => {
     createdAt: new Date().toISOString()
   };
   account.alsoCompetes = account.role === 'club_coach' && alsoCompetes === true;
+  account.consents = { terms: true, personalData: true, version: String(consents.version || '').slice(0, 20), at: new Date().toISOString() };
   addAccount(account);
   if (invite) {
     invite.record.uses += 1;
@@ -1201,6 +1207,15 @@ app.post('/api/entries', (req: Request, res: Response) => {
     res.status(400).json({ error: 'Нет заявок для отправки.' });
     return;
   }
+  // Consent for these entries: parent / coach with the parents' consent and publication of results (required);
+  // photo / video (optional, kept on each entry so the organizer sees «no photo/video»)
+  const consent = req.body?.consent || {};
+  if (consent.guardian !== true) {
+    res.status(400).json({ error: 'Подтвердите согласие родителей (законных представителей) и публикацию результатов.' });
+    return;
+  }
+  const consentAt = new Date().toISOString();
+  const mediaConsent = consent.media !== false;
   const categories: any[] = Array.isArray(db.state.categories?.value) ? (db.state.categories!.value as any[]) : [];
   const list = participantsList();
   const created: any[] = [];
@@ -1290,7 +1305,9 @@ app.post('/api/entries', (req: Request, res: Response) => {
       teamMembers: isTeam && Array.isArray(e.teamMembers) ? e.teamMembers.map((m: unknown) => String(m).trim().slice(0, 80)).filter(Boolean).slice(0, 8) : undefined,
       athleteId: card?.id,
       createdBy: user.id,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      consentAt,
+      mediaConsent
     });
     if (!isTeam && e?.isSelf === true && user.role === 'club_coach') selfEntryIds.add(created[created.length - 1].id);
   }

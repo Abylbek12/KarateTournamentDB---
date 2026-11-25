@@ -1,5 +1,7 @@
 import { ROLE_LABELS } from '../utils/access';
 import { BrandFullLogo } from './BrandLogo';
+import { LEGAL_VERSION } from '../data/legal';
+import { legalHash } from './LegalPage';
 import React, { useState, useEffect } from 'react';
 import { 
   X, 
@@ -131,6 +133,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     if (suggestedRole === 'athlete' || suggestedRole === 'club_coach') setRegRole(suggestedRole);
   }, [suggestedRole]);
   const [regAgreeTerms, setRegAgreeTerms] = useState(false);
+  const [regAgreeData, setRegAgreeData] = useState(false);
 
   // Quick fill helper toggle
   const [showDemoAccounts, setShowDemoAccounts] = useState(false);
@@ -269,8 +272,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setErrorMessage(trL('Введенные пароли не совпадают', 'Киргизилген сырсөздөр дал келбейт', 'Passwords do not match'));
       return;
     }
-    if (!regAgreeTerms) {
-      setErrorMessage(trL('Необходимо согласиться с политикой конфиденциальности', 'Купуялык саясатына макул болуу керек', 'Please accept terms'));
+    if (!regAgreeTerms || !regAgreeData) {
+      setErrorMessage(trL('Отметьте обе галочки: соглашение и согласие на обработку персональных данных', 'Эки белгини тең коюңуз: келишим жана жеке маалыматтарды иштетүүгө макулдук', 'Tick both boxes: terms of use and consent to personal data processing'));
       return;
     }
 
@@ -287,7 +290,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           role: lockedRole || regRole,
           inviteToken: inviteToken || undefined,
           clubName: regClubName || undefined,
-          alsoCompetes: (lockedRole || regRole) === 'club_coach' ? regAlsoCompetes : undefined
+          alsoCompetes: (lockedRole || regRole) === 'club_coach' ? regAlsoCompetes : undefined,
+          consents: { terms: regAgreeTerms, personalData: regAgreeData, version: LEGAL_VERSION }
         })
       });
 
@@ -714,16 +718,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       </label>
                     )}
 
-                    {/* Terms Checkbox */}
-                    <label className="flex items-start gap-2 pt-1 text-[10px] text-slate-600 font-sans cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={regAgreeTerms}
-                        onChange={(e) => setRegAgreeTerms(e.target.checked)}
-                        className="mt-0.5 rounded text-[#38a3a5] focus:ring-[#38a3a5]"
-                      />
+                    {/* Two separate consents, each with its document (opens in a new tab) */}
+                    <label className="flex items-start gap-2 pt-1 text-[11px] text-slate-600 font-sans cursor-pointer">
+                      <input type="checkbox" checked={regAgreeTerms} onChange={(e) => setRegAgreeTerms(e.target.checked)} className="mt-0.5 rounded text-[#38a3a5] focus:ring-[#38a3a5]" />
                       <span>
-                        {trL('Согласен с Условиями и обработкой персональных данных', 'Шарттарга жана жеке маалыматтарды иштетүүгө макулмун', 'I agree to the Terms & Privacy Policy')}
+                        {trL('Принимаю', 'Кабыл алам:', 'I accept the')}{' '}
+                        <a href={`/${legalHash('terms')}`} target="_blank" rel="noreferrer" className="text-[#2b7a7e] underline">{trL('пользовательское соглашение', 'колдонуучу келишими', 'terms of use')}</a>
+                      </span>
+                    </label>
+                    <label className="flex items-start gap-2 text-[11px] text-slate-600 font-sans cursor-pointer">
+                      <input type="checkbox" checked={regAgreeData} onChange={(e) => setRegAgreeData(e.target.checked)} className="mt-0.5 rounded text-[#38a3a5] focus:ring-[#38a3a5]" />
+                      <span>
+                        {trL('Даю согласие на обработку моих персональных данных по', 'Жеке маалыматтарымды иштетүүгө макулдук берем, негизи:', 'I consent to the processing of my personal data under the')}{' '}
+                        <a href={`/${legalHash('privacy')}`} target="_blank" rel="noreferrer" className="text-[#2b7a7e] underline">{trL('политике обработки персональных данных', 'жеке маалыматтарды иштетүү саясаты', 'personal data policy')}</a>
                       </span>
                     </label>
 
