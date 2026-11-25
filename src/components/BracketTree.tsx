@@ -4,6 +4,7 @@
 // The bracket size follows the entries: 2 → final only, 3–4 → semis, 5–8 → 1/4, 9–16 → 1/8, 17–32 → two subgroups
 // (A and B, 16 each) whose winners meet in the final. One component for print ('print') and the website ('screen').
 import React from 'react';
+import { Trophy } from 'lucide-react';
 import type { Bout, Participant, ThirdPlaceMode } from '../types/schema';
 import { bracketLayout, feedsInto, type LayoutSlot, type SideSource } from '../utils/bracketLayout';
 import { computeStandings, repechageHalf, repechageStep, stageLabel } from '../utils/bracketProgression';
@@ -119,6 +120,20 @@ export function screenDims(slots: number, widthCards: number, extraGaps: number,
 }
 
 const RESULTS_W = 230;
+// Screen accents: navy band, gold for the final / champion and the lit path, medal colors
+const NAVY = '#14213d';
+const GOLD = '#c9971c';
+const GOLD_TEXT = '#8a6400';
+const MEDAL: Record<string, string> = { '1': '#e3b341', '2': '#8f99a6', '3': '#b26b2e', '4': '#9aa3ad' };
+// Animations of the screen bracket (none on paper; off with «reduce motion»)
+const BRACKET_CSS = `
+.bt-draw{stroke-dasharray:1;stroke-dashoffset:1;animation:bt-draw .6s ease-out forwards}
+@keyframes bt-draw{to{stroke-dashoffset:0}}
+.bt-live{animation:bt-pulse 1.2s ease-in-out infinite}
+@keyframes bt-pulse{50%{outline-color:rgba(224,69,58,.2)}}
+.bt-slot{transition:background-color .15s ease}
+@media (prefers-reduced-motion:reduce){.bt-draw{animation:none;stroke-dashoffset:0}.bt-live{animation:none}}
+`;
 /** 17–32 entries (a 1/16 round): the bracket is shown as subgroups A and B plus the final */
 const isSplit = (firstCount: number) => firstCount >= 16;
 
@@ -158,6 +173,8 @@ export const BracketTree: React.FC<BracketTreeProps> = ({ bouts, categoryId, lan
     };
   }, [print]);
 
+  // Screen: the athlete under the mouse (or tapped) — their whole path through the bracket is lit
+  const [hoverId, setHoverId] = React.useState<string | null>(null);
   const cat = bouts.filter((b) => b.categoryId === categoryId);
   const layout = bracketLayout(cat);
   const people = cat.flatMap((b) => [b.akaParticipantId, b.aoParticipantId]).map(find).filter((p): p is Participant => !!p);
@@ -192,15 +209,29 @@ export const BracketTree: React.FC<BracketTreeProps> = ({ bouts, categoryId, lan
   const frame = print ? 1.25 : 1.5;
 
   const winnerLabel = (n: number) => `${tr(lang, 'Победитель', 'Жеңүүчү', 'Winner')} #${n}`;
+  // «4 боя» / «4 беттеш» / «4 bouts»
+  const boutsLabel = (n: number) => {
+    const m10 = n % 10, m100 = n % 100;
+    const ru = m10 === 1 && m100 !== 11 ? 'бой' : m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? 'боя' : 'боёв';
+    return tr(lang, `${n} ${ru}`, `${n} беттеш`, `${n} ${n === 1 ? 'bout' : 'bouts'}`);
+  };
   const athlete = (id?: string): SideSource => (id ? { kind: 'athlete', id } : { kind: 'empty' });
 
   // ---------- one athlete slot: an open frame (top, left, bottom; open on the right) like Uventex ----------
-  const slot = (content: { p?: Participant; label?: string; won?: boolean; score?: number | string }, edge: string, key: string, style?: React.CSSProperties, width = frame, fill = c.bg) => (
+  const slot = (content: { p?: Participant; label?: string; won?: boolean; score?: number | string }, edge: string, key: string, style?: React.CSSProperties, width = frame, fill = c.bg) => {
+    const pid = !print ? content.p?.id : undefined;
+    const lit = !!pid && pid === hoverId;
+    return (
     <div
       key={key}
+      className={pid ? 'bt-slot' : undefined}
+      onMouseEnter={pid ? () => setHoverId(pid) : undefined}
+      onMouseLeave={pid ? () => setHoverId(null) : undefined}
+      onClick={pid ? () => setHoverId((h) => (h === pid ? null : pid)) : undefined}
       style={{
+        cursor: pid ? 'pointer' : undefined,
         height: d.row, display: 'flex', alignItems: 'center', gap: 6, padding: `0 ${Math.round(d.row * 0.22)}px 0 ${Math.round(d.row * 0.24)}px`, boxSizing: 'border-box',
-        borderTop: `${width}px solid ${edge}`, borderLeft: `${width}px solid ${edge}`, borderBottom: `${width}px solid ${edge}`, background: fill,
+        borderTop: `${width}px solid ${edge}`, borderLeft: `${width}px solid ${edge}`, borderBottom: `${width}px solid ${edge}`, background: lit ? '#fff3c4' : fill,
         ...style
       }}
     >
@@ -216,7 +247,8 @@ export const BracketTree: React.FC<BracketTreeProps> = ({ bouts, categoryId, lan
       </span>
       {content.score !== '' && content.score != null && <span style={{ fontSize: d.name, fontWeight: 700, color: c.cardText }}>{content.score}</span>}
     </div>
-  );
+    );
+  };
   const sideSlot = (b: Bout | undefined, src: SideSource, s: 'aka' | 'ao', bye: boolean) => {
     const p = src.kind === 'athlete' ? find(src.id) : undefined;
     const won = !!b?.winnerId && src.kind === 'athlete' && b.winnerId === src.id;
@@ -226,7 +258,7 @@ export const BracketTree: React.FC<BracketTreeProps> = ({ bouts, categoryId, lan
     return slot({ p, won, score, label: src.kind === 'winner' ? winnerLabel(src.boutNumber) : '' }, edge, s, s === 'ao' ? { marginTop: d.pair } : undefined, won ? frame + 1 : frame, bye ? 'transparent' : c.bg);
   };
   const card = (b: Bout | undefined, aka: SideSource, ao: SideSource, style: React.CSSProperties, key: string) => (
-    <div key={key} style={{ position: 'absolute', width: cardW, height: CARD_H, boxSizing: 'border-box', outline: b?.status === 'in_progress' ? `2px solid ${c.aka}` : undefined, outlineOffset: 2, ...style }}>
+    <div key={key} className={!print && b?.status === 'in_progress' ? 'bt-live' : undefined} style={{ position: 'absolute', width: cardW, height: CARD_H, boxSizing: 'border-box', outline: b?.status === 'in_progress' ? `2px solid ${c.aka}` : undefined, outlineOffset: 2, ...style }}>
       <div style={{ height: d.head, fontSize: d.club - 0.5, color: c.muted, padding: '0 2px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', lineHeight: 1 }}>
         <span>{b ? `#${b.boutNumber}${b.scheduledTime ? ` · ${b.scheduledTime}` : ''}` : ''}</span>
         {b?.status === 'in_progress' && <span style={{ color: c.aka, fontWeight: 700 }}>LIVE</span>}
@@ -254,7 +286,12 @@ export const BracketTree: React.FC<BracketTreeProps> = ({ bouts, categoryId, lan
         const p = find(pl.id);
         return (
           <div key={i} style={{ display: 'flex', gap: 6, padding: '3px 6px', minHeight: placeRowH, boxSizing: 'border-box', borderTop: i ? `1.5px solid ${print ? c.border : '#9aa3ad'}` : undefined, alignItems: 'center' }}>
-            <span style={{ fontSize: d.club, color: c.cardText, width: 14 }}>{pl.place}.</span>
+            {print ? (
+              <span style={{ fontSize: d.club, color: c.cardText, width: 14 }}>{pl.place}.</span>
+            ) : (
+              // Medal circle: gold, silver, bronze (4th place gray)
+              <span style={{ flex: 'none', width: Math.round(d.name * 1.45), height: Math.round(d.name * 1.45), borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: d.club, fontWeight: 700, color: pl.place === '1' ? '#4a3500' : '#fff', background: MEDAL[pl.place] || '#9aa3ad' }}>{pl.place}</span>
+            )}
             <span style={{ flex: 1, lineHeight: 1.15, color: c.cardText }}>
               {p && (
                 <>
@@ -279,16 +316,16 @@ export const BracketTree: React.FC<BracketTreeProps> = ({ bouts, categoryId, lan
     const akaMid = (r: number, local: number) => top(r, local) + d.head + d.row / 2;
     const aoMid = (r: number, local: number) => top(r, local) + d.head + d.row * 1.5 + d.pair;
     // Three kinds of lines: thin gray, pale (slot without a bout) and the dark path of the winner, drawn on top
-    const lines: { d: string; kind: 'line' | 'soft' | 'path' }[] = [];
+    const lines: { d: string; kind: 'line' | 'soft' | 'path'; round?: number; who?: string }[] = [];
     // Uventex connector: a short bar joining the pair on its right, then a line to the slot it feeds
-    const join = (x1: number, ya: number, yb: number, y2: number, x2: number, kind: 'line' | 'soft', won?: 'aka' | 'ao') => {
+    const join = (x1: number, ya: number, yb: number, y2: number, x2: number, kind: 'line' | 'soft', won?: 'aka' | 'ao', round = 0, who?: string) => {
       const xm = x1 + Math.round(d.gapX * 0.3);
       const ym = (ya + yb) / 2;
       const xe = x1 + d.gapX / 2;
       lines.push({ d: `M${x1} ${ya} H${xm} M${x1} ${yb} H${xm} M${xm} ${ya} V${yb} M${xm} ${ym} H${xe} V${y2} H${x2}`, kind });
       if (won) {
         const yw = won === 'aka' ? ya : yb;
-        lines.push({ d: `M${x1} ${yw} H${xm} V${ym} H${xe} V${y2} H${x2}`, kind: 'path' });
+        lines.push({ d: `M${x1} ${yw} H${xm} V${ym} H${xe} V${y2} H${x2}`, kind: 'path', round, who });
       }
     };
     const wonSide = (b?: Bout): 'aka' | 'ao' | undefined =>
@@ -297,7 +334,7 @@ export const BracketTree: React.FC<BracketTreeProps> = ({ bouts, categoryId, lan
       if (r === cols.length - 1) return;
       for (const s of col.slots) {
         const to = feedsInto(s.local);
-        join(x(r) + cardW, akaMid(r, s.local), aoMid(r, s.local), to.side === 'aka' ? akaMid(r + 1, to.pos) : aoMid(r + 1, to.pos), x(r + 1), s.bout ? 'line' : 'soft', wonSide(s.bout));
+        join(x(r) + cardW, akaMid(r, s.local), aoMid(r, s.local), to.side === 'aka' ? akaMid(r + 1, to.pos) : aoMid(r + 1, to.pos), x(r + 1), s.bout ? 'line' : 'soft', wonSide(s.bout), r, s.bout?.winnerId);
       }
     });
     const lastC = cols.length - 1;
@@ -305,7 +342,7 @@ export const BracketTree: React.FC<BracketTreeProps> = ({ bouts, categoryId, lan
     // The winner of the final: a dark slot to the right of the final
     const champX = x(lastC + 1);
     const champY = (akaMid(lastC, 1) + aoMid(lastC, 1)) / 2 - d.row / 2;
-    if (opts.withFinalExtras && finalSlot?.bout) join(x(lastC) + cardW, akaMid(lastC, 1), aoMid(lastC, 1), champY + d.row / 2, champX, 'line', wonSide(finalSlot.bout));
+    if (opts.withFinalExtras && finalSlot?.bout) join(x(lastC) + cardW, akaMid(lastC, 1), aoMid(lastC, 1), champY + d.row / 2, champX, 'line', wonSide(finalSlot.bout), lastC, finalSlot.bout.winnerId);
     const finalBottom = top(lastC, 1) + CARD_H;
     const extrasTop = finalBottom + 22;
     const resultsRight = opts.withFinalExtras && resultsAt === 'right';
@@ -319,19 +356,49 @@ export const BracketTree: React.FC<BracketTreeProps> = ({ bouts, categoryId, lan
       <div key={opts.key} className="bracket-panel" style={{ marginTop: opts.title ? 6 : 0 }}>
         {opts.title && <div style={{ fontSize: d.name + 2, fontWeight: 800, margin: '2px 0 6px', color: c.text }}>{opts.title}</div>}
         <div style={{ position: 'relative', width, height: fullH }}>
-          {cols.map((col, r) => (
-            <div key={col.stage} style={{ position: 'absolute', left: x(r), top: 0, width: cardW, fontSize: d.club + 1, fontWeight: 700, color: c.text }}>{col.stage}</div>
-          ))}
+          {cols.map((col, r) =>
+            print ? (
+              <div key={col.stage} style={{ position: 'absolute', left: x(r), top: 0, width: cardW, fontSize: d.club + 1, fontWeight: 700, color: c.text }}>{col.stage}</div>
+            ) : (
+              // Screen: the round as a label with its number of bouts; the final in dark
+              <div key={col.stage} style={{ position: 'absolute', left: x(r), top: 0, maxWidth: cardW, display: 'inline-flex', alignItems: 'center', gap: 6, height: d.title - 6, padding: '0 9px', boxSizing: 'border-box', fontSize: d.club, fontWeight: 700, letterSpacing: 0.2, whiteSpace: 'nowrap', overflow: 'hidden', ...(r === cols.length - 1 && opts.withFinalExtras ? { background: NAVY, color: '#fff' } : { border: `1px solid ${c.border}`, color: c.text }) }}>
+                {col.stage}
+                <span style={{ fontWeight: 500, opacity: 0.75 }}>· {boutsLabel(col.slots.filter((x2) => x2.bout).length)}</span>
+              </div>
+            )
+          )}
           <svg width={width} height={height} style={{ position: 'absolute', left: 0, top: 0, overflow: 'visible' }} aria-hidden>
-            {lines.map((p, i) => (
-              <path key={i} d={p.d} fill="none" stroke={stroke[p.kind]} strokeWidth={p.kind === 'path' ? 2.25 : 1} strokeLinejoin="round" />
-            ))}
+            {lines.map((p) => {
+              const lit = !print && p.kind === 'path' && !!p.who && p.who === hoverId;
+              return (
+                <path
+                  key={`${p.kind}:${p.d}`}
+                  d={p.d}
+                  fill="none"
+                  stroke={lit ? GOLD : stroke[p.kind]}
+                  strokeWidth={p.kind === 'path' ? (lit ? 3.5 : 2.25) : 1}
+                  strokeLinejoin="round"
+                  // Screen: the winner's path draws itself, round after round
+                  {...(!print && p.kind === 'path' ? { pathLength: 1, className: 'bt-draw', style: { animationDelay: `${(p.round || 0) * 0.22}s` } } : {})}
+                />
+              );
+            })}
           </svg>
+          {/* Screen: the final stands out on a light gold plate */}
+          {!print && opts.withFinalExtras && finalSlot?.bout && (
+            <div style={{ position: 'absolute', left: x(lastC) - 8, top: top(lastC, 1) - 6, width: cardW + 16, height: CARD_H + 14, background: '#fff4dc', border: `1.5px solid ${GOLD}`, boxSizing: 'border-box' }} />
+          )}
           {/* Every slot of the round is drawn: a slot without a bout (bye) keeps its empty pale frames */}
           {cols.flatMap((col, r) => col.slots.map((s) => card(s.bout, s.aka, s.ao, { left: x(r), top: top(r, s.local) }, `${opts.key}-${r}-${s.pos}`)))}
           {opts.withFinalExtras && finalSlot?.bout && (
             <div style={{ position: 'absolute', left: champX, top: champY, width: cardW }}>
               {slot({ p: champ, won: true, label: '' }, champ ? c.win : c.ao, 'champ', undefined, champ ? frame + 1.5 : frame)}
+              {!print && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 5, fontSize: d.club + 0.5, fontWeight: 700, color: champ ? GOLD_TEXT : c.muted, letterSpacing: 0.3 }}>
+                  <Trophy size={Math.round(d.name * 1.15)} color={champ ? GOLD : 'currentColor'} aria-hidden />
+                  {tr(lang, 'Чемпион', 'Чемпион', 'Champion')}
+                </div>
+              )}
             </div>
           )}
           {opts.withFinalExtras && bronzeBout && (
@@ -382,6 +449,7 @@ export const BracketTree: React.FC<BracketTreeProps> = ({ bouts, categoryId, lan
   return (
     // inline-block: the header takes the width of the drawing (a split bracket stays a block so its pages can break)
     <div ref={rootRef} className="bracket-tree" style={{ color: c.text, ...(isSplit(layout.firstCount) ? {} : { display: 'inline-block', minWidth: '100%', verticalAlign: 'top' }) }}>
+      {!print && <style>{BRACKET_CSS}</style>}
       {info && (
         <div style={{ marginBottom: 12 }}>
           {print && (info.eventTitle || info.city) && (
@@ -390,19 +458,40 @@ export const BracketTree: React.FC<BracketTreeProps> = ({ bouts, categoryId, lan
               <div style={{ fontSize: 15, fontWeight: 700 }}>{info.city}</div>
             </div>
           )}
-          {/* Header table like Uventex: category | tatami / code | № | date | time */}
-          <div style={{ border: `1.5px solid ${c.border}`, background: c.band }}>
-            <div style={{ display: 'flex', borderBottom: `1.5px solid ${c.border}` }}>
-              <div style={{ ...cell, flex: 1, whiteSpace: 'normal' }}>{bold(tr(lang, 'Категория', 'Категория', 'Category'))}{info.discipline} · {info.category}</div>
-              <div style={{ ...cell, ...(print ? { width: 170 } : {}), borderLeft: `1.5px solid ${c.border}` }}>{bold(tr(lang, 'Татами', 'Татами', 'Tatami'))}{info.tatami != null ? `${tr(lang, 'Татами', 'Татами', 'Tatami')} #${info.tatami}` : '—'}</div>
+          {/* Header table like Uventex: category | tatami / code | № | date | time (paper); on the screen a tournament band */}
+          {print ? (
+            <>
+            <div style={{ border: `1.5px solid ${c.border}`, background: c.band }}>
+              <div style={{ display: 'flex', borderBottom: `1.5px solid ${c.border}` }}>
+                <div style={{ ...cell, flex: 1, whiteSpace: 'normal' }}>{bold(tr(lang, 'Категория', 'Категория', 'Category'))}{info.discipline} · {info.category}</div>
+                <div style={{ ...cell, ...(print ? { width: 170 } : {}), borderLeft: `1.5px solid ${c.border}` }}>{bold(tr(lang, 'Татами', 'Татами', 'Tatami'))}{info.tatami != null ? `${tr(lang, 'Татами', 'Татами', 'Tatami')} #${info.tatami}` : '—'}</div>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+                <div style={{ ...cell, ...w(190) }}>{bold(tr(lang, 'Код', 'Код', 'Code'))}{info.code}</div>
+                <div style={{ ...cell, ...(print ? { flex: 1 } : w(90)) }}>{bold('№')}{info.protocol ?? '—'}</div>
+                <div style={{ ...cell, ...w(170) }}>{bold(tr(lang, 'Дата', 'Күнү', 'Date'))}{info.date || '—'}</div>
+                <div style={{ ...cell, ...w(170), ...(print ? { borderLeft: `1.5px solid ${c.border}` } : {}) }}>{bold(tr(lang, 'Время', 'Убакыт', 'Time'))}{info.time || '—'}</div>
+              </div>
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-              <div style={{ ...cell, ...w(190) }}>{bold(tr(lang, 'Код', 'Код', 'Code'))}{info.code}</div>
-              <div style={{ ...cell, ...(print ? { flex: 1 } : w(90)) }}>{bold('№')}{info.protocol ?? '—'}</div>
-              <div style={{ ...cell, ...w(170) }}>{bold(tr(lang, 'Дата', 'Күнү', 'Date'))}{info.date || '—'}</div>
-              <div style={{ ...cell, ...w(170), ...(print ? { borderLeft: `1.5px solid ${c.border}` } : {}) }}>{bold(tr(lang, 'Время', 'Убакыт', 'Time'))}{info.time || '—'}</div>
+            </>
+          ) : (
+            <div className="theme-keep" style={{ background: NAVY, color: '#fff', padding: '12px 16px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '8px 16px', borderLeft: `6px solid ${c.aka}` }}>
+              <div style={{ minWidth: 0 }}>
+                <div translate="no" style={{ fontSize: box.w < 700 ? 19 : 24, fontWeight: 800, lineHeight: 1.15, letterSpacing: 0.2, color: '#fff' }}>{info.category}</div>
+                <div style={{ marginTop: 4, fontSize: 13.5, color: '#c9d2e3', display: 'flex', flexWrap: 'wrap', gap: '2px 12px' }}>
+                  <span translate="no">{info.discipline}</span>
+                  <span>{people.length ? `${new Set(people.map((p) => p.id)).size} ${tr(lang, 'участн.', 'катыш.', 'athletes')}` : ''}</span>
+                  {info.tatami != null && <span>{tr(lang, 'Татами', 'Татами', 'Tatami')} {info.tatami}</span>}
+                  {info.date && <span>{info.date}</span>}
+                  {info.time && <span>{info.time}</span>}
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', flex: 'none' }}>
+                {info.protocol != null && <span style={{ fontSize: 13, color: '#c9d2e3' }}>№ {info.protocol}</span>}
+                <span translate="no" style={{ background: c.aka, color: '#fff', fontSize: 13, fontWeight: 700, padding: '3px 9px', letterSpacing: 0.4 }}>{info.code}</span>
+              </div>
             </div>
-          </div>
+          )}
           {/* Five referee signatures (print) */}
           {print && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', columnGap: 22, margin: '6px 0 14px' }}>
